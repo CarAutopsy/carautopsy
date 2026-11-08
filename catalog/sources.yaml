@@ -1,0 +1,9 @@
+sources:
+  - id: evdb-reference
+    name: EV Database
+    url: https://ev-database.org/
+    type: reference_only
+  - id: oem-tesla-press
+    name: Tesla Press
+    url: https://www.tesla.com/press
+    type: official

@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/CarAutopsy/carautopsy/schemas/vehicle-variant.schema.json",
+  "title": "CarAutopsy Vehicle Variant",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "variant_id",
+    "status",
+    "identity",
+    "performance",
+    "energy",
+    "dimensions",
+    "emissions",
+    "offers",
+    "warranty",
+    "extensions",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "variant_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "identity": {
+      "type": "object"
+    },
+    "performance": {
+      "type": "object"
+    },
+    "energy": {
+      "type": "object"
+    },
+    "dimensions": {
+      "type": "object"
+    },
+    "emissions": {
+      "type": "object"
+    },
+    "offers": {
+      "type": "array"
+    },
+    "warranty": {
+      "type": "object"
+    },
+    "extensions": {
+      "type": "object"
+    },
+    "provenance": {
+      "type": "object"
+    }
+  }
+}

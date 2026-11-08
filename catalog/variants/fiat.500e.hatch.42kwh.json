@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "variant_id": "fiat.500e.hatch.42kwh",
+  "status": "current",
+  "identity": {
+    "make": "Fiat"
+  },
+  "provenance": {
+    "confidence": "low"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "variant_id": "renault.5.etech.52kwh-150",
+  "status": "current",
+  "identity": {
+    "make": "Renault"
+  },
+  "provenance": {
+    "confidence": "low"
+  }
+}

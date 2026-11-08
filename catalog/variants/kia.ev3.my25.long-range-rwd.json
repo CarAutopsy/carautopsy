@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "variant_id": "kia.ev3.my25.long-range-rwd",
+  "status": "current",
+  "identity": {
+    "make": "Kia"
+  },
+  "provenance": {
+    "confidence": "low"
+  }
+}
