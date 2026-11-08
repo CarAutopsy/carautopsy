@@ -1,0 +1,31 @@
+country: AT
+version: "1.0.0"
+effective_from: "2024-01-01"
+currency: EUR
+
+nova:
+  description: "Normverbrauchsabgabe (One-time registration tax)"
+  exemptions: ["bev", "fcev"]
+  deduction_co2_gkm: 97
+  divisor: 5
+  max_percentage: 55
+  malus_brackets:
+    - threshold_gkm: 200
+      rate_eur_per_gkm: 20
+    - threshold_gkm: 250
+      rate_eur_per_gkm: 40
+    - threshold_gkm: 300
+      rate_eur_per_gkm: 50
+  source: "BMF NoVA Rechner 2024"
+
+motorbezogene_versicherungssteuer:
+  description: "Monthly motor-related insurance tax"
+  exemptions: ["bev", "fcev"]
+  effective_from: "2021-10-01"
+  power_component:
+    threshold_kw: 65
+    rate_eur_per_kw: 0.72
+  co2_component:
+    threshold_gkm: 115
+    rate_eur_per_gkm: 0.25
+  source: "WKO / BMF Motorbezogene Versicherungssteuer"

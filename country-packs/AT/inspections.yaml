@@ -1,0 +1,9 @@
+country: AT
+version: "1.0.0"
+name: "§57a Begutachtung (Pickerl)"
+intervals_years: [3, 2, 1, 1, 1]
+average_cost_eur: 25.00
+grace_period_months: 4
+sources:
+  - name: "ÖAMTC §57a Info"
+    url: "https://www.oeamtc.at/fahrzeug/begutachtung/"

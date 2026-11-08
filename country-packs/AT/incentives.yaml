@@ -1,0 +1,11 @@
+country: AT
+version: "1.0.0"
+name: "E-Mobilitätsbonus & Förderungen"
+bev_purchase_subsidy_eur: 2500.00
+wallbox_subsidy_eur: 600.00
+exemptions:
+  - nova
+  - motorbezogene_versicherungssteuer
+sources:
+  - name: "BMK E-Mobilitätsförderungen"
+    url: "https://www.bmk.gv.at/"

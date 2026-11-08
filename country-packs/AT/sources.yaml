@@ -1,0 +1,18 @@
+country: AT
+version: "1.0.0"
+sources:
+  - id: at-bmf-nova
+    name: "Bundesministerium für Finanzen (BMF) - NoVA"
+    url: "https://www.bmf.gv.at/themen/steuern/verkehr-und-immobilien/normverbrauchsabgabe.html"
+    type: statutory
+    licence: "Public"
+  - id: at-bmf-motorbez
+    name: "Bundesministerium für Finanzen (BMF) - Motorbezogene Versicherungssteuer"
+    url: "https://www.bmf.gv.at/"
+    type: statutory
+    licence: "Public"
+  - id: at-econtrol
+    name: "E-Control Austria"
+    url: "https://www.e-control.at/"
+    type: statutory
+    licence: "Public"

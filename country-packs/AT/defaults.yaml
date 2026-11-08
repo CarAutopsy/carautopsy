@@ -1,0 +1,16 @@
+country: AT
+version: "1.0.0"
+tyres:
+  replacement_interval_km: 30000
+  average_cost_eur: 800
+maintenance:
+  bev_annual_eur: 150
+  ice_annual_eur: 450
+insurance_proxy:
+  bev_annual_eur: 900
+  ice_annual_eur: 1100
+electricity:
+  default_tariff_eur_kwh: 0.35
+fuel:
+  petrol_eur_l: 1.65
+  diesel_eur_l: 1.55

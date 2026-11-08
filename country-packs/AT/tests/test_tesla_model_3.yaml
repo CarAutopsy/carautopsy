@@ -1,0 +1,12 @@
+test_id: "AT-TEST-001"
+variant_id: "tesla.model-3.highland.rwd-60"
+country: AT
+inputs:
+  purchase_price_eur: 40000
+  annual_mileage_km: 15000
+  ownership_years: 5
+expected_outputs:
+  nova_eur: 0.00
+  monthly_motor_tax_eur: 0.00
+  inspection_interval_years: [3, 2, 1, 1, 1]
+  notes: "BEV is fully exempt from NoVA and motorbezogene Versicherungssteuer in Austria."
