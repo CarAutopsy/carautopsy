@@ -1,0 +1,20 @@
+agents:
+  oem_press_scout:
+    enabled: true
+    schedule: manual
+    rate_limit_seconds: 5
+  statutory_monitor:
+    enabled: true
+    schedule: daily
+  schema_enforcer:
+    enabled: true
+    schedule: manual
+    auto_commit: false
+
+compliance:
+  respect_robots_txt: true
+  user_agent: "CarAutopsy-Research-Bot/1.0 (contact: ermiya.karan@gmx.ch)"
+  prohibited_sources:
+    - ev-database.org
+    - autouncle.com
+    - mobile.de
