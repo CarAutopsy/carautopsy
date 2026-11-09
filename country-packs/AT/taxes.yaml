@@ -1,31 +1,66 @@
+# CarAutopsy Austria (AT) Statutory Tax Rules
+# Version: 1.0.0
+# Effective from: 2024-01-01 (covers current 2026 brackets)
+# Source: Bundesministerium für Finanzen (BMF)
+# Status: verified-draft
+
 country: AT
 version: "1.0.0"
-effective_from: "2024-01-01"
 currency: EUR
 
+# 1. NoVA (Normverbrauchsabgabe) - One-time registration tax
 nova:
-  description: "Normverbrauchsabgabe (One-time registration tax)"
-  exemptions: ["bev", "fcev"]
-  deduction_co2_gkm: 97
-  divisor: 5
-  max_percentage: 55
-  malus_brackets:
-    - threshold_gkm: 200
-      rate_eur_per_gkm: 20
-    - threshold_gkm: 250
-      rate_eur_per_gkm: 40
-    - threshold_gkm: 300
-      rate_eur_per_gkm: 50
-  source: "BMF NoVA Rechner 2024"
+  description: "One-time registration tax applied when a vehicle is first registered in Austria."
+  effective_from: "2021-07-01"
+  exemptions:
+    - bev
+    - fcev
+  formula:
+    # Base percentage: (CO2 - deduction) / 5
+    co2_deduction_gkm: 97
+    divisor: 5
+    min_percentage: 0
+    max_percentage: 55
+    # Fixed amount deduction (Absetzbetrag)
+    fixed_deduction_eur: 350
+  malus:
+    description: "Additional penalty tax for high-emission vehicles"
+    brackets:
+      - threshold_gkm: 200
+        rate_eur_per_gkm_over_threshold: 20
+      - threshold_gkm: 250
+        rate_eur_per_gkm_over_threshold: 40
+      - threshold_gkm: 300
+        rate_eur_per_gkm_over_threshold: 50
 
+# 2. Motorbezogene Versicherungssteuer - Recurring monthly tax
 motorbezogene_versicherungssteuer:
-  description: "Monthly motor-related insurance tax"
-  exemptions: ["bev", "fcev"]
+  description: "Monthly motor-related insurance tax, collected via the vehicle's liability insurance."
   effective_from: "2021-10-01"
-  power_component:
-    threshold_kw: 65
-    rate_eur_per_kw: 0.72
-  co2_component:
-    threshold_gkm: 115
-    rate_eur_per_gkm: 0.25
-  source: "WKO / BMF Motorbezogene Versicherungssteuer"
+  exemptions:
+    - bev
+    - fcev
+  formula:
+    # Power component (Leistungskomponente)
+    power:
+      threshold_kw: 65
+      rate_eur_per_kw_over_threshold: 0.72
+    # CO2 component (CO2-Komponente)
+    co2:
+      threshold_gkm: 115
+      rate_eur_per_gkm_over_threshold: 0.25
+  # Motorcycles have different rules (deferred)
+  applies_to: ["car", "suv", "van", "pickup"]
+
+# 3. Provenance (Required by Data Rights Policy v1.01)
+sources:
+  - id: at-bmf-nova
+    name: "BMF - Normverbrauchsabgabe (NoVA)"
+    url: "https://www.bmf.gv.at/themen/steuern/verkehr-und-immobilien/normverbrauchsabgabe.html"
+    retrieved: "2026-11-09"
+    licence: "Public / Statutory"
+  - id: at-bmf-motorbez
+    name: "BMF - Motorbezogene Versicherungssteuer"
+    url: "https://www.bmf.gv.at/themen/steuern/verkehr-und-immobilien/motorbezogene-versicherungssteuer.html"
+    retrieved: "2026-11-09"
+    licence: "Public / Statutory"
