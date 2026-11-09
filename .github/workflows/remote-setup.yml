@@ -1,0 +1,552 @@
+name: Remote Setup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  remote_setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create remote docs, audit tools, and session handover
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from datetime import datetime, timezone
+          import subprocess
+          import json
+          import os
+
+          ROOT = Path(".")
+
+          def write(path, content):
+              p = ROOT / path
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(content.strip() + "\n", encoding="utf-8", newline="\n")
+              print(f"Created/updated: {path}")
+
+          def append_unique(path, lines):
+              p = ROOT / path
+              existing = p.read_text(encoding="utf-8").splitlines() if p.exists() else []
+              changed = False
+              for line in lines:
+                  if line not in existing:
+                      existing.append(line)
+                      changed = True
+              if changed:
+                  p.parent.mkdir(parents=True, exist_ok=True)
+                  p.write_text("\n".join(existing) + "\n", encoding="utf-8", newline="\n")
+                  print(f"Updated: {path}")
+
+          now = datetime.now(timezone.utc)
+          date_utc = now.strftime("%Y-%m-%d")
+          time_utc = now.strftime("%H:%M")
+          stamp = now.strftime("%Y%m%d-%H%M")
+          session_id = f"CARAUTOPSY-SESSION-QWEN-{stamp}-001"
+
+          try:
+              base_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          except Exception:
+              base_sha = "UNKNOWN"
+
+          write("docs/README.md", """
+          # CarAutopsy Documentation
+
+          This folder is the operating manual for CarAutopsy.
+
+          ## Core Protocols
+
+          | Document | Purpose |
+          |:---|:---|
+          | [Vehicle Catalog Protocol](protocols/vehicle-catalog-protocol-v104.md) | Canonical vehicle identity, specs, units, provenance, and source policy |
+          | [Article-Writing Protocol](protocols/article-writing-protocol-v104.md) | Writing style, citations, document history, and publishing assets |
+          | [Session Handover Protocol](protocols/session-handover-protocol-v101.md) | Continuity between AI agents, work sessions, and human contributors |
+
+          ## Operating Documents
+
+          | Document | Purpose |
+          |:---|:---|
+          | [Remote Work Protocol](operations/REMOTE_WORK_PROTOCOL.md) | How to continue development using only GitHub web browser access |
+          | [Current State](operations/CURRENT_STATE.md) | Current repository state, known blockers, and active priorities |
+          | [Next Actions](operations/NEXT_ACTIONS.md) | Small bounded tasks that can be done remotely |
+          | [Data Rights Policy](data-rights-policy-v101.md) | Source licensing and data-use rules |
+
+          ## Rule
+
+          Repository truth beats chat memory. If a decision matters, commit it.
+          """)
+
+          write("docs/protocols/README.md", """
+          # CarAutopsy Protocols
+
+          These protocols govern how humans and AI agents work on CarAutopsy.
+
+          ## Required Reading Order
+
+          1. Vehicle Catalog Protocol v1.04
+          2. Data Rights Policy v1.01
+          3. Project Session Handover Protocol v1.01
+          4. Article-Writing Protocol v1.04, when writing public content
+
+          ## Non-Negotiables
+
+          - Do not bypass site terms or access controls.
+          - Do not scrape EV Database or similar compiled databases.
+          - Do not store unverified numeric specs as official facts.
+          - Unknown values are `null`, not zero.
+          - Every statutory calculation needs a source and effective date.
+          - Every meaningful work session needs a handover.
+          """)
+
+          write("docs/operations/REMOTE_WORK_PROTOCOL.md", """
+          # Remote Work Protocol
+
+          **Project:** CarAutopsy  
+          **Version:** v1.00  
+          **Status:** Active working rule  
+          **Owner:** @realarchitekt
+
+          ## Purpose
+
+          This protocol allows CarAutopsy development to continue when the owner only has browser access to GitHub.
+
+          ## Allowed Tools
+
+          - GitHub web file editor
+          - GitHub Issues
+          - GitHub Projects
+          - GitHub Pull Requests
+          - GitHub Actions
+          - GitHub Codespaces, if available
+          - Vercel / Cloudflare Pages browser deployment, if connected later
+
+          ## Not Required
+
+          - Local Git
+          - Local npm
+          - Local Python
+          - SSH keys on the current machine
+          - Administrator access
+
+          ## Workflow
+
+          1. Create or edit files through GitHub web.
+          2. Use GitHub Actions for validation, scripts, builds, and repository maintenance.
+          3. Store decisions in `docs/`.
+          4. Store session state in `.carautopsy/sessions/`.
+          5. Use Issues for bounded tasks.
+          6. Do not rely on chat memory as the source of truth.
+
+          ## Safety Rules
+
+          - Do not add secrets to the repository.
+          - Do not paste API keys into Issues, Actions logs, or docs.
+          - Do not run paid APIs without owner approval.
+          - Do not activate scheduled crawling without source-policy review.
+          - Do not claim a test passed unless the GitHub Actions result was inspected.
+
+          ## Current Principle
+
+          GitHub Actions is the remote computer. The office PC is only a browser terminal.
+          """)
+
+          write("docs/operations/CURRENT_STATE.md", f"""
+          # Current Project State
+
+          **Last updated:** {date_utc}  
+          **Repository:** CarAutopsy/carautopsy  
+          **Current mode:** Browser-only development
+
+          ## Confirmed Completed
+
+          - GitHub organization created.
+          - Main repository created.
+          - SSH push succeeded from previous machine.
+          - Documentation and protocol folders were created.
+          - Austria country-pack work was started.
+          - TCO engine work was started.
+          - AI data-agent framework was pushed.
+          - Local npm development caused repeated Windows tar/file-lock errors.
+
+          ## Current Constraint
+
+          Owner is now on an office PC with only GitHub web browser access.
+
+          ## Active Strategy
+
+          Use GitHub web + GitHub Actions for repository maintenance, documentation, validation, and later remote deployment.
+
+          ## Known Risks
+
+          - Some earlier generated docs may be shortened placeholders and need replacement with canonical full protocol text.
+          - Some earlier helper scripts may have been committed to the repo root and should later be moved to `scripts/dev/` or removed.
+          - Website npm install should not be attempted on the office PC.
+          - Statutory formulas must be verified against official current sources before paid reports are generated.
+          - Seed vehicle data remains low-confidence until upgraded from official OEM/type-approval sources.
+
+          ## Current Commit Reference
+
+          `{base_sha}`
+          """)
+
+          write("docs/operations/NEXT_ACTIONS.md", """
+          # Next Actions
+
+          ## Browser-Only Tasks
+
+          1. Add full canonical protocol documents under `docs/protocols/`.
+          2. Add a proper docs index and source registry.
+          3. Add repository audit workflow.
+          4. Add issue templates for remote tasks.
+          5. Add session handover files.
+          6. Review root-level helper scripts and move/remove them.
+          7. Prepare web app for remote deployment through Vercel or Cloudflare Pages.
+
+          ## Do Not Do Yet
+
+          - Do not run npm locally on the office PC.
+          - Do not activate crawling schedules.
+          - Do not add paid API credentials.
+          - Do not treat placeholder vehicle specs as verified.
+          """)
+
+          append_unique(".gitignore", [
+              "",
+              "# Local/generated helper scripts",
+              "bootstrap.py",
+              "bootstrap.sh",
+              "startup.sh",
+              "setup_web.py",
+              "build_*.py",
+              "update_docs.py",
+              "fix.py",
+              "",
+              "# Node / Next.js",
+              "node_modules/",
+              ".next/",
+              "out/",
+              "*.tsbuildinfo",
+              "",
+              "# Reports generated by CI",
+              "reports/",
+          ])
+
+          write("scripts/repo_audit.py", """
+          #!/usr/bin/env python3
+          import json
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          ROOT = Path(__file__).resolve().parents[1]
+          REPORT = ROOT / "reports" / "repo_audit.md"
+
+          required = [
+              "README.md",
+              "docs/README.md",
+              "docs/protocols/vehicle-catalog-protocol-v104.md",
+              "docs/protocols/article-writing-protocol-v104.md",
+              "docs/protocols/session-handover-protocol-v101.md",
+              "schemas/vehicle-variant.schema.json",
+              "catalog/variants",
+              "country-packs/AT/manifest.yaml",
+              "data-connectors/agent_config.yaml",
+          ]
+
+          warnings = []
+          errors = []
+          passed = []
+
+          def check_path(rel):
+              p = ROOT / rel
+              if p.exists():
+                  passed.append(f"PASS: {rel}")
+              else:
+                  warnings.append(f"MISSING: {rel}")
+
+          def walk_keys(obj, path="root"):
+              found = []
+              if isinstance(obj, dict):
+                  for k, v in obj.items():
+                      if isinstance(k, str) and k != k.strip():
+                          found.append(f"{path}.{k!r}")
+                      found.extend(walk_keys(v, f"{path}.{k}"))
+              elif isinstance(obj, list):
+                  for i, v in enumerate(obj):
+                      found.extend(walk_keys(v, f"{path}[{i}]"))
+              return found
+
+          for item in required:
+              check_path(item)
+
+          web_pkg = ROOT / "apps" / "web" / "package.json"
+          if not web_pkg.exists():
+              warnings.append("MISSING: apps/web/package.json — web app not yet committed or scaffold incomplete")
+          else:
+              passed.append("PASS: apps/web/package.json")
+
+          for jf in sorted((ROOT / "catalog" / "variants").glob("*.json")):
+              try:
+                  data = json.loads(jf.read_text(encoding="utf-8"))
+                  bad_keys = walk_keys(data)
+                  if bad_keys:
+                      errors.append(f"JSON key whitespace in {jf.relative_to(ROOT)}: {bad_keys[:5]}")
+                  else:
+                      passed.append(f"PASS JSON: {jf.relative_to(ROOT)}")
+              except Exception as exc:
+                  errors.append(f"Invalid JSON {jf.relative_to(ROOT)}: {exc}")
+
+          schema = ROOT / "schemas" / "vehicle-variant.schema.json"
+          if schema.exists():
+              try:
+                  json.loads(schema.read_text(encoding="utf-8"))
+                  passed.append("PASS JSON: schemas/vehicle-variant.schema.json")
+              except Exception as exc:
+                  errors.append(f"Invalid schema JSON: {exc}")
+
+          REPORT.parent.mkdir(parents=True, exist_ok=True)
+
+          lines = [
+              "# CarAutopsy Repository Audit",
+              "",
+              f"Generated: {datetime.now(timezone.utc).isoformat()}",
+              "",
+              "## Summary",
+              "",
+              f"- Passed: {len(passed)}",
+              f"- Warnings: {len(warnings)}",
+              f"- Errors: {len(errors)}",
+              "",
+              "## Errors",
+              "",
+          ]
+          lines += [f"- {x}" for x in errors] or ["None."]
+          lines += ["", "## Warnings", ""]
+          lines += [f"- {x}" for x in warnings] or ["None."]
+          lines += ["", "## Passed", ""]
+          lines += [f"- {x}" for x in passed] or ["None."]
+          lines += [
+              "",
+              "## Interpretation",
+              "",
+              "Warnings do not necessarily mean the repository is broken. They identify incomplete areas.",
+              "Errors should be fixed before relying on the affected component.",
+          ]
+
+          REPORT.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          print(REPORT.read_text(encoding="utf-8"))
+
+          if errors:
+              raise SystemExit(1)
+          """)
+
+          write(".github/workflows/repo-audit.yml", """
+          name: Repository Audit
+
+          on:
+            workflow_dispatch:
+            pull_request:
+            push:
+              paths:
+                - "docs/**"
+                - "schemas/**"
+                - "catalog/**"
+                - "country-packs/**"
+                - "data-connectors/**"
+                - "scripts/repo_audit.py"
+                - ".github/workflows/repo-audit.yml"
+
+          permissions:
+            contents: read
+
+          jobs:
+            audit:
+              runs-on: ubuntu-latest
+
+              steps:
+                - name: Checkout
+                  uses: actions/checkout@v4
+
+                - name: Set up Python
+                  uses: actions/setup-python@v5
+                  with:
+                    python-version: "3.12"
+
+                - name: Run repository audit
+                  run: python scripts/repo_audit.py
+
+                - name: Upload audit report
+                  uses: actions/upload-artifact@v4
+                  with:
+                    name: repo-audit-report
+                    path: reports/repo_audit.md
+          """)
+
+          write(".github/ISSUE_TEMPLATE/remote-task.md", """
+          ---
+          name: Remote Task
+          about: A bounded task that can be completed through GitHub web or Actions
+          labels: remote-task
+          ---
+
+          ## Objective
+
+          What should be changed?
+
+          ## Files / Paths
+
+          Which files or folders are involved?
+
+          ## Done When
+
+          - [ ] Change is committed
+          - [ ] Relevant workflow passes, if applicable
+          - [ ] Docs/session state updated if needed
+
+          ## Owner Approval Required?
+
+          Yes / No
+
+          ## Notes
+
+          Add constraints, links, or source references.
+          """)
+
+          write(f".carautopsy/sessions/{session_id}.md", f"""
+          ---
+          session_id: {session_id}
+          protocol: Project Session Handover Protocol v1.01
+          project: CarAutopsy
+          agent: QWEN
+          co_agents: []
+          date_utc: {date_utc}
+          time_utc: "{time_utc}"
+          repository: CarAutopsy/carautopsy
+          branch: main
+          base_commit_sha: {base_sha}
+          handover_commit_sha: PENDING
+          open_prs: []
+          active_task: remote-setup
+          task_state: implementation
+          automation_state: ACTIVE_MANUAL_TRIGGER
+          status: DRAFT
+          confidence: MEDIUM
+          next_action: Inspect Remote Setup workflow result, then run Repository Audit workflow.
+          owner_go_required: false
+          blockers:
+            - Owner currently has only GitHub web browser access.
+            - Local npm development is blocked by Windows tar/file-lock errors.
+          supersedes: null
+          superseded_by: null
+          ---
+
+          # Project Session Handover
+
+          ## Current objective
+
+          Continue CarAutopsy setup using only GitHub web browser access and GitHub Actions.
+
+          ## Repository state
+
+          - Repository: CarAutopsy/carautopsy
+          - Branch: main
+          - Base commit: `{base_sha}`
+          - Current mode: browser-only
+
+          ## Completed this session
+
+          - Added remote-work operating documentation.
+          - Added repository audit script and workflow.
+          - Added remote-task issue template.
+          - Added current session pointer. [COMMIT]
+
+          ## Decisions made
+
+          - GitHub Actions becomes the remote execution environment while local desktop tooling is unavailable. [OWNER_DECISION]
+          - No local npm or admin-required setup should be required from the office PC. [OWNER_DECISION]
+
+          ## Verified
+
+          - This handover is generated by workflow. Workflow result must be inspected before claiming success. [REASONED_ONLY]
+
+          ## Not verified and known risks
+
+          - Repository may contain shortened placeholder protocol docs from earlier emergency scripts.
+          - Web app may still be incomplete or not committed.
+          - npm install remains unresolved locally and should be avoided on office PC.
+          - Statutory rules require official-source verification before commercial use.
+
+          ## Next actions
+
+          1. Inspect the Remote Setup workflow result.
+          2. Run the Repository Audit workflow.
+          3. Review the audit artifact.
+          4. Replace shortened protocol docs with canonical full documents where needed.
+
+          ## Owner decisions required
+
+          None for this setup step.
+
+          ## Do not do
+
+          - Do not add secrets.
+          - Do not activate crawling schedules.
+          - Do not claim tests passed without inspecting Actions output.
+          - Do not use local npm on the office PC.
+
+          ## Context pointers
+
+          - docs/operations/REMOTE_WORK_PROTOCOL.md
+          - docs/operations/CURRENT_STATE.md
+          - docs/operations/NEXT_ACTIONS.md
+          - scripts/repo_audit.py
+
+          ## References
+
+          - Vehicle Catalog Protocol v1.04
+          - Project Session Handover Protocol v1.01
+          - Data Rights Policy v1.01
+          """)
+
+          write(".carautopsy/sessions/CURRENT.md", f"""
+          # Current Project Session
+
+          **Latest full handover:** `.carautopsy/sessions/{session_id}.md`
+
+          **Repository:** CarAutopsy/carautopsy  
+          **Commit SHA:** `{base_sha}`  
+          **Branch:** `main`  
+          **Open PRs:** None  
+          **Active task:** `remote-setup`  
+          **Status:** DRAFT  
+          **Next action:** Inspect Remote Setup workflow result, then run Repository Audit workflow.  
+          **Owner GO required:** false
+          """)
+
+          PY
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "docs: add remote work protocol and repository audit"
+            git push
+          fi
