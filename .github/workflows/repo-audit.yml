@@ -1,0 +1,39 @@
+name: Repository Audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    paths:
+      - "docs/**"
+      - "schemas/**"
+      - "catalog/**"
+      - "country-packs/**"
+      - "data-connectors/**"
+      - "scripts/repo_audit.py"
+      - ".github/workflows/repo-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run repository audit
+        run: python scripts/repo_audit.py
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-audit-report
+          path: reports/repo_audit.md
