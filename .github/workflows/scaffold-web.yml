@@ -5,28 +5,35 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   scaffold:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v6
-      
-      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          
+          persist-credentials: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
       - name: Generate Next.js App
         run: |
-          # Remove the placeholder directory
           rm -rf apps/web
-          # Create a full Next.js app non-interactively
           npx create-next-app@latest apps/web --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --yes
-          
-      - name: Commit and Push
+
+      - name: Push branch and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "hive-bot"
           git config user.email "hive-bot@users.noreply.github.com"
+          git checkout -B scaffold/web-mvp
           git add apps/web
           git commit -m "feat(web): scaffold Next.js MVP via Actions"
-          git push
+          git push -u origin scaffold/web-mvp
+          gh pr create --title "🏗️ Scaffold: Next.js Web MVP" \
+            --body "Auto-generated Next.js scaffold (TypeScript, Tailwind, App Router). Merge to enable Vercel deployment." \
+            --base main --head scaffold/web-mvp || echo "PR already open for this branch"
