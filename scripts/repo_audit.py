@@ -98,7 +98,9 @@ lines += [
     "Errors should be fixed before relying on the affected component.",
 ]
 
-REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+REPORT.write_text("
+".join(lines) + "
+", encoding="utf-8")
 print(REPORT.read_text(encoding="utf-8"))
 
 if errors:
