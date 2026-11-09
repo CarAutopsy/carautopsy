@@ -17,6 +17,6 @@ jobs:
       - name: Run Hive Orchestrator
         env:
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_API_CARAUTOPSY_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
           python scripts/hive_orchestrator.py
