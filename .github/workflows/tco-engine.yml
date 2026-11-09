@@ -18,16 +18,28 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml
 
-      - name: Run CarAutopsy TCO Engine v0.2 (BEV vs ICE autopsy)
+      - name: Run CarAutopsy TCO Engine v0.2.1 (BEV vs ICE autopsy)
         run: |
           python - <<'PY'
           import json, math, yaml
           from pathlib import Path
           from datetime import datetime, timezone
 
+          # The Ultimate Ghost-Space Eraser
+          def strip_spaces(obj):
+              if isinstance(obj, dict):
+                  return {str(k).strip(): strip_spaces(v) for k, v in obj.items()}
+              if isinstance(obj, list):
+                  return [strip_spaces(i) for i in obj]
+              if isinstance(obj, str):
+                  return obj.strip()
+              return obj
+
+          # Universal loader that scrubs all files on read
           def load(p):
               with open(p, encoding="utf-8") as f:
-                  return json.load(f) if p.endswith(".json") else yaml.safe_load(f)
+                  data = json.load(f) if p.endswith(".json") else yaml.safe_load(f)
+              return strip_spaces(data)
 
           taxes = load("country-packs/AT/taxes.yaml")
           defaults = load("country-packs/AT/defaults.yaml")
@@ -99,7 +111,7 @@ jobs:
           bev = tco(load("catalog/variants/tesla.model-3.highland.rwd-60.json"))
           ice = tco(load("catalog/variants/vw.tiguan.2026.tdi-150.json"))
 
-          print("\n🚗 CarAutopsy TCO Engine v0.2 — BEV vs ICE Autopsy (Austria, 5y / 15,000 km/yr)")
+          print("\n🚗 CarAutopsy TCO Engine v0.2.1 — BEV vs ICE Autopsy (Austria, 5y / 15,000 km/yr)")
           print("=" * 78)
           for r in (bev, ice):
               print(f"\n{r['variant_id']}  [{r['powertrain']}]")
@@ -115,7 +127,7 @@ jobs:
           print(f"⚖️  5-year operating delta (ICE - BEV): €{ice['total_5y_eur'] - bev['total_5y_eur']:,.2f}")
 
           envelope = {
-              "engine_version": "0.2.0",
+              "engine_version": "0.2.1",
               "country_pack": "AT@1.0.0",
               "calculation_timestamp": datetime.now(timezone.utc).isoformat(),
               "currency": "EUR",
@@ -126,5 +138,5 @@ jobs:
           }
           print("\n📊 AUDIT ENVELOPE:")
           print(json.dumps(envelope, indent=2))
-          print("\n✅ TCO Engine v0.2 executed successfully.")
+          print("\n✅ TCO Engine v0.2.1 executed successfully.")
           PY
