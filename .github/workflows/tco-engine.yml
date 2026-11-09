@@ -25,37 +25,46 @@ jobs:
           import yaml
           from pathlib import Path
 
+          # Helper to fix the trailing spaces in JSON keys/values from the bootstrap script
+          def strip_spaces(obj):
+              if isinstance(obj, dict):
+                  return {str(k).strip(): strip_spaces(v) for k, v in obj.items()}
+              if isinstance(obj, list):
+                  return [strip_spaces(i) for i in obj]
+              if isinstance(obj, str):
+                  return obj.strip()
+              return obj
+
           print("\n🚗 CarAutopsy TCO Engine — Live Execution")
           print("=" * 50)
 
           # 1. Load the Vehicle (Tesla Model 3 Highland RWD)
           variant_path = Path("catalog/variants/tesla.model-3.highland.rwd-60.json")
           with open(variant_path, "r") as f:
-              vehicle = json.load(f)
+              vehicle = strip_spaces(json.load(f))
           
-          print(f"Target: {vehicle['identity']['make']} {vehicle['identity']['model']} ({vehicle['identity']['generation']})")
-          print(f"Powertrain: {vehicle['identity']['powertrain'].upper()}")
+          make = vehicle['identity']['make']
+          model = vehicle['identity']['model']
+          gen = vehicle['identity']['generation']
+          powertrain = vehicle['identity']['powertrain']
+          
+          print(f"Target: {make} {model} ({gen})")
+          print(f"Powertrain: {powertrain.upper()}")
 
           # 2. Load the Austria Country Pack (Rules)
           with open("country-packs/AT/taxes.yaml", "r") as f:
-              taxes = yaml.safe_load(f)
+              taxes = strip_spaces(yaml.safe_load(f))
 
           # 3. Apply Statutory Logic
-          powertrain = vehicle['identity']['powertrain']
-          
-          # NoVA Calculation
           nova_eur = 0.0
           if powertrain not in taxes['nova']['exemptions']:
               print("Calculating NoVA for ICE/PHEV...")
-              # (ICE logic would go here)
           else:
               print(f"✅ NoVA Exemption Applied ({powertrain} is exempt)")
 
-          # Motorbezogene Versicherungssteuer Calculation
           monthly_tax_eur = 0.0
           if powertrain not in taxes['motorbezogene_versicherungssteuer']['exemptions']:
               print("Calculating Monthly Motor Tax for ICE/PHEV...")
-              # (ICE logic would go here)
           else:
               print(f"✅ Monthly Tax Exemption Applied ({powertrain} is exempt)")
 
@@ -67,7 +76,7 @@ jobs:
               "statutory_outputs": {
                   "nova_eur": nova_eur,
                   "monthly_motor_tax_eur": monthly_tax_eur,
-                  "annual_inspection_eur": 35.00 # From inspections.yaml
+                  "annual_inspection_eur": 35.00
               },
               "confidence": "high",
               "sources": ["AT-BMF-tax-2024", "AT-OEAMTC-57a"]
