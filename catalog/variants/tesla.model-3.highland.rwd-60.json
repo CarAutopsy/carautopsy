@@ -3,9 +3,86 @@
   "variant_id": "tesla.model-3.highland.rwd-60",
   "status": "current",
   "identity": {
-    "make": "Tesla"
+    "make": "Tesla",
+    "make_slug": "tesla",
+    "model": "Model 3",
+    "model_slug": "model-3",
+    "generation": "Highland",
+    "generation_slug": "highland",
+    "variant_name": "RWD",
+    "variant_slug": "rwd-60",
+    "trim": null,
+    "model_year_from": 2026,
+    "model_year_to": null,
+    "body_style": "sedan",
+    "segment_euro_ncap": "D",
+    "doors": 4,
+    "seats": 5,
+    "powertrain": "bev"
   },
+  "performance": {
+    "power_w": 208000,
+    "torque_nm": null,
+    "accel_0_100_s": 6.2,
+    "top_speed_kmh": null,
+    "drive": "rwd"
+  },
+  "energy": {
+    "battery_usable_wh": 60000000,
+    "battery_gross_wh": null,
+    "battery_chemistry": null,
+    "battery_form_factor": null,
+    "voltage_architecture_v": 400,
+    "consumption_wh_km": { "wltp_combined": null, "real_world": 133 },
+    "range_m": { "wltp": null, "real_world": 450000 },
+    "ac_max_w": null,
+    "dc_peak_w": 110000,
+    "v2l": null,
+    "v2g": null
+  },
+  "dimensions": {
+    "length_mm": null,
+    "width_mm": null,
+    "height_mm": null,
+    "wheelbase_mm": null,
+    "curb_mass_kg": 1847,
+    "cargo_l": 682,
+    "tow_braked_kg": 1000
+  },
+  "emissions": {
+    "co2_wltp_gpkm": 0,
+    "euro_class": null
+  },
+  "offers": [
+    {
+      "offer_id": "tesla.model-3.highland.rwd-60@AT-2026",
+      "country": "AT",
+      "currency": "EUR",
+      "list_price_minor": 3797000,
+      "price_as_of": "2026-08-23",
+      "availability": "available_to_order"
+    }
+  ],
+  "warranty": {
+    "vehicle_years": null,
+    "vehicle_km": null,
+    "battery_years": null,
+    "battery_km": null,
+    "battery_soh_threshold_pct": null
+  },
+  "extensions": {},
   "provenance": {
-    "confidence": "low"
+    "confidence": "low",
+    "reviewed_by": null,
+    "sources": [
+      {
+        "field_glob": "*",
+        "name": "EV Database listing (field inventory check only)",
+        "url": "https://ev-database.org/",
+        "retrieved": "2026-08-23",
+        "licence": "reference-only",
+        "role": "field_inventory"
+      }
+    ]
   }
 }
