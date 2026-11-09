@@ -5,18 +5,32 @@ on:
     - cron: '0 * * * *' # Run every hour
   workflow_dispatch:
 
+# REQUIRED: Give the workflow permission to push branches and open PRs
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   orchestrate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+          
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       
+      # THIS IS THE FIX: Install the missing libraries
+      - name: Install dependencies
+        run: pip install requests pyyaml
+      
       - name: Run Hive Orchestrator
         env:
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          # THIS IS THE FIX: Map your specific secret name to the variable the script expects
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_CARAUTOPSY_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python scripts/hive_orchestrator.py
