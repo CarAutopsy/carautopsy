@@ -1,0 +1,147 @@
+import json, math, subprocess, sys
+from pathlib import Path
+from datetime import datetime, timezone
+import yaml
+
+ROOT = Path.cwd()
+
+def clean(o):
+    if isinstance(o, dict): return {str(k).strip(): clean(v) for k, v in o.items()}
+    if isinstance(o, list): return [clean(i) for i in o]
+    if isinstance(o, str): return o.strip()
+    return o
+
+def load(p):
+    with open(p, encoding="utf-8") as f:
+        return clean(json.load(f) if p.suffix == ".json" else yaml.safe_load(f))
+
+taxes = load(ROOT / "country-packs/AT/taxes.yaml")
+defaults = load(ROOT / "country-packs/AT/defaults.yaml")
+
+FUEL_DEFAULT = {"ice_diesel": 6.5, "ice_petrol": 6.0, "hev": 4.5, "phev": 5.0}
+MAINT = {"bev": 150, "phev": 350, "hev": 400, "ice_petrol": 450, "ice_diesel": 450}
+
+def nova(v):
+    pt = v["identity"]["powertrain"]
+    if pt in taxes["nova"]["exemptions"]: return 0.0
+    co2 = v["emissions"].get("co2_wltp_gpkm") or 0
+    f = taxes["nova"]["formula"]
+    pct = math.floor((co2 - f["co2_deduction_gkm"]) / f["divisor"])
+    pct = max(f["min_percentage"], min(f["max_percentage"], pct))
+    malus = sum((co2 - b["threshold_gkm"]) * b["rate_eur_per_gkm_over_threshold"]
+                for b in taxes["nova"]["malus"]["brackets"] if co2 > b["threshold_gkm"])
+    offers = v.get("offers") or []
+    gross = (offers[0].get("list_price_minor") or 0) / 100.0 if offers else 0.0
+    if gross <= 0: return 0.0
+    net = gross / ((1 + pct / 100.0) * 1.20)
+    return round(max(0.0, net * pct / 100.0 - f["fixed_deduction_eur"]) + malus, 2)
+
+def motor_monthly(v):
+    pt = v["identity"]["powertrain"]
+    if pt in taxes["motorbezogene_versicherungssteuer"]["exemptions"]: return 0.0
+    f = taxes["motorbezogene_versicherungssteuer"]["formula"]
+    kw = (v["performance"].get("power_w") or 0) / 1000.0
+    co2 = v["emissions"].get("co2_wltp_gpkm") or 0
+    p = max(0.0, kw - f["power"]["threshold_kw"]) * f["power"]["rate_eur_per_kw_over_threshold"]
+    c = max(0.0, co2 - f["co2"]["threshold_gkm"]) * f["co2"]["rate_eur_per_gkm_over_threshold"]
+    return round(p + c, 2)
+
+def tco(v):
+    pt = v["identity"]["powertrain"]
+    yrs = defaults["horizon_years_default"]; km = defaults["annual_km_default"]
+    n = nova(v); mt = motor_monthly(v) * 12 * yrs
+    if pt == "bev":
+        wh = (v["energy"]["consumption_wh_km"].get("real_world")
+              or v["energy"]["consumption_wh_km"].get("wltp_combined") or 0)
+        energy = (wh / 1000.0) * km * defaults["energy"]["electricity_tariff_eur_kwh"] * yrs
+    else:
+        l100 = ((v.get("extensions") or {}).get("fuel_consumption_l_100km") or {}).get("real_world") or FUEL_DEFAULT.get(pt, 6.0)
+        price = defaults["energy"]["diesel_eur_l"] if pt == "ice_diesel" else defaults["energy"]["petrol_eur_l"]
+        energy = (l100 / 100.0) * km * price * yrs
+    maint = MAINT.get(pt, 450) * yrs
+    ins = defaults["insurance_proxy_annual_eur"].get("bev" if pt == "bev" else "ice", 1100) * yrs
+    tyres = (km * yrs / defaults["tyres"]["interval_km"]) * defaults["tyres"]["set_cost_eur"]
+    insp = defaults["inspection_annual_proxy_eur"] * yrs
+    total = n + mt + energy + maint + ins + tyres + insp
+    offers = v.get("offers") or []
+    return {
+        "variant_id": v["variant_id"],
+        "make": v["identity"].get("make"),
+        "model": v["identity"].get("model"),
+        "variant_name": v["identity"].get("variant_name"),
+        "powertrain": pt,
+        "power_kw": round((v["performance"].get("power_w") or 0) / 1000.0, 1),
+        "co2_gkm": v["emissions"].get("co2_wltp_gpkm"),
+        "list_price_eur": round((offers[0].get("list_price_minor") or 0) / 100.0, 2) if offers else None,
+        "nova_eur": n,
+        "motor_tax_monthly_eur": motor_monthly(v),
+        "energy_5y_eur": round(energy, 2),
+        "maintenance_5y_eur": round(maint, 2),
+        "insurance_5y_eur": round(ins, 2),
+        "tyres_5y_eur": round(tyres, 2),
+        "inspection_5y_eur": round(insp, 2),
+        "total_5y_eur": round(total, 2),
+        "monthly_eur": round(total / (yrs * 12), 2),
+        "data_confidence": (v.get("provenance") or {}).get("confidence"),
+    }
+
+results = []
+for p in sorted((ROOT / "catalog" / "variants").glob("*.json")):
+    try:
+        results.append(tco(load(p)))
+    except Exception as e:
+        print(f"WARNING skipped {p.name}: {e}")
+
+bevs = [r for r in results if r["powertrain"] == "bev"]
+others = [r for r in results if r["powertrain"] != "bev"]
+summary = {
+    "variants": len(results),
+    "bev_avg_monthly_eur": round(sum(r["monthly_eur"] for r in bevs) / len(bevs), 2) if bevs else None,
+    "ice_avg_monthly_eur": round(sum(r["monthly_eur"] for r in others) / len(others), 2) if others else None,
+}
+
+payload = {
+    "results": results,
+    "summary": summary,
+    "envelope": {
+        "engine_version": "0.3.0",
+        "country_pack": "AT@1.0.0",
+        "assumptions_version": "AT-defaults@1.0.0",
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "currency": "EUR",
+        "horizon_years": defaults["horizon_years_default"],
+        "annual_km": defaults["annual_km_default"],
+        "sources": ["AT-BMF-tax-2024", "AT-OEAMTC-57a", "AT-defaults-assumptions-1.0.0"],
+        "note": "Operating + statutory costs only; excludes depreciation and financing.",
+    },
+}
+
+out = ROOT / "apps" / "web" / "public" / "data" / "autopsies.json"
+new_results = json.dumps(results, sort_keys=True)
+if out.exists():
+    try:
+        old = json.loads(out.read_text(encoding="utf-8"))
+        if json.dumps(old.get("results"), sort_keys=True) == new_results:
+            print("Results unchanged - no PR needed.")
+            sys.exit(0)
+    except Exception:
+        pass
+
+out.parent.mkdir(parents=True, exist_ok=True)
+out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+print(f"Wrote {len(results)} autopsies to {out}")
+
+def run(cmd):
+    print("$ " + " ".join(cmd)); subprocess.run(cmd, check=True)
+
+run(["git", "config", "user.name", "hive-bot"])
+run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
+run(["git", "checkout", "-B", "tco/refresh"])
+run(["git", "add", "apps/web/public/data/autopsies.json"])
+run(["git", "commit", "-m", "chore(data): refresh TCO autopsy results"])
+run(["git", "push", "-u", "origin", "tco/refresh", "--force"])
+r = subprocess.run(["gh", "pr", "create", "--title", "Refresh TCO autopsy results",
+                    "--body", f"Variants: {len(results)} | BEV avg/mo: {summary['bev_avg_monthly_eur']} | non-BEV avg/mo: {summary['ice_avg_monthly_eur']}",
+                    "--base", "main", "--head", "tco/refresh"])
+if r.returncode != 0:
+    print("PR already open - branch updated instead.")
