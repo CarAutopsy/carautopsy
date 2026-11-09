@@ -1,11 +1,30 @@
+# CarAutopsy Austria (AT) Incentives & Subsidies
+# Version: 1.0.0
+# Effective from: 2024-01-01
+
 country: AT
-version: "1.0.0"
 name: "E-Mobilitätsbonus & Förderungen"
-bev_purchase_subsidy_eur: 2500.00
-wallbox_subsidy_eur: 600.00
-exemptions:
-  - nova
-  - motorbezogene_versicherungssteuer
+version: "1.0.0"
+currency: EUR
+
+rules:
+  bev_purchase_subsidy_eur: 2500.00  # Federal subsidy for pure EVs (varies by budget year)
+  phev_purchase_subsidy_eur: 1250.00 # Federal subsidy for PHEVs (range > 50km)
+  wallbox_subsidy_eur: 600.00        # Subsidy for home charging station installation
+  
+  # Statutory tax exemptions for zero-emission vehicles
+  exemptions:
+    - nova                            # BEVs/FCEVs pay 0% NoVA registration tax
+    - motorbezogene_versicherungssteuer # BEVs/FCEVs pay 0 monthly motor tax
+
 sources:
-  - name: "BMK E-Mobilitätsförderungen"
-    url: "https://www.bmk.gv.at/"
+  - id: at-bmk-emob
+    name: "BMK - E-Mobilitätsförderungen"
+    url: "https://www.bmk.gv.at/themen/verkehr/mobilitaet/elektromobilitaet.html"
+    retrieved: "2026-11-09"
+    licence: "Public / Statutory"
+  - id: at-bmf-nova-exemption
+    name: "BMF - NoVA Befreiung für Elektrofahrzeuge"
+    url: "https://www.bmf.gv.at/themen/steuern/verkehr-und-immobilien/normverbrauchsabgabe.html"
+    retrieved: "2026-11-09"
+    licence: "Public / Statutory"
