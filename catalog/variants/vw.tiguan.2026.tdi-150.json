@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0.0",
+  "variant_id": "vw.tiguan.2026.tdi-150",
+  "status": "current",
+  "identity": {
+    "make": "Volkswagen",
+    "make_slug": "vw",
+    "model": "Tiguan",
+    "model_slug": "tiguan",
+    "generation": "2026",
+    "generation_slug": "2026",
+    "variant_name": "2.0 TDI 150",
+    "variant_slug": "tdi-150",
+    "trim": null,
+    "model_year_from": 2026,
+    "model_year_to": null,
+    "body_style": "suv",
+    "segment_euro_ncap": "C",
+    "doors": 5,
+    "seats": 5,
+    "powertrain": "ice_diesel"
+  },
+  "performance": {
+    "power_w": 110000,
+    "torque_nm": 360,
+    "accel_0_100_s": 9.9,
+    "top_speed_kmh": 205,
+    "drive": "fwd"
+  },
+  "energy": {
+    "battery_usable_wh": null,
+    "battery_gross_wh": null,
+    "battery_chemistry": null,
+    "battery_form_factor": null,
+    "voltage_architecture_v": null,
+    "consumption_wh_km": { "wltp_combined": null, "real_world": null },
+    "range_m": { "wltp": null, "real_world": null },
+    "ac_max_w": null,
+    "dc_peak_w": null,
+    "v2l": null,
+    "v2g": null
+  },
+  "dimensions": {
+    "length_mm": 4551,
+    "width_mm": 1839,
+    "height_mm": 1640,
+    "wheelbase_mm": 2681,
+    "curb_mass_kg": 1720,
+    "cargo_l": 615,
+    "tow_braked_kg": 2000
+  },
+  "emissions": {
+    "co2_wltp_gpkm": 152,
+    "euro_class": "euro6e"
+  },
+  "offers": [
+    {
+      "offer_id": "vw.tiguan.2026.tdi-150@AT-2026",
+      "country": "AT",
+      "currency": "EUR",
+      "list_price_minor": 4499000,
+      "price_as_of": "2026-11-09",
+      "availability": "available_to_order",
+      "note": "Placeholder AT list price; verify against VW AT configurator"
+    }
+  ],
+  "warranty": {
+    "vehicle_years": 2,
+    "vehicle_km": null,
+    "battery_years": null,
+    "battery_km": null,
+    "battery_soh_threshold_pct": null
+  },
+  "extensions": {
+    "fuel_consumption_l_100km": { "wltp_combined": 5.8, "real_world": 6.4 }
+  },
+  "provenance": {
+    "confidence": "low",
+    "reviewed_by": null,
+    "sources": [
+      {
+        "field_glob": "*",
+        "name": "Manual curation placeholder (verify vs VW configurator / CoC)",
+        "url": "https://www.volkswagen.at/",
+        "retrieved": "2026-11-09",
+        "licence": "manual-curation",
+        "role": "placeholder"
+      }
+    ]
+  }
+}
