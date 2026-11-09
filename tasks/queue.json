@@ -1,0 +1,9 @@
+[
+  {"variant_id": "tesla.model-y.juniper.rwd-60", "make": "Tesla", "model": "Model Y Juniper"},
+  {"variant_id": "fiat.500e.hatch.42kwh", "make": "Fiat", "model": "500e 42 kWh"},
+  {"variant_id": "renault.5.etech.52kwh-150", "make": "Renault", "model": "5 E-Tech"},
+  {"variant_id": "kia.ev3.my25.long-range-rwd", "make": "Kia", "model": "EV3 Long Range"},
+  {"variant_id": "vw.tiguan.2026.tdi-150", "make": "Volkswagen", "model": "Tiguan 2.0 TDI"},
+  {"variant_id": "toyota.yaris.hybrid-130", "make": "Toyota", "model": "Yaris Hybrid"},
+  {"variant_id": "toyota.rav4.phev-300", "make": "Toyota", "model": "RAV4 Plug-in Hybrid"}
+]
