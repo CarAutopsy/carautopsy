@@ -1,9 +1,38 @@
+# CarAutopsy Austria (AT) Inspection Rules (§57a Begutachtung)
+# Version: 1.0.0
+# Effective from: 2012-07-01 (The "3-2-1-1-1" rule)
+# Source: ÖAMTC / ARBÖ
+
 country: AT
-version: "1.0.0"
 name: "§57a Begutachtung (Pickerl)"
-intervals_years: [3, 2, 1, 1, 1]
-average_cost_eur: 25.00
-grace_period_months: 4
+version: "1.0.0"
+currency: EUR
+
+rules:
+  # First inspection after 3 years, then 2, then 1, then 1, then 1.
+  intervals_years: [3, 2, 1, 1, 1]
+  
+  # You can get the inspection up to 4 months before or 4 months after the due date.
+  grace_period_months: 4 
+  
+  applies_to: ["car", "suv", "van", "pickup", "motorcycle"]
+  exemptions: []
+
+defaults:
+  # Average cost at an independent workshop (ÖAMTC/ARBÖ members often get discounts)
+  average_cost_eur: 35.00
+  # Cost if the car fails and requires re-inspection
+  reinspection_cost_eur: 15.00
+
+# Provenance (Data Rights Policy v1.01)
 sources:
-  - name: "ÖAMTC §57a Info"
+  - id: at-oeamtc-57a
+    name: "ÖAMTC §57a Begutachtung Info"
     url: "https://www.oeamtc.at/fahrzeug/begutachtung/"
+    retrieved: "2026-11-09"
+    licence: "Public / Informational"
+  - id: at-arboe-57a
+    name: "ARBÖ Pickerl-Check"
+    url: "https://www.arboe.at/themen/auto-fuehrerschein/pickerl/"
+    retrieved: "2026-11-09"
+    licence: "Public / Informational"
