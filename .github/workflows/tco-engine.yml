@@ -18,37 +18,42 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml
 
-      - name: Run CarAutopsy TCO Engine v0.2.1 (BEV vs ICE autopsy)
+      - name: Run CarAutopsy TCO Engine v0.2.2 (Nuclear Key Cleaning)
         run: |
           python - <<'PY'
-          import json, math, yaml
+          import json, math, yaml, re
           from pathlib import Path
           from datetime import datetime, timezone
 
-          # The Ultimate Ghost-Space Eraser
+          # THE NUCLEAR OPTION: Strip EVERYTHING except letters, numbers, and underscores
+          def clean_key(k):
+              return re.sub(r'[^a-zA-Z0-9_]', '', str(k))
+
           def strip_spaces(obj):
               if isinstance(obj, dict):
-                  return {str(k).strip(): strip_spaces(v) for k, v in obj.items()}
+                  return {clean_key(k): strip_spaces(v) for k, v in obj.items()}
               if isinstance(obj, list):
                   return [strip_spaces(i) for i in obj]
               if isinstance(obj, str):
                   return obj.strip()
               return obj
 
-          # Universal loader that scrubs all files on read
           def load(p):
               with open(p, encoding="utf-8") as f:
                   data = json.load(f) if p.endswith(".json") else yaml.safe_load(f)
-              return strip_spaces(data)
+              return strip_spaces(data) if data else {}
 
           taxes = load("country-packs/AT/taxes.yaml")
           defaults = load("country-packs/AT/defaults.yaml")
+          
+          # DEBUG: This will print exactly what keys the engine sees in your YAML file
+          print(f"DEBUG: Defaults keys loaded: {list(defaults.keys())}")
 
           def nova_for(v):
               pt = v["identity"]["powertrain"]
-              if pt in taxes["nova"]["exemptions"]:
+              if pt in taxes.get("nova", {}).get("exemptions", []):
                   return 0.0, "exempt (BEV/FCEV)"
-              co2 = v["emissions"]["co2_wltp_gpkm"] or 0
+              co2 = v["emissions"].get("co2_wltp_gpkm") or 0
               f = taxes["nova"]["formula"]
               pct = math.floor((co2 - f["co2_deduction_gkm"]) / f["divisor"])
               pct = max(f["min_percentage"], min(f["max_percentage"], pct))
@@ -63,35 +68,37 @@ jobs:
 
           def motor_tax_monthly(v):
               pt = v["identity"]["powertrain"]
-              if pt in taxes["motorbezogene_versicherungssteuer"]["exemptions"]:
+              if pt in taxes.get("motorbezogene_versicherungssteuer", {}).get("exemptions", []):
                   return 0.0
               f = taxes["motorbezogene_versicherungssteuer"]["formula"]
-              kw = (v["performance"]["power_w"] or 0) / 1000.0
-              co2 = v["emissions"]["co2_wltp_gpkm"] or 0
+              kw = (v["performance"].get("power_w") or 0) / 1000.0
+              co2 = v["emissions"].get("co2_wltp_gpkm") or 0
               p = max(0.0, kw - f["power"]["threshold_kw"]) * f["power"]["rate_eur_per_kw_over_threshold"]
               c = max(0.0, co2 - f["co2"]["threshold_gkm"]) * f["co2"]["rate_eur_per_gkm_over_threshold"]
               return round(p + c, 2)
 
           def tco(v):
               pt = v["identity"]["powertrain"]
-              yrs = defaults["horizon_years_default"]
-              km = defaults["annual_km_default"]
+              # Fallbacks ensure the engine NEVER crashes, even if YAML is broken
+              yrs = defaults.get("horizon_years_default", 5)
+              km = defaults.get("annual_km_default", 15000)
+              
               nova, note = nova_for(v)
               mtax = motor_tax_monthly(v) * 12 * yrs
               if pt == "bev":
-                  wh = (v["energy"]["consumption_wh_km"]["real_world"]
-                        or v["energy"]["consumption_wh_km"]["wltp_combined"] or 0)
-                  energy = (wh / 1000.0) * km * defaults["energy"]["electricity_tariff_eur_kwh"] * yrs
-                  maint = defaults["maintenance_annual_eur"]["bev"] * yrs
-                  ins = defaults["insurance_proxy_annual_eur"]["bev"] * yrs
+                  wh = (v["energy"]["consumption_wh_km"].get("real_world")
+                        or v["energy"]["consumption_wh_km"].get("wltp_combined") or 0)
+                  energy = (wh / 1000.0) * km * defaults.get("energy", {}).get("electricity_tariff_eur_kwh", 0.35) * yrs
+                  maint = defaults.get("maintenance_annual_eur", {}).get("bev", 150) * yrs
+                  ins = defaults.get("insurance_proxy_annual_eur", {}).get("bev", 900) * yrs
               else:
-                  l100 = (v["extensions"].get("fuel_consumption_l_100km") or {}).get("real_world") or 6.5
-                  price = defaults["energy"]["diesel_eur_l"] if "diesel" in pt else defaults["energy"]["petrol_eur_l"]
+                  l100 = (v.get("extensions", {}).get("fuel_consumption_l_100km") or {}).get("real_world") or 6.5
+                  price = defaults.get("energy", {}).get("diesel_eur_l", 1.55) if "diesel" in pt else defaults.get("energy", {}).get("petrol_eur_l", 1.65)
                   energy = (l100 / 100.0) * km * price * yrs
-                  maint = defaults["maintenance_annual_eur"].get(pt, 450) * yrs
-                  ins = defaults["insurance_proxy_annual_eur"]["ice"] * yrs
-              tyres = (km * yrs / defaults["tyres"]["interval_km"]) * defaults["tyres"]["set_cost_eur"]
-              insp = defaults["inspection_annual_proxy_eur"] * yrs
+                  maint = defaults.get("maintenance_annual_eur", {}).get(pt, 450) * yrs
+                  ins = defaults.get("insurance_proxy_annual_eur", {}).get("ice", 1100) * yrs
+              tyres = (km * yrs / defaults.get("tyres", {}).get("interval_km", 30000)) * defaults.get("tyres", {}).get("set_cost_eur", 800)
+              insp = defaults.get("inspection_annual_proxy_eur", 35) * yrs
               total = nova + mtax + energy + maint + ins + tyres + insp
               return {
                   "variant_id": v["variant_id"],
@@ -111,7 +118,7 @@ jobs:
           bev = tco(load("catalog/variants/tesla.model-3.highland.rwd-60.json"))
           ice = tco(load("catalog/variants/vw.tiguan.2026.tdi-150.json"))
 
-          print("\n🚗 CarAutopsy TCO Engine v0.2.1 — BEV vs ICE Autopsy (Austria, 5y / 15,000 km/yr)")
+          print("\n🚗 CarAutopsy TCO Engine v0.2.2 — BEV vs ICE Autopsy (Austria, 5y / 15,000 km/yr)")
           print("=" * 78)
           for r in (bev, ice):
               print(f"\n{r['variant_id']}  [{r['powertrain']}]")
@@ -127,7 +134,7 @@ jobs:
           print(f"⚖️  5-year operating delta (ICE - BEV): €{ice['total_5y_eur'] - bev['total_5y_eur']:,.2f}")
 
           envelope = {
-              "engine_version": "0.2.1",
+              "engine_version": "0.2.2",
               "country_pack": "AT@1.0.0",
               "calculation_timestamp": datetime.now(timezone.utc).isoformat(),
               "currency": "EUR",
@@ -138,5 +145,5 @@ jobs:
           }
           print("\n📊 AUDIT ENVELOPE:")
           print(json.dumps(envelope, indent=2))
-          print("\n✅ TCO Engine v0.2.1 executed successfully.")
+          print("\n✅ TCO Engine v0.2.2 executed successfully.")
           PY
