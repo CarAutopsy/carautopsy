@@ -1,0 +1,61 @@
+name: Sanitize Catalog JSON (Remove Ghost Spaces)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sanitize:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run JSON Sanitizer
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          def strip_spaces(obj):
+              if isinstance(obj, dict):
+                  return {str(k).strip(): strip_spaces(v) for k, v in obj.items()}
+              if isinstance(obj, list):
+                  return [strip_spaces(i) for i in obj]
+              if isinstance(obj, str):
+                  return obj.strip()
+              return obj
+
+          variants_dir = Path("catalog/variants")
+          for json_file in variants_dir.glob("*.json"):
+              print(f"Processing {json_file}...")
+              with open(json_file, "r", encoding="utf-8") as f:
+                  data = json.load(f)
+              
+              clean_data = strip_spaces(data)
+              
+              with open(json_file, "w", encoding="utf-8") as f:
+                  json.dump(clean_data, f, indent=2, ensure_ascii=False)
+              print(f"  ✅ Cleaned and saved {json_file.name}")
+          PY
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add catalog/variants/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(data): sanitize catalog JSON keys and values (remove ghost spaces)"
+            git push
+          fi
