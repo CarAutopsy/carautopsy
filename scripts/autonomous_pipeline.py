@@ -315,6 +315,18 @@ if RESEARCH_ONLY:
     branch = "hive/research-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     run(["git", "checkout", "-b", branch])
     run(["git", "add", "catalog/variants", "tasks/queue.json", "tasks/failed.json"])
+    substantive = subprocess.run(
+        ["git", "diff", "--cached", "--quiet", "--",
+         "catalog/variants", "tasks/failed.json"],
+        check=False,
+    )
+    if substantive.returncode == 0:
+        print("Queue-only research change; skipping PR to avoid reordering-only proposals.")
+        if audit_failures_this_run:
+            sys.exit(1)
+        sys.exit(0)
+    if substantive.returncode != 1:
+        raise RuntimeError("Could not determine whether research produced substantive changes.")
     run(["git", "commit", "-m", f"chore(hive): {msg}"])
     run(["git", "push", "-u", "origin", branch])
     run(["gh", "pr", "create", "--title", f"Hive research: {msg}",
