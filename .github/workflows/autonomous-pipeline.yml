@@ -53,6 +53,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          HIVE_RESEARCH_BATCH_SIZE: ${{ vars.HIVE_RESEARCH_BATCH_SIZE }}
         run: python scripts/autonomous_pipeline.py --research-only
       - name: Provider smoke test only
         if: github.event_name == 'workflow_dispatch' && inputs.run_mode == 'provider-smoke-test'
