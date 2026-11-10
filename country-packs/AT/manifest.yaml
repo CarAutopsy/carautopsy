@@ -1,8 +1,8 @@
 country: AT
 name: Austria
-version: "1.0.0"
-status: verified
-effective_from: "2024-01-01"
+version: "1.1.0-draft"
+status: draft
+effective_from: "2026-01-01"
 currency: EUR
 components:
   - taxes.yaml
