@@ -7,7 +7,8 @@ import sys
 from pathlib import Path
 from typing import Iterable
 
-from jsonschema import Draft7Validator\nfrom jsonschema.exceptions import SchemaError
+from jsonschema import Draft7Validator
+from jsonschema.exceptions import SchemaError
 
 
 ROOT = Path(__file__).resolve().parents[1]
