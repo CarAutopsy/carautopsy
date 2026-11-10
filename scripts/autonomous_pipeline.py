@@ -134,9 +134,11 @@ if "--provider-smoke-test" in sys.argv:
     import time
     sys.exit(provider_smoke_test())
 
-from tco_engine import calculate_tco, load_country_config
+from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
 
 taxes, defaults, inspections = load_country_config(ROOT)
+# Stop before curation, queue/catalog writes, or TCO artifact publication.
+assert_tax_pack_publishable(taxes)
 analyze = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
 
 audit_failures_this_run = 0
