@@ -1,8 +1,9 @@
 name: Autonomous Pipeline (Hive Research + TCO)
 
 on:
+  # Avoid the top-of-hour scheduling spike; keep one hourly research window.
   schedule:
-    - cron: '0 * * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       run_mode:
