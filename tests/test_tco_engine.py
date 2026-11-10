@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from tco_engine import calculate_tco, load_country_config, motor_monthly, nova, validate_config
+from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config, motor_monthly, nova, validate_config
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -136,6 +136,30 @@ class TcoConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unsupported for powertrain"):
             motor_monthly(v, self.t)
 
+
+    def test_publish_gate_rejects_draft_pack(self):
+        with self.assertRaisesRegex(ValueError, "requires status 'verified'"):
+            assert_tax_pack_publishable(self.t)
+
+    def test_publish_gate_rejects_incomplete_schedules(self):
+        verified = copy.deepcopy(self.t)
+        verified["status"] = "verified"
+        del verified["nova"]["annual_rules"]
+        with self.assertRaisesRegex(ValueError, "NoVA annual_rules"):
+            assert_tax_pack_publishable(verified)
+
+    def test_legacy_engine_adapter_fails_closed_on_draft_pack(self):
+        sys.path.insert(0, str(ROOT))
+        from engine.tco.calculator import TCOEngine
+        with self.assertRaisesRegex(ValueError, "TCO publication is disabled"):
+            TCOEngine(ROOT).calculate("tesla.model-3.highland.rwd-60", "AT", 15000, 5)
+
+    def test_legacy_builder_is_non_mutating(self):
+        import subprocess
+        result = subprocess.run([sys.executable, str(ROOT / "build_engine.py")],
+                                cwd=ROOT, capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("No files changed", result.stdout)
 
 if __name__ == "__main__":
     unittest.main()
