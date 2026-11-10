@@ -1,0 +1,209 @@
+[
+  {
+    "task": {
+      "variant_id": "vw.id-4.pro-77kwh",
+      "make": "Volkswagen",
+      "model": "ID.4 Pro"
+    },
+    "verdict": "FAIL: drive_layout says front-wheel drive but ID.4 Pro 77kWh is rear-wheel drive, and power_max_w 150000 (150 kW) is inconsistent with the 77 kWh Pro RWD spec (typically 210 kW/286 PS); also gross/net battery delta and other figures need verification against cited sources.",
+    "at": "2026-11-10T09:12:46.183330+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "vw.id-3.pro-58kwh",
+      "make": "Volkswagen",
+      "model": "ID.3 Pro"
+    },
+    "verdict": "FAIL: drive_layout \"front-wheel drive\" is inconsistent with the VW ID.3 Pro, which is rear-wheel drive (rear motor, RWD).",
+    "at": "2026-11-10T09:13:03.121505+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "vw.golf-8.etsi-150",
+      "make": "Volkswagen",
+      "model": "Golf 8 eTSI"
+    },
+    "verdict": "FAIL: engine_code \"DQ200\" is a DSG transmission code, not an engine code (inconsistent identity data).",
+    "at": "2026-11-10T09:13:21.931209+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "skoda.enyaq-iv-80",
+      "make": "Skoda",
+      "model": "Enyaq iV 80"
+    },
+    "verdict": "FAIL: power_max_continuous_w (150000) and power_max_peak_w (170000) are inconsistent with the Enyaq iV 80's actual 150 kW peak output, and the continuous value exceeds plausible continuous rating; also production_start \"2022-09\" conflicts with model_year 2023 press-kit provenance, and retrieved_date 2026-11-10 is in the future relative to curation, indicating hallucinated/inconsistent data.",
+    "at": "2026-11-10T09:13:39.825738+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "skoda.octavia-combi-20tdi-150",
+      "make": "Skoda",
+      "model": "Octavia Combi 2.0 TDI"
+    },
+    "verdict": "FAIL: engine_code \"CAEB\" is inconsistent with a 2.0 TDI 150 (CAEB is a 1.8 TSI petrol code), and the 2017-2021 Combi 2.0 TDI 150 uses EA288 codes (e.g. CRVA/DFGA), so the engine identity is hallucinated/inconsistent.",
+    "at": "2026-11-10T09:14:02.167835+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "bmw.ix3-impulse-80kwh",
+      "make": "BMW",
+      "model": "iX3"
+    },
+    "verdict": "FAIL: power_max_continuous 210000 W (210 kW) and power_max_overboost 286000 W (286 kW) are inconsistent with the iX3's actual 210 kW/286 Nm figures \u2014 torque_max 430 Nm is plausible but the overboost power value appears to be a unit/field confusion (286 kW overboost is not a documented iX3 spec; the 286 figure is torque in Nm), and the \"Impulse Edition\" nameplate plus 80 kWh gross/74 kWh net with 460 km WLTC and 6.8 s acceleration do not match documented G08 iX3 specs (74.0 kWh net, ~461 km WLTP, 6.8 s is plausible but 210 kW continuous vs 286 kW overboost is a hallucinated split), and provenance confidence is \"low\" with no reviewed_by, so the record cannot be validated.",
+    "at": "2026-11-10T09:14:24.293112+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "bmw.330e-xdrive-g20",
+      "make": "BMW",
+      "model": "330e xDrive"
+    },
+    "verdict": "FAIL: performance.power_system_combined is 215000 but stored under a key implying kW while value appears to be watts (215 kW), and torque_system_combined 420 lacks unit clarity; also acceleration_0_100_kph 5.9 and top_speed 235 are inconsistent with a 215 kW PHEV 330e xDrive (real ~5.9s is plausible but 215000 W = 215 kW is below the actual ~215 kW combined? borderline), plus provenance confidence is \"low\" which is acceptable, but the power unit mismatch (kW stored as watts) violates the protocol.",
+    "at": "2026-11-10T09:14:46.631983+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "mercedes.eqb-300-4matic",
+      "make": "Mercedes-Benz",
+      "model": "EQB 300"
+    },
+    "verdict": "FAIL: power_max_w is 164000 W (164 kW), which is inconsistent with the EQB 300 4MATIC's actual ~168 kW/228 hp output and the torque/acceleration figures; also provenance includes a suspicious dat.de PDF URL and retrieved_date/curated_utc are in the future (2026), indicating fabricated provenance.",
+    "at": "2026-11-10T09:15:06.987245+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "mercedes.c300de-w206",
+      "make": "Mercedes-Benz",
+      "model": "C 300 de"
+    },
+    "verdict": "FAIL: performance.power_system_combined (250000) \u2260 power_engine (140000) + power_electric (120000) = 260000, an inconsistent number; also offers.list_price_at 6299000 EUR is implausible for a C300de and lacks unit/scale justification.",
+    "at": "2026-11-10T09:15:25.280962+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "audi.q4-etron-50-quattro",
+      "make": "Audi",
+      "model": "Q4 e-tron 50"
+    },
+    "verdict": "FAIL: power_system (150000) does not equal power_motor_front + power_motor_rear (80000+70000=150000) \u2014 actually consistent, but torque_system 310 Nm is implausibly low for a 150 kW dual-motor quattro (real Q4 50 quattro is 460 Nm), indicating a hallucinated/inconsistent number; additionally provenance confidence is \"low\" which is acceptable, but the torque inconsistency alone warrants rejection.",
+    "at": "2026-11-10T09:15:42.685697+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "hyundai.ioniq-5.long-range-awd",
+      "make": "Hyundai",
+      "model": "IONIQ 5 Long Range"
+    },
+    "verdict": "FAIL: power_front (125000) + power_rear (160000) = 285000 W exceeds power_system_total (225000 W), an inconsistent number; also torque_system_total 605 lacks unit clarity and provenance confidence is acceptable but the numeric inconsistency alone warrants rejection.",
+    "at": "2026-11-10T09:16:01.172828+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "hyundai.tucson-16t-gdi-hybrid",
+      "make": "Hyundai",
+      "model": "Tucson Hybrid"
+    },
+    "verdict": "FAIL: power_system_total_w (130000) \u2260 power_engine_w + power_electric_w (115000 + 15000 = 130000) is consistent, but engine_code \"G4FS-MHEV\" is a hallucinated/invalid code (G4FS is the non-hybrid 1.6 T-GDi; MHEV suffix is fabricated), and the 1.6 T-GDi is turbocharged, contradicting \"naturally aspirated\"; also torque 264 Nm and 0\u2013100 10.7 s are inconsistent with a 130 kW NA hybrid, and provenance lacks per-field source mapping.",
+    "at": "2026-11-10T09:16:21.671342+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "kia.ev6.gt-line-77kwh-awd",
+      "make": "Kia",
+      "model": "EV6 GT-Line"
+    },
+    "verdict": "FAIL: performance.power_max_w 239000 W (239 kW) is inconsistent with the 77 kWh AWD GT-Line's actual 239 kW combined output only if unverified, but more critically the DC charging_max_dc_kw of 239 kW matches power rather than the EV6's real ~233 kW peak, and charging_time_ac_0_100_pct_min 660 with 11 kW AC on 74 kWh net is implausible (~400 min), indicating hallucinated/inconsistent numbers.",
+    "at": "2026-11-10T09:16:39.219400+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "kia.ev3.my25.long-range-rwd",
+      "make": "Kia",
+      "model": "EV3 Long Range"
+    },
+    "verdict": "FAIL: status \"unreleased\" with all-null specs and empty provenance sources provides no verifiable data, and drive_layout \"front-motor, rear-wheel drive\" is internally inconsistent for a RWD variant.",
+    "at": "2026-11-10T09:16:50.929242+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "kia.niro-ev-64kwh",
+      "make": "Kia",
+      "model": "Niro EV"
+    },
+    "verdict": "FAIL: provenance contains fabricated/inconsistent URLs (KBA CoC path with duplicated retrieval date and implausible press-kit path), and curated/retrieved dates are in the future (2026-11-10), indicating hallucinated provenance.",
+    "at": "2026-11-10T09:17:10.864592+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "toyota.yaris.hybrid-130",
+      "make": "Toyota",
+      "model": "Yaris Hybrid"
+    },
+    "verdict": "FAIL: performance.power_system_total_w (95600) is inconsistent with power_engine_w (67000) + power_electric_w (45000) = 112000, and the \"hybrid-130\" variant implies 130 PS (~96 kW) system output while engine alone is listed at 67 kW \u2014 numbers are internally contradictory/hallucinated.",
+    "at": "2026-11-10T09:17:29.991018+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "toyota.corolla-touring-sports-hybrid-140",
+      "make": "Toyota",
+      "model": "Corolla Touring Sports Hybrid"
+    },
+    "verdict": "FAIL: torque_system_nm 142 is inconsistent with a 103 kW hybrid system (should be ~190 Nm), and power_engine_w 90000 + power_electric_w 50000 exceeds the stated total 103000 W without justification.",
+    "at": "2026-11-10T09:17:48.323721+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "toyota.rav4.phev-300",
+      "make": "Toyota",
+      "model": "RAV4 Plug-in Hybrid"
+    },
+    "verdict": "FAIL: performance power figures inconsistent \u2014 power_engine_w 112000 + power_electric_w 80000 = 192000 W, not the stated power_system_total_w 225000 W (Toyota RAV4 PHEV 300 is 225 kW system / 163 kW combined, so engine/electric values are wrong), and torque 360 Nm is implausible for this variant.",
+    "at": "2026-11-10T09:18:09.051984+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "fiat.500e.hatch.42kwh",
+      "make": "Fiat",
+      "model": "500e 42 kWh"
+    },
+    "verdict": "FAIL: power_max_continuous 87000 is stored in watts but the key implies a continuous power field with no unit suffix, and 87 kW is inconsistent with the 500e's ~87 kW peak (not continuous) rating; also charging_max_dc 85000 W (85 kW) exceeds the 500e's actual ~85 kW peak only briefly and conflicts with charge_time_dc_10_to_80_percent 0.33 h (20 min) which is optimistic/inconsistent, and torque_max 220 Nm lacks unit key while other numeric fields use explicit units.",
+    "at": "2026-11-10T09:18:27.221018+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "renault.5.etech.52kwh-150",
+      "make": "Renault",
+      "model": "5 E-Tech"
+    },
+    "verdict": "FAIL: power_max_continuous_w is 110300 W (110.3 kW) but variant_id and model designate 150 hp/110 kW \u2014 inconsistent with the \"150\" designation and likely conflates continuous vs peak power; also seats=4 is questionable for a 5-door hatchback and charge_time_ac_0_to_100_pct_min=555 (9.25 h) is inconsistent with 47 kWh net at 11 kW AC (~4.3 h), indicating hallucinated/inconsistent numbers.",
+    "at": "2026-11-10T09:18:43.196034+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "renault.megane-etech-60kwh",
+      "make": "Renault",
+      "model": "Megane E-Tech"
+    },
+    "verdict": "FAIL: hallucinated/inconsistent numbers \u2014 length_mm 4200 is wrong for M\u00e9gane E-Tech (actual ~4210mm is close but the real issue is power_max_continuous_w 110000 conflicts with the 60kWh variant's 96kW/160kW motor specs, and torque 220Nm vs actual 300Nm; also acceleration 8.7s and top speed 150kph don't match the 96kW/220Nm pairing), plus provenance URLs are unverifiable/fabricated (EU type-approval CoC URL is a placeholder pattern, not a real document link).",
+    "at": "2026-11-10T09:19:01.330625+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "tesla.model-y.juniper.rwd-60",
+      "make": "Tesla",
+      "model": "Model Y Juniper"
+    },
+    "verdict": "FAIL: drive is \"front-wheel drive\" but Tesla Model Y Juniper RWD is rear-wheel drive (inconsistent), and provenance.sources is empty (missing provenance URLs).",
+    "at": "2026-11-10T09:19:13.292486+00:00"
+  },
+  {
+    "task": {
+      "variant_id": "tesla.model-y.juniper.lr-awd",
+      "make": "Tesla",
+      "model": "Model Y Juniper Long Range"
+    },
+    "verdict": "FAIL: \"Juniper\" is a trim/refresh designation, not a valid trim for a 2024 Model Y (Juniper is the 2025+ refresh), and production dates 2024-03-01 to 2024-09-30 with status \"discontinued\" are inconsistent with a 2024 model year still in production; also power_max 358000 W (358 kW) and torque 639 Nm do not match the LR AWD spec, and the eurocarnews approval PDF URL appears fabricated (hallucinated provenance).",
+    "at": "2026-11-10T09:19:29.975951+00:00"
+  }
+]
