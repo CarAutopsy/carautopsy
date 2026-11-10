@@ -135,7 +135,10 @@ def analyze(v):
         "data_confidence": (v.get("provenance") or {}).get("confidence"),
     }
 
+audit_failures_this_run = 0
+
 def curate_one():
+    global audit_failures_this_run
     qp = ROOT / "tasks" / "queue.json"
     if not qp.exists(): return False, "no queue"
     tasks = json.loads(qp.read_text())
@@ -214,6 +217,7 @@ Reply with exactly one line: PASS or FAIL: reason"""
         # Fail closed: every available independent vendor must explicitly PASS.
         passed = len(audit_results) >= 2 and all(item["verdict"].upper().startswith("PASS") for item in audit_results)
         if not passed:
+            audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
             failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "audits": audit_results, "at": datetime.now(timezone.utc).isoformat()})
@@ -279,8 +283,13 @@ if changed:
     out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Wrote {len(results)} autopsies")
 
-if not curated and not changed:
-    print("No changes. Exiting."); sys.exit(0)
+# Include queue/failed-ledger updates in the commit decision, not only catalog output.
+if not subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True).stdout.strip():
+    print("No changes. Exiting.")
+    if audit_failures_this_run:
+        print(f"Pipeline rejected {audit_failures_this_run} vehicle record(s).")
+        sys.exit(1)
+    sys.exit(0)
 
 run(["git", "config", "user.name", "hive-bot"])
 run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
@@ -288,3 +297,6 @@ run(["git", "add", "-A"])
 run(["git", "commit", "-m", f"chore(autonomous): {msg} | {len(results)} autopsies"])
 run(["git", "push", "origin", "main"])
 print("Committed and pushed to main.")
+if audit_failures_this_run:
+    print(f"Pipeline rejected {audit_failures_this_run} vehicle record(s); marking workflow failed.")
+    sys.exit(1)
