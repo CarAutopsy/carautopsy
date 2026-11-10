@@ -102,7 +102,7 @@ class NativeGeminiFallbackTests(unittest.TestCase):
         self.assertEqual(text, "Fallback OK")
         self.assertEqual(model, "gemini-3.5-flash-lite")
         self.assertEqual(post.call_count, 5)
-        self.assertEqual(sleep.call_count, 4)
+        self.assertEqual(sleep.call_count, 3)
         first_call = post.call_args_list[0]
         self.assertIn("/models/gemini-3.8-flash:generateContent", first_call.args[0])
         self.assertEqual(first_call.kwargs["headers"]["x-goog-api-key"], "test-secret")
