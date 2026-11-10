@@ -4,42 +4,179 @@
   "title": "CarAutopsy Vehicle Variant",
   "description": "Structural contract for a vehicle variant. Sparse records remain valid while completeness and source quality are handled by catalog quality gates.",
   "type": "object",
-  "required": ["schema_version", "variant_id", "status", "identity", "provenance"],
+  "required": [
+    "schema_version",
+    "variant_id",
+    "status",
+    "identity",
+    "provenance"
+  ],
   "properties": {
-    "schema_version": {"type": "string", "minLength": 1},
-    "variant_id": {"type": "string", "minLength": 1},
-    "status": {"type": "string", "minLength": 1},
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "variant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1
+    },
     "identity": {
       "type": "object",
-      "required": ["make"],
+      "required": [
+        "make"
+      ],
       "properties": {
-        "make": {"type": "string", "minLength": 1},
-        "model": {"type": ["string", "null"]},
-        "powertrain": {"type": ["string", "null"]},
-        "model_year_from": {"type": ["integer", "null"]},
-        "model_year_to": {"type": ["integer", "null"]},
-        "doors": {"type": ["integer", "null"], "minimum": 1},
-        "seats": {"type": ["integer", "null"], "minimum": 1}
+        "make": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "powertrain": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model_year_from": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "model_year_to": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "doors": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "seats": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "vehicle_class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Registration certificate vehicle class, e.g. M1."
+        }
       },
       "additionalProperties": true
     },
     "performance": {
       "type": "object",
       "properties": {
-        "power_w": {"type": ["integer", "number", "null"], "minimum": 0},
-        "torque_nm": {"type": ["integer", "number", "null"], "minimum": 0},
-        "accel_0_100_s": {"type": ["number", "null"], "minimum": 0},
-        "top_speed_kmh": {"type": ["number", "null"], "minimum": 0},
-        "drive": {"type": ["string", "null"]}
+        "power_w": {
+          "type": [
+            "integer",
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "torque_nm": {
+          "type": [
+            "integer",
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "accel_0_100_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "top_speed_kmh": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "drive": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "combustion_engine_power_w": {
+          "type": [
+            "integer",
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Combustion engine power in watts; required for ICE/HEV/PHEV motor tax."
+        },
+        "electric_motor_continuous_power_w": {
+          "type": [
+            "integer",
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Electric motor nominal continuous rated power in watts; required for M1 BEV motor tax."
+        }
       },
       "additionalProperties": true
     },
-    "energy": {"type": "object"},
-    "dimensions": {"type": "object"},
+    "energy": {
+      "type": "object"
+    },
+    "dimensions": {
+      "type": "object",
+      "properties": {
+        "own_weight_kg": {
+          "type": [
+            "integer",
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Eigengewicht in kg from registration certificate; required for M1 BEV motor tax."
+        }
+      }
+    },
     "emissions": {
       "type": "object",
       "properties": {
-        "co2_wltp_gpkm": {"type": ["number", "null"], "minimum": 0}
+        "co2_wltp_gpkm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "co2_wltp_weighted_combined_gpkm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Weighted combined WLTP CO2 g/km for plug-in hybrids."
+        }
       },
       "additionalProperties": true
     },
@@ -48,23 +185,85 @@
       "items": {
         "type": "object",
         "properties": {
-          "offer_id": {"type": "string", "minLength": 1},
-          "country": {"type": "string", "minLength": 2},
-          "currency": {"type": "string", "minLength": 3, "maxLength": 3},
-          "list_price_minor": {"type": ["integer", "null"], "minimum": 0}
+          "offer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "list_price_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "purchase_price_excl_vat_eur": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "NoVA taxable purchase base in EUR excluding VAT and NoVA; do not infer from list_price_minor."
+          }
         },
         "additionalProperties": true
       }
     },
-    "warranty": {"type": "object"},
-    "extensions": {"type": "object"},
+    "warranty": {
+      "type": "object"
+    },
+    "extensions": {
+      "type": "object"
+    },
     "provenance": {
       "type": "object",
-      "required": ["confidence"],
+      "required": [
+        "confidence"
+      ],
       "properties": {
-        "confidence": {"type": "string", "enum": ["low", "medium", "high", "official"]},
-        "reviewed_by": {"type": ["string", "null"]},
-        "sources": {"type": "array", "items": {"type": "object"}}
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "official"
+          ]
+        },
+        "reviewed_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "registration": {
+      "type": "object",
+      "properties": {
+        "first_registration_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "First registration anywhere (worldwide/Union), not current Austrian registration date."
+        }
       },
       "additionalProperties": true
     }
