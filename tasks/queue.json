@@ -1,20 +1,5 @@
 [
   {
-    "variant_id": "vw.id-4.pro-77kwh",
-    "make": "Volkswagen",
-    "model": "ID.4 Pro"
-  },
-  {
-    "variant_id": "vw.id-3.pro-58kwh",
-    "make": "Volkswagen",
-    "model": "ID.3 Pro"
-  },
-  {
-    "variant_id": "vw.golf-8.etsi-150",
-    "make": "Volkswagen",
-    "model": "Golf 8 eTSI"
-  },
-  {
     "variant_id": "skoda.enyaq-iv-80",
     "make": "Skoda",
     "model": "Enyaq iV 80"
@@ -113,5 +98,20 @@
     "variant_id": "tesla.model-y.juniper.lr-awd",
     "make": "Tesla",
     "model": "Model Y Juniper Long Range"
+  },
+  {
+    "variant_id": "vw.id-4.pro-77kwh",
+    "make": "Volkswagen",
+    "model": "ID.4 Pro"
+  },
+  {
+    "variant_id": "vw.id-3.pro-58kwh",
+    "make": "Volkswagen",
+    "model": "ID.3 Pro"
+  },
+  {
+    "variant_id": "vw.golf-8.etsi-150",
+    "make": "Volkswagen",
+    "model": "Golf 8 eTSI"
   }
 ]
