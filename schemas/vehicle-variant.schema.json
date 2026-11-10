@@ -156,6 +156,15 @@
           ],
           "minimum": 0,
           "description": "Eigengewicht in kg from registration certificate; required for M1 BEV motor tax."
+        },
+        "max_permissible_mass_kg": {
+          "type": [
+            "integer",
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Technically permissible maximum laden mass in kg; Austrian M1 motor-tax schedule applies up to 3500 kg."
         }
       }
     },
