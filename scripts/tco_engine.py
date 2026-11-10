@@ -45,7 +45,12 @@ FUEL_CONSUMPTION_DEFAULT = {"ice_diesel": 6.5, "ice_petrol": 6.0, "hev": 4.5, "p
 def _required(mapping, path, label):
     value = mapping
     for key in path.split("."):
-        value = value.get(key) if isinstance(value, dict) else None
+        if isinstance(value, dict):
+            value = value.get(key)
+        elif isinstance(value, list) and key.isdigit() and int(key) < len(value):
+            value = value[int(key)]
+        else:
+            value = None
     if value is None or isinstance(value, bool):
         raise ValueError(f"Cannot calculate Austrian tax: missing {label}")
     return value
