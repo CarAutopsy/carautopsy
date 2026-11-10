@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "variant_id": "tesla.model-3.highland.rwd-60",
+      "make": "Tesla",
+      "model": "Model 3",
+      "variant_name": "RWD",
+      "powertrain": "bev",
+      "power_kw": 208.0,
+      "co2_gkm": 0,
+      "list_price_eur": 37970.0,
+      "nova_eur": 0.0,
+      "motor_tax_monthly_eur": 0.0,
+      "energy_5y_eur": 3491.25,
+      "maintenance_5y_eur": 750,
+      "insurance_5y_eur": 5500,
+      "tyres_5y_eur": 2000.0,
+      "inspection_5y_eur": 175,
+      "total_5y_eur": 11916.25,
+      "monthly_eur": 198.6,
+      "data_confidence": "low"
+    },
+    {
+      "variant_id": "vw.tiguan.2026.tdi-150",
+      "make": "Volkswagen",
+      "model": "Tiguan",
+      "variant_name": "2.0 TDI 150",
+      "powertrain": "ice_diesel",
+      "power_kw": 110.0,
+      "co2_gkm": 152,
+      "list_price_eur": 44990.0,
+      "nova_eur": 3365.39,
+      "motor_tax_monthly_eur": 41.65,
+      "energy_5y_eur": 7440.0,
+      "maintenance_5y_eur": 2250,
+      "insurance_5y_eur": 5500,
+      "tyres_5y_eur": 2000.0,
+      "inspection_5y_eur": 175,
+      "total_5y_eur": 23229.39,
+      "monthly_eur": 387.16,
+      "data_confidence": "low"
+    }
+  ],
+  "summary": {
+    "variants": 2,
+    "bev_avg_monthly_eur": 198.6,
+    "ice_avg_monthly_eur": 387.16
+  },
+  "envelope": {
+    "engine_version": "0.4.0",
+    "country_pack": "AT@1.0.0",
+    "assumptions_version": "AT-defaults@1.0.0",
+    "generated_utc": "2026-11-10T08:52:24.474152+00:00",
+    "currency": "EUR",
+    "horizon_years": 5,
+    "annual_km": 15000,
+    "sources": [
+      "AT-BMF-tax-2024",
+      "AT-OEAMTC-57a",
+      "AT-defaults-assumptions-1.0.0"
+    ],
+    "note": "Operating + statutory costs only; excludes depreciation and financing."
+  }
+}
