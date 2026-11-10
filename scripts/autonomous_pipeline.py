@@ -84,12 +84,22 @@ def provider_smoke_test():
             continue
         started = time.monotonic()
         try:
-            response = requests.post(
-                url,
-                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0},
-                timeout=45,
-            )
+            request_kwargs = {
+                "headers": {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                "json": {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0},
+                "timeout": 45,
+            }
+            # Gemini can return transient 429/5xx responses while capacity recovers.
+            # Retry only Gemini; other providers retain the original single-attempt check.
+            retry_delays = (2, 4, 8) if vendor == "google" else ()
+            for attempt in range(len(retry_delays) + 1):
+                response = requests.post(url, **request_kwargs)
+                if response.status_code not in {429, 500, 502, 503, 504} or attempt == len(retry_delays):
+                    break
+                response.close()
+                delay = retry_delays[attempt]
+                print(f"{name}: transient HTTP {response.status_code}; retrying in {delay}s (attempt {attempt + 2}/{len(retry_delays) + 1}).")
+                time.sleep(delay)
             elapsed_ms = round((time.monotonic() - started) * 1000)
             response.raise_for_status()
             data = response.json()
