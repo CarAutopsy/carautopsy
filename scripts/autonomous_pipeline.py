@@ -7,6 +7,7 @@ from provider_retry import generate_content_with_fallback
 ROOT = Path.cwd()
 
 def clean(o):
+    """Recursively normalize keys and trim string values in decoded data."""
     if isinstance(o, dict):
         return {re.sub(r'[^a-zA-Z0-9_]', '', str(k)): clean(v) for k, v in o.items()}
     if isinstance(o, list): return [clean(i) for i in o]
@@ -14,10 +15,12 @@ def clean(o):
     return o
 
 def load(p):
+    """Load and normalize a JSON or YAML file from the repository."""
     with open(p, encoding="utf-8") as f:
         return clean(json.load(f) if p.suffix == ".json" else yaml.safe_load(f))
 
 def clean_json_response(t):
+    """Extract a JSON object from a provider response or fenced code block."""
     m = re.search(r"```json\s*(\{.*?\})\s*```", t, re.DOTALL)
     if m: return m.group(1)
     m = re.search(r"\{.*\}", t, re.DOTALL)
@@ -50,6 +53,7 @@ def call_provider(prompt, key, url, model, temperature=0.1):
 
 
 def call_llm(prompt, key, url, model):
+    """Call one model and treat provider errors as unavailable."""
     if not key:
         return None
     try:
@@ -76,6 +80,7 @@ PROVIDERS = [
 ]
 
 def call_any(prompt, exclude_vendors=None):
+    """Return the first successful response from a non-excluded vendor."""
     excluded = set(exclude_vendors or [])
     for name, vendor, key, url, model in PROVIDERS:
         if not key or vendor in excluded:
@@ -87,6 +92,7 @@ def call_any(prompt, exclude_vendors=None):
     return None, None, None
 
 def call_vendor(prompt, vendor):
+    """Call a specific independent vendor for an audit response."""
     for name, provider_vendor, key, url, model in PROVIDERS:
         if provider_vendor != vendor or not key:
             continue
@@ -149,6 +155,7 @@ else:
 audit_failures_this_run = 0
 
 def curate_one():
+    """Research and independently audit at most one queued vehicle variant."""
     global audit_failures_this_run
     qp = ROOT / "tasks" / "queue.json"
     if not qp.exists(): return False, "no queue"
@@ -175,11 +182,18 @@ def curate_one():
         print(f"Hive processing: {make} {model} ({vid})")
         fp = ROOT / "tasks" / "failed.json"
         failed = json.loads(fp.read_text()) if fp.exists() else []
-        prior_failure = next(
-            (item.get("verdict", "") for item in reversed(failed)
+        prior_entry = next(
+            (item for item in reversed(failed)
              if (item.get("task") or {}).get("variant_id") == vid),
-            ""
+            None,
         )
+        prior_audits = (prior_entry or {}).get("audits") or []
+        prior_failure = "; ".join(
+            f"{audit.get('provider', audit.get('vendor', 'auditor'))}: "
+            f"{audit.get('verdict', 'no verdict')}"
+            for audit in prior_audits
+            if isinstance(audit, dict)
+        ) or ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
         rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
@@ -261,16 +275,29 @@ Reply with exactly one line: PASS or FAIL: reason"""
     return (skipped > 0), f"queue exhausted; skipped {skipped} existing"
 
 def run(cmd):
+    """Run a checked subprocess command and print its invocation.""" 
     print("$ " + " ".join(cmd)); subprocess.run(cmd, check=True)
 
 curated, msg = curate_one()
 print(f"Curation: {msg}")
 
 if RESEARCH_ONLY:
-    # Research-only runs never calculate or publish TCO. Accepted research,
-    # queue progress and failed-audit records are submitted for human review.
+    # Avoid reprocessing main's queue while an earlier Hive PR awaits review.
+    open_prs = subprocess.run(
+        ["gh", "pr", "list", "--state", "open", "--base", "main",
+         "--json", "headRefName", "--jq",
+         '[.[] | select(.headRefName | startswith("hive/research-"))] | length'],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    if open_prs and open_prs != "0":
+        print(f"An open Hive research PR already exists ({open_prs}); skipping this run.")
+        sys.exit(0)
+
+    # Inspect only paths staged below; unrelated files must not cause empty commits.
     dirty = subprocess.run(
-        ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+        ["git", "status", "--porcelain", "--",
+         "catalog/variants", "tasks/queue.json", "tasks/failed.json"],
+        capture_output=True, text=True, check=True,
     ).stdout.strip()
     if not dirty:
         print("Research-only run made no changes.")
