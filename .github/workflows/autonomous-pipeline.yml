@@ -35,16 +35,6 @@ jobs:
           python-version: "3.12"
       - name: Install deps
         run: pip install pyyaml requests
-      - name: Smoke-test Qwen, DeepSeek and Gemini
-        if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
-        continue-on-error: true
-        env:
-          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_CARAUTOPSY_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
-          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
-        run: python scripts/autonomous_pipeline.py --provider-smoke-test
       - name: Require PR automation token
         if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
         env:
@@ -63,6 +53,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          HIVE_RESEARCH_BATCH_SIZE: ${{ vars.HIVE_RESEARCH_BATCH_SIZE }}
         run: python scripts/autonomous_pipeline.py --research-only
       - name: Provider smoke test only
         if: github.event_name == 'workflow_dispatch' && inputs.run_mode == 'provider-smoke-test'
