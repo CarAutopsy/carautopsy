@@ -21,7 +21,7 @@ class TcoConfigTests(unittest.TestCase):
             "registration": {"first_registration_date": "2026-01-15"},
             "performance": {"power_w": 100000, "combustion_engine_power_w": 140000,
                             "electric_motor_continuous_power_w": 60000},
-            "dimensions": {"own_weight_kg": 1450},
+            "dimensions": {"own_weight_kg": 1450, "max_permissible_mass_kg": 2000},
             "emissions": {"co2_wltp_gpkm": 180, "co2_wltp_weighted_combined_gpkm": 30},
             "offers": [{"purchase_price_excl_vat_eur": 20000, "list_price_minor": 2400000}],
         }
