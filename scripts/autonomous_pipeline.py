@@ -37,6 +37,21 @@ def call_llm(prompt, key, url, model):
 
 QWEN = os.getenv("QWEN_API_KEY")
 DEEP = os.getenv("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_CARAUTOPSY_KEY")
+PROVIDERS = [
+    ("qwen-intl", QWEN, "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
+    ("qwen-cn",   QWEN, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
+    ("deepseek",  DEEP, "https://api.deepseek.com/chat/completions", "deepseek-chat"),
+]
+
+def call_any(prompt, exclude=None):
+    for name, key, url, model in PROVIDERS:
+        if not key or name == exclude:
+            continue
+        out = call_llm(prompt, key, url, model)
+        if out:
+            print(f"   [provider: {name}]")
+            return out, name
+    return None, None
 
 taxes = load(ROOT / "country-packs/AT/taxes.yaml")
 defaults = load(ROOT / "country-packs/AT/defaults.yaml")
