@@ -2,7 +2,7 @@ import json, math, os, re, subprocess, sys
 from pathlib import Path
 from datetime import datetime, timezone
 import yaml, requests
-from provider_retry import post_gemini_with_retry
+from provider_retry import generate_content_with_fallback
 
 ROOT = Path.cwd()
 
@@ -24,15 +24,41 @@ def clean_json_response(t):
     if m: return m.group(0)
     return t
 
+def call_provider(prompt, key, url, model, temperature=0.1):
+    """Return (text, actual_model), routing Gemini through its native API."""
+    if not key:
+        return None, model
+    if "generativelanguage.googleapis.com" in url:
+        return generate_content_with_fallback(
+            prompt=prompt,
+            api_key=key,
+            primary_model=model,
+            fallback_model=GEMINI_FALLBACK_MODEL,
+            temperature=temperature,
+        )
+    response = requests.post(
+        url,
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": temperature},
+        timeout=120,
+    )
+    response.raise_for_status()
+    content = response.json()["choices"][0]["message"]["content"]
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("provider returned empty response content")
+    return content, model
+
+
 def call_llm(prompt, key, url, model):
-    if not key: return None
+    if not key:
+        return None
     try:
-        r = requests.post(url, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                          json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.1},
-                          timeout=120)
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
-    except Exception:
+        content, used_model = call_provider(prompt, key, url, model)
+        if content and used_model != model:
+            print(f"   [Gemini fallback model: {used_model}]")
+        return content
+    except Exception as exc:
+        print(f"   [provider request failed: {type(exc).__name__}]")
         return None
 
 # Provider fallback routing
@@ -40,6 +66,7 @@ QWEN_KEY = os.getenv("QWEN_API_KEY")
 DEEP_KEY = os.getenv("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_CARAUTOPSY_KEY")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
 
 PROVIDERS = [
     ("qwen-intl", "qwen", QWEN_KEY, "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
@@ -85,23 +112,11 @@ def provider_smoke_test():
             continue
         started = time.monotonic()
         try:
-            request_kwargs = {
-                "headers": {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                "json": {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0},
-            }
-            # Retry Gemini on transient HTTP failures and network timeouts.
-            # Qwen and DeepSeek retain their original single-attempt behavior.
-            if vendor == "google":
-                response = post_gemini_with_retry(url, **request_kwargs)
-            else:
-                response = requests.post(url, timeout=45, **request_kwargs)
+            content, used_model = call_provider(prompt, key, url, model, temperature=0)
             elapsed_ms = round((time.monotonic() - started) * 1000)
-            response.raise_for_status()
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
             if not isinstance(content, str) or not content.strip():
                 raise ValueError("empty response content")
-            checks.append({"provider": name, "vendor": vendor, "model": model, "status": "PASS",
+            checks.append({"provider": name, "vendor": vendor, "model": used_model, "status": "PASS",
                            "latency_ms": elapsed_ms, "response_chars": len(content.strip())})
         except Exception as exc:
             elapsed_ms = round((time.monotonic() - started) * 1000)
@@ -111,6 +126,8 @@ def provider_smoke_test():
     print("PROVIDER_SMOKE_TEST=" + json.dumps(checks, ensure_ascii=False))
     failed = [item for item in checks if item["status"] != "PASS"]
     print(f"Provider smoke test: {len(checks) - len(failed)}/{len(checks)} passed.")
+    # Gemini remains mandatory: the production audit requires two independent
+    # vendors, so a smoke-test quorum would hide a real curation blocker.
     return 1 if failed else 0
 
 if "--provider-smoke-test" in sys.argv:
