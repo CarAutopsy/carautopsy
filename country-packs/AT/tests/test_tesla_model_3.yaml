@@ -1,12 +1,16 @@
-test_id: "AT-TEST-001"
-variant_id: "tesla.model-3.highland.rwd-60"
+test_id: "AT-TEST-BEV-001"
+variant_id: "bmf.example.bev.m1.60kw.1450kg"
 country: AT
 inputs:
-  purchase_price_eur: 40000
+  first_registration_date: "2025-04-01"
+  vehicle_class: "M1"
+  electric_motor_continuous_power_kw: 60
+  own_weight_kg: 1450
+  max_permissible_mass_kg: 2000
   annual_mileage_km: 15000
   ownership_years: 5
 expected_outputs:
   nova_eur: 0.00
-  monthly_motor_tax_eur: 0.00
+  monthly_motor_tax_eur: 12.75
   inspection_interval_years: [3, 2, 1, 1, 1]
-  notes: "BEV is fully exempt from NoVA and motorbezogene Versicherungssteuer in Austria."
+  notes: "Illustrative BMF BEV M1 example; NoVA exempt, motorbezogene Versicherungssteuer applies from 2025-04-01."
