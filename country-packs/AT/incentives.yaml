@@ -12,10 +12,9 @@ rules:
   phev_purchase_subsidy_eur: 1250.00 # Federal subsidy for PHEVs (range > 50km)
   wallbox_subsidy_eur: 600.00        # Subsidy for home charging station installation
   
-  # Statutory tax exemptions for zero-emission vehicles
+  # NoVA exemption only; M1 BEVs are subject to motorbezogene Versicherungssteuer from 2025-04-01.
   exemptions:
     - nova                            # BEVs/FCEVs pay 0% NoVA registration tax
-    - motorbezogene_versicherungssteuer # BEVs/FCEVs pay 0 monthly motor tax
 
 sources:
   - id: at-bmk-emob

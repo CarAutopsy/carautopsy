@@ -263,12 +263,12 @@ payload = {
         "ice_avg_monthly_eur": round(sum(r["monthly_eur"] for r in others) / len(others), 2) if others else None,
     },
     "envelope": {
-        "engine_version": "0.4.0", "country_pack": "AT@1.0.0",
+        "engine_version": "0.5.0", "country_pack": "AT@1.2.0-draft",
         "assumptions_version": "AT-defaults@1.0.0",
         "generated_utc": datetime.now(timezone.utc).isoformat(), "currency": "EUR",
         "horizon_years": defaults.get("horizon_years_default", 5),
         "annual_km": defaults.get("annual_km_default", 15000),
-        "sources": ["AT-BMF-tax-2024", "AT-OEAMTC-57a", "AT-defaults-assumptions-1.0.0"],
+        "sources": ["AT-BMF-tax-2025-2029", "AT-OEAMTC-57a", "AT-defaults-assumptions-1.0.0"],
         "note": "Operating + statutory costs only; excludes depreciation and financing.",
     },
 }
