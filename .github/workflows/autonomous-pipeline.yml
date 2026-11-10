@@ -45,10 +45,19 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
         run: python scripts/autonomous_pipeline.py --provider-smoke-test
+      - name: Require PR automation token
+        if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
+        env:
+          GH_TOKEN: ${{ secrets.CARAUTOPSY_PR_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Configure the CARAUTOPSY_PR_TOKEN repository secret using a least-privilege GitHub App or PAT token."
+            exit 1
+          fi
       - name: Hive research + two independent AI audits
         if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.CARAUTOPSY_PR_TOKEN }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_CARAUTOPSY_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
