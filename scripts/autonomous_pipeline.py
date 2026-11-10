@@ -2,6 +2,7 @@ import json, math, os, re, subprocess, sys
 from pathlib import Path
 from datetime import datetime, timezone
 import yaml, requests
+from provider_retry import post_gemini_with_retry
 
 ROOT = Path.cwd()
 
@@ -87,19 +88,13 @@ def provider_smoke_test():
             request_kwargs = {
                 "headers": {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                 "json": {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0},
-                "timeout": 45,
             }
-            # Gemini can return transient 429/5xx responses while capacity recovers.
-            # Retry only Gemini; other providers retain the original single-attempt check.
-            retry_delays = (2, 4, 8) if vendor == "google" else ()
-            for attempt in range(len(retry_delays) + 1):
-                response = requests.post(url, **request_kwargs)
-                if response.status_code not in {429, 500, 502, 503, 504} or attempt == len(retry_delays):
-                    break
-                response.close()
-                delay = retry_delays[attempt]
-                print(f"{name}: transient HTTP {response.status_code}; retrying in {delay}s (attempt {attempt + 2}/{len(retry_delays) + 1}).")
-                time.sleep(delay)
+            # Retry Gemini on transient HTTP failures and network timeouts.
+            # Qwen and DeepSeek retain their original single-attempt behavior.
+            if vendor == "google":
+                response = post_gemini_with_retry(url, **request_kwargs)
+            else:
+                response = requests.post(url, timeout=45, **request_kwargs)
             elapsed_ms = round((time.monotonic() - started) * 1000)
             response.raise_for_status()
             data = response.json()
