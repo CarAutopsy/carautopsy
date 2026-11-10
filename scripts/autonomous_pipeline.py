@@ -278,21 +278,27 @@ def run(cmd):
     """Run a checked subprocess command and print its invocation.""" 
     print("$ " + " ".join(cmd)); subprocess.run(cmd, check=True)
 
-curated, msg = curate_one()
-print(f"Curation: {msg}")
-
-if RESEARCH_ONLY:
-    # Avoid reprocessing main's queue while an earlier Hive PR awaits review.
+def has_open_research_pr():
+    """Return whether a Hive research proposal is already awaiting review."""
     open_prs = subprocess.run(
         ["gh", "pr", "list", "--state", "open", "--base", "main",
          "--json", "headRefName", "--jq",
          '[.[] | select(.headRefName | startswith("hive/research-"))] | length'],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
-    if open_prs and open_prs != "0":
-        print(f"An open Hive research PR already exists ({open_prs}); skipping this run.")
-        sys.exit(0)
+    return bool(open_prs and open_prs != "0")
 
+
+# Check before provider calls so hourly runs do not spend API credits while
+# an earlier research proposal is still awaiting human review.
+if RESEARCH_ONLY and has_open_research_pr():
+    print("An open Hive research PR already exists; skipping this run.")
+    sys.exit(0)
+
+curated, msg = curate_one()
+print(f"Curation: {msg}")
+
+if RESEARCH_ONLY:
     # Inspect only paths staged below; unrelated files must not cause empty commits.
     dirty = subprocess.run(
         ["git", "status", "--porcelain", "--",
