@@ -2,57 +2,72 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/CarAutopsy/carautopsy/schemas/vehicle-variant.schema.json",
   "title": "CarAutopsy Vehicle Variant",
+  "description": "Structural contract for a vehicle variant. Sparse records remain valid while completeness and source quality are handled by catalog quality gates.",
   "type": "object",
-  "required": [
-    "schema_version",
-    "variant_id",
-    "status",
-    "identity",
-    "performance",
-    "energy",
-    "dimensions",
-    "emissions",
-    "offers",
-    "warranty",
-    "extensions",
-    "provenance"
-  ],
+  "required": ["schema_version", "variant_id", "status", "identity", "provenance"],
   "properties": {
-    "schema_version": {
-      "type": "string"
-    },
-    "variant_id": {
-      "type": "string"
-    },
-    "status": {
-      "type": "string"
-    },
+    "schema_version": {"type": "string", "minLength": 1},
+    "variant_id": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1},
     "identity": {
-      "type": "object"
+      "type": "object",
+      "required": ["make"],
+      "properties": {
+        "make": {"type": "string", "minLength": 1},
+        "model": {"type": ["string", "null"]},
+        "powertrain": {"type": ["string", "null"]},
+        "model_year_from": {"type": ["integer", "null"]},
+        "model_year_to": {"type": ["integer", "null"]},
+        "doors": {"type": ["integer", "null"], "minimum": 1},
+        "seats": {"type": ["integer", "null"], "minimum": 1}
+      },
+      "additionalProperties": true
     },
     "performance": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "power_w": {"type": ["integer", "number", "null"], "minimum": 0},
+        "torque_nm": {"type": ["integer", "number", "null"], "minimum": 0},
+        "accel_0_100_s": {"type": ["number", "null"], "minimum": 0},
+        "top_speed_kmh": {"type": ["number", "null"], "minimum": 0},
+        "drive": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
     },
-    "energy": {
-      "type": "object"
-    },
-    "dimensions": {
-      "type": "object"
-    },
+    "energy": {"type": "object"},
+    "dimensions": {"type": "object"},
     "emissions": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "co2_wltp_gpkm": {"type": ["number", "null"], "minimum": 0}
+      },
+      "additionalProperties": true
     },
     "offers": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "offer_id": {"type": "string", "minLength": 1},
+          "country": {"type": "string", "minLength": 2},
+          "currency": {"type": "string", "minLength": 3, "maxLength": 3},
+          "list_price_minor": {"type": ["integer", "null"], "minimum": 0}
+        },
+        "additionalProperties": true
+      }
     },
-    "warranty": {
-      "type": "object"
-    },
-    "extensions": {
-      "type": "object"
-    },
+    "warranty": {"type": "object"},
+    "extensions": {"type": "object"},
     "provenance": {
-      "type": "object"
+      "type": "object",
+      "required": ["confidence"],
+      "properties": {
+        "confidence": {"type": "string", "enum": ["low", "medium", "high", "official"]},
+        "reviewed_by": {"type": ["string", "null"]},
+        "sources": {"type": "array", "items": {"type": "object"}}
+      },
+      "additionalProperties": true
     }
-  }
+  },
+  "additionalProperties": true
 }
