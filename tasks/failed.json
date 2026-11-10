@@ -5,8 +5,20 @@
       "make": "Volkswagen",
       "model": "ID.4 Pro"
     },
-    "verdict": "FAIL: drive_layout says front-wheel drive but ID.4 Pro 77kWh is rear-wheel drive, and power_max_w 150000 (150 kW) is inconsistent with the 77 kWh Pro RWD spec (typically 210 kW/286 PS); also gross/net battery delta and other figures need verification against cited sources.",
-    "at": "2026-11-10T09:12:46.183330+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: performance figures are inconsistent with the ID.4 Pro 77 kWh (210000 W / 545 Nm / 6.2 s / 160 kph do not match the cited variant; Pro RWD is ~150 kW/310 Nm, ~8.5 s), and the 0\u2013100 time conflicts with the stated power/torque, indicating hallucinated or mismatched data."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: VW ID.4 Pro (2023) with APP550 motor (210 kW / 545 Nm) has a gross battery capacity of 82 kWh (82000 Wh) and net usable capacity of 77 kWh (77000 Wh); the provided JSON incorrectly lists gross as 77000 Wh and net as 71000 Wh."
+      }
+    ],
+    "at": "2026-11-10T16:36:16.869217+00:00"
   },
   {
     "task": {
@@ -14,8 +26,20 @@
       "make": "Volkswagen",
       "model": "ID.3 Pro"
     },
-    "verdict": "FAIL: drive_layout \"front-wheel drive\" is inconsistent with the VW ID.3 Pro, which is rear-wheel drive (rear motor, RWD).",
-    "at": "2026-11-10T09:13:03.121505+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: provenance sources are fabricated/unverifiable URLs (e.g., KBA CoC link with placeholder numeric string and VW press-release paths that don't resolve to real documents), so numbers lack valid provenance; also retrieved_at/curated_utc dated 2026-11-10 is in the future, undermining data integrity."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: Missing confidence above \"low\" constraint (confidence is set to \"low\")"
+      }
+    ],
+    "at": "2026-11-10T16:36:54.445774+00:00"
   },
   {
     "task": {
@@ -23,8 +47,20 @@
       "make": "Volkswagen",
       "model": "Golf 8 eTSI"
     },
-    "verdict": "FAIL: engine_code \"DQ200\" is a DSG transmission code, not an engine code (inconsistent identity data).",
-    "at": "2026-11-10T09:13:21.931209+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: mild_hybrid is false and regenerative_braking is false despite eTSI mild-hybrid designation, and engine_code \"EA211 eTSI 1.5 TSI\" is not a valid engine code."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: inconsistent extensions data (mild_hybrid is false for an eTSI variant which is inherently a mild hybrid)"
+      }
+    ],
+    "at": "2026-11-10T16:37:29.471944+00:00"
   },
   {
     "task": {
@@ -32,8 +68,20 @@
       "make": "Skoda",
       "model": "Enyaq iV 80"
     },
-    "verdict": "FAIL: power_max_continuous_w (150000) and power_max_peak_w (170000) are inconsistent with the Enyaq iV 80's actual 150 kW peak output, and the continuous value exceeds plausible continuous rating; also production_start \"2022-09\" conflicts with model_year 2023 press-kit provenance, and retrieved_date 2026-11-10 is in the future relative to curation, indicating hallucinated/inconsistent data.",
-    "at": "2026-11-10T09:13:39.825738+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: provenance confidence is \"low\" (not above low) but required keys are present and numbers/units appear consistent; however the schema requires confidence above \"low\" for acceptance, so reject."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "PASS"
+      }
+    ],
+    "at": "2026-11-10T16:38:03.128741+00:00"
   },
   {
     "task": {
@@ -41,8 +89,20 @@
       "make": "Skoda",
       "model": "Octavia Combi 2.0 TDI"
     },
-    "verdict": "FAIL: engine_code \"CAEB\" is inconsistent with a 2.0 TDI 150 (CAEB is a 1.8 TSI petrol code), and the 2017-2021 Combi 2.0 TDI 150 uses EA288 codes (e.g. CRVA/DFGA), so the engine identity is hallucinated/inconsistent.",
-    "at": "2026-11-10T09:14:02.167835+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: provenance sources are generic press-kit/configurator URLs not tied to the specific variant figures, and several values (e.g., 0\u2013100 in 8.7 s, 218 kph top speed, 109 g/km CO2, 1800 kg towing, Euro 6d-TEMP) are unverifiable/inconsistent with the cited sources, so confidence cannot be justified as \"low\" without per-field provenance."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: price_minor_units 2799000 EUR is unrealistic for an Octavia Combi (value implies \u20ac2,799,000)"
+      }
+    ],
+    "at": "2026-11-10T16:38:42.932356+00:00"
   },
   {
     "task": {
@@ -50,8 +110,20 @@
       "make": "BMW",
       "model": "iX3"
     },
-    "verdict": "FAIL: power_max_continuous 210000 W (210 kW) and power_max_overboost 286000 W (286 kW) are inconsistent with the iX3's actual 210 kW/286 Nm figures \u2014 torque_max 430 Nm is plausible but the overboost power value appears to be a unit/field confusion (286 kW overboost is not a documented iX3 spec; the 286 figure is torque in Nm), and the \"Impulse Edition\" nameplate plus 80 kWh gross/74 kWh net with 460 km WLTC and 6.8 s acceleration do not match documented G08 iX3 specs (74.0 kWh net, ~461 km WLTP, 6.8 s is plausible but 210 kW continuous vs 286 kW overboost is a hallucinated split), and provenance confidence is \"low\" with no reviewed_by, so the record cannot be validated.",
-    "at": "2026-11-10T09:14:24.293112+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: top_speed stored as 180000 (should be 180 km/h, unit error) and drivetrain describes a \"single motor on rear axle with eBoost on front axle\" which is inconsistent with AWD dual-motor setup; also power_max_continuous 210000 W = 210 kW is plausible but the notes' torque claim (286 Nm base/430 Nm overboost) conflicts with torque_max 430 without overboost labeling."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: top_speed has wrong units (stored in meters per hour / mm/h instead of kph, value 180000 instead of 180)"
+      }
+    ],
+    "at": "2026-11-10T16:39:21.831647+00:00"
   },
   {
     "task": {
@@ -59,8 +131,20 @@
       "make": "BMW",
       "model": "330e xDrive"
     },
-    "verdict": "FAIL: performance.power_system_combined is 215000 but stored under a key implying kW while value appears to be watts (215 kW), and torque_system_combined 420 lacks unit clarity; also acceleration_0_100_kph 5.9 and top_speed 235 are inconsistent with a 215 kW PHEV 330e xDrive (real ~5.9s is plausible but 215000 W = 215 kW is below the actual ~215 kW combined? borderline), plus provenance confidence is \"low\" which is acceptable, but the power unit mismatch (kW stored as watts) violates the protocol.",
-    "at": "2026-11-10T09:14:46.631983+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: combined system power 215000 W (215 kW) is inconsistent with the 330e xDrive G20's actual ~215 kW? \u2014 no, that matches; but torque 420 N\u00b7m and 0\u2013100 5.9 s are plausible; the real defects are: battery gross 12000 Wh (12 kWh) is wrong for G20 330e (should be ~12.0 kWh net? actually gross ~12.0, net ~10.4 \u2014 net 10800 is inconsistent with gross 12000 and WLTP EV range 64 km is implausible for 10.8 kWh net), WLTP combined consumption 1.7 kWh/100km is a unit/quantity error (should be fuel+electric combined, not 1.7 kWh), and provenance confidence is \"low\" which is acceptable but numbers are hallucinated/inconsistent \u2014 FAIL."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: missing required keys (confidence is low, which triggers a fail per instructions)"
+      }
+    ],
+    "at": "2026-11-10T16:39:56.812245+00:00"
   },
   {
     "task": {
@@ -68,8 +152,20 @@
       "make": "Mercedes-Benz",
       "model": "EQB 300"
     },
-    "verdict": "FAIL: power_max_w is 164000 W (164 kW), which is inconsistent with the EQB 300 4MATIC's actual ~168 kW/228 hp output and the torque/acceleration figures; also provenance includes a suspicious dat.de PDF URL and retrieved_date/curated_utc are in the future (2026), indicating fabricated provenance.",
-    "at": "2026-11-10T09:15:06.987245+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: power_max_w is 168000 W (168 kW), which is inconsistent with the EQB 300 4MATIC's actual ~168 kW? \u2014 actually that matches; but the real rejection trigger is the hallucinated/inconsistent battery figures (gross 700000 Wh = 70 kWh, net 660000 Wh = 66 kWh) versus WLTP range/consumption math (66 kWh net \u00f7 156 Wh/km \u2248 423 km is consistent), so the decisive failure is the provenance confidence being \"low\" while the protocol requires confidence not above \"low\" \u2014 it is exactly \"low,\" which is allowed \u2014 leaving the true FAIL cause: the offer price 5,799,000 minor units = \u20ac57,990 with a configuration_url that is a generic configurator path, and the \"Burmeister\u00ae\" misspelling plus a future-dated curated_utc (2026) indicating fabricated provenance; also trunk_volume_max_liters 1720 exceeds plausible EQB max (~1710) and gross weight/curb weight gap is fine \u2014 net: inconsistent/hallucinated numbers and unreliable provenance \u2192 FAIL."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: battery capacity numbers are inconsistent/hallucinated (battery_gross_wh is given as 700000 Wh / 700 kWh, whereas the Mercedes-Benz EQB 300 4MATIC actually features a ~69.7 kWh gross / ~66.5 kWh net battery, meaning 700000 Wh is a factor of 10 too high; it should be ~697000 Wh or ~70000 Wh)."
+      }
+    ],
+    "at": "2026-11-10T16:40:35.320790+00:00"
   },
   {
     "task": {
@@ -77,8 +173,20 @@
       "make": "Mercedes-Benz",
       "model": "C 300 de"
     },
-    "verdict": "FAIL: performance.power_system_combined (250000) \u2260 power_engine (140000) + power_electric (120000) = 260000, an inconsistent number; also offers.list_price_at 6299000 EUR is implausible for a C300de and lacks unit/scale justification.",
-    "at": "2026-11-10T09:15:25.280962+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: list_price_at is 6299000 but notes state 62990 EUR = 6,299,000 cents \u2014 unit inconsistency (price stored in cents while currency is EUR), plus electric_motor_code \"EM-123\" appears hallucinated/placeholder and power_system_combined (200000 W = 200 kW) is inconsistent with additive engine (140 kW) + electric (95 kW) = 235 kW derated claim lacking verification."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: Inconsistent numbers: engine power (140,000 W) + electric motor power (95,000 W) = 235,000 W, but combined power system is reported as 200,000 W without matching valid hybrid system constraints or proper reconciliation in notes."
+      }
+    ],
+    "at": "2026-11-10T16:41:35.488443+00:00"
   },
   {
     "task": {
@@ -86,8 +194,20 @@
       "make": "Audi",
       "model": "Q4 e-tron 50"
     },
-    "verdict": "FAIL: power_system (150000) does not equal power_motor_front + power_motor_rear (80000+70000=150000) \u2014 actually consistent, but torque_system 310 Nm is implausibly low for a 150 kW dual-motor quattro (real Q4 50 quattro is 460 Nm), indicating a hallucinated/inconsistent number; additionally provenance confidence is \"low\" which is acceptable, but the torque inconsistency alone warrants rejection.",
-    "at": "2026-11-10T09:15:42.685697+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: power_system (150000) \u2260 power_motor_front (80000) + power_motor_rear (70000) = 150000 \u2014 actually consistent; but power values appear to be in W while torque is in Nm and other fields use mixed units without explicit unit keys, and provenance confidence is \"low\" which is acceptable, yet the schema requires explicit unit-suffixed keys (e.g., power_w) \u2014 power_system/power_motor_front/power_motor_rear lack unit suffixes, violating schema v1.0.0."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: inconsistent numbers: front motor power (80000W) + rear motor power (70000W) equals 150000W, but the actual system power (max output) for the Audi Q4 e-tron 50 quattro is officially 220 kW (220000 W), not 150 kW."
+      }
+    ],
+    "at": "2026-11-10T16:42:14.697849+00:00"
   },
   {
     "task": {
@@ -95,8 +215,20 @@
       "make": "Hyundai",
       "model": "IONIQ 5 Long Range"
     },
-    "verdict": "FAIL: power_front (125000) + power_rear (160000) = 285000 W exceeds power_system_total (225000 W), an inconsistent number; also torque_system_total 605 lacks unit clarity and provenance confidence is acceptable but the numeric inconsistency alone warrants rejection.",
-    "at": "2026-11-10T09:16:01.172828+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: power_system_total (225000) \u2260 power_front (125000) + power_rear (100000) = 225000 \u2014 actually consistent; but torque_system_total 605 Nm is inconsistent with 225 kW AWD IONIQ 5 spec (should be ~605 Nm \u2014 consistent); real issue: price_base 5499000 EUR is implausible (should be ~\u20ac55,000, not \u20ac5.5M) \u2014 hallucinated/inconsistent number."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: inconsistent numbers (front and rear motor power values swapped relative to standard 2023 Hyundai Ioniq 5 AWD configuration where the rear motor is more powerful, 170kW/70kW or 161kW/74kW depending on exact spec, but definitely not front=125kW / rear=100kW; also price_base 5499000 EUR for Austria is off by a factor of 100)"
+      }
+    ],
+    "at": "2026-11-10T16:42:54.117420+00:00"
   },
   {
     "task": {
@@ -104,8 +236,20 @@
       "make": "Hyundai",
       "model": "Tucson Hybrid"
     },
-    "verdict": "FAIL: power_system_total_w (130000) \u2260 power_engine_w + power_electric_w (115000 + 15000 = 130000) is consistent, but engine_code \"G4FS-MHEV\" is a hallucinated/invalid code (G4FS is the non-hybrid 1.6 T-GDi; MHEV suffix is fabricated), and the 1.6 T-GDi is turbocharged, contradicting \"naturally aspirated\"; also torque 264 Nm and 0\u2013100 10.7 s are inconsistent with a 130 kW NA hybrid, and provenance lacks per-field source mapping.",
-    "at": "2026-11-10T09:16:21.671342+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: power_system_total_w (130000) is less than power_engine_w (115000) + power_electric_w (15000) = 130000 \u2014 actually that sums correctly, but the hybrid system total should exceed engine alone; more critically, 130 kW total for a 1.6T GDI hybrid is inconsistent with the 10.7 s 0\u2013100 and 265 Nm figures, and the transmission description (\"6-speed automatic (electrically actuated dual-clutch)\") is internally contradictory; also wltp_electric_range_km 1.2 is implausible for a parallel hybrid with a 1.44 kWh battery, and provenance confidence is \"low\" with reviewed_by null \u2014 inconsistent/hallucinated numbers present."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: Generation/Platform inconsistency: 4th generation Tucson is code NX4, not TL (TL was the 3rd generation, 2015-2020)."
+      }
+    ],
+    "at": "2026-11-10T16:43:37.953295+00:00"
   },
   {
     "task": {
@@ -113,8 +257,20 @@
       "make": "Kia",
       "model": "EV6 GT-Line"
     },
-    "verdict": "FAIL: performance.power_max_w 239000 W (239 kW) is inconsistent with the 77 kWh AWD GT-Line's actual 239 kW combined output only if unverified, but more critically the DC charging_max_dc_kw of 239 kW matches power rather than the EV6's real ~233 kW peak, and charging_time_ac_0_100_pct_min 660 with 11 kW AC on 74 kWh net is implausible (~400 min), indicating hallucinated/inconsistent numbers.",
-    "at": "2026-11-10T09:16:39.219400+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: charging_max_ac_kw and charging_max_dc_kw store kW values in keys suffixed _kw (unit mismatch vs protocol's _w convention), and charging_time_ac_0_100_pct_min=740 is inconsistent with 11 kW AC on a 74 kWh net battery (~404 min expected)."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "PASS"
+      }
+    ],
+    "at": "2026-11-10T16:44:17.309322+00:00"
   },
   {
     "task": {
@@ -122,8 +278,20 @@
       "make": "Kia",
       "model": "EV3 Long Range"
     },
-    "verdict": "FAIL: status \"unreleased\" with all-null specs and empty provenance sources provides no verifiable data, and drive_layout \"front-motor, rear-wheel drive\" is internally inconsistent for a RWD variant.",
-    "at": "2026-11-10T09:16:50.929242+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: status \"unreleased\" with all-null specs and empty provenance sources \u2014 no provenance URLs provided, and \"unreleased\" conflicts with model_year 2025 / MY25 identity claims (inconsistent)."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: missing provenance URLs"
+      }
+    ],
+    "at": "2026-11-10T16:44:52.063109+00:00"
   },
   {
     "task": {
@@ -131,8 +299,20 @@
       "make": "Kia",
       "model": "Niro EV"
     },
-    "verdict": "FAIL: provenance contains fabricated/inconsistent URLs (KBA CoC path with duplicated retrieval date and implausible press-kit path), and curated/retrieved dates are in the future (2026-11-10), indicating hallucinated provenance.",
-    "at": "2026-11-10T09:17:10.864592+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: production_start 2022-07 conflicts with model_year_range starting 2023 and second-gen Niro EV launch timing, and provenance lacks a source URL for core performance/energy/dimension figures (press kit PDF and KBA CoC do not substantiate all listed specs)."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: missing required keys (protocol v1.04 requires structured evidence block and other metadata fields)"
+      }
+    ],
+    "at": "2026-11-10T16:45:35.549775+00:00"
   },
   {
     "task": {
@@ -140,8 +320,20 @@
       "make": "Toyota",
       "model": "Yaris Hybrid"
     },
-    "verdict": "FAIL: performance.power_system_total_w (95600) is inconsistent with power_engine_w (67000) + power_electric_w (45000) = 112000, and the \"hybrid-130\" variant implies 130 PS (~96 kW) system output while engine alone is listed at 67 kW \u2014 numbers are internally contradictory/hallucinated.",
-    "at": "2026-11-10T09:17:29.991018+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: power_system_total_w (95,600 W) is inconsistent with power_engine_w (67,000 W) + power_electric_w (45,000 W) = 112,000 W, and exceeds the sum; also torque_system_n_m 141 N\u00b7m is implausibly low for a 95.6 kW hybrid system, and the \"130\" variant designation conflicts with the stated 95.6 kW total."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: Inconsistent numbers: power_engine_w (67000) + electric motor power is typically not a simple arithmetic sum, but more importantly, total system power (95600 W / 130 hp) does not match the individual rated outputs (67 kW ICE + 45 kW electric = 112 kW / 152 hp combined peak, while Toyota rates the Hybrid 130 system at 96 kW total). Additionally, system torque is listed as 141 Nm, which only represents the ICE torque (the electric motor adds up to 185 Nm, making combined system torque significantly higher than 141 Nm)."
+      }
+    ],
+    "at": "2026-11-10T16:46:23.279755+00:00"
   },
   {
     "task": {
@@ -149,8 +341,20 @@
       "make": "Toyota",
       "model": "Corolla Touring Sports Hybrid"
     },
-    "verdict": "FAIL: torque_system_nm 142 is inconsistent with a 103 kW hybrid system (should be ~190 Nm), and power_engine_w 90000 + power_electric_w 50000 exceeds the stated total 103000 W without justification.",
-    "at": "2026-11-10T09:17:48.323721+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: performance.power_system_w is 103000 (103 kW), inconsistent with the \"140\" variant designation (140 hp \u2248 103 kW system output is plausible, but the field stores system power while torque_system_nm 185 and 0-100 10.9s suggest engine-only figures mixed with system figures \u2014 inconsistent; also hybrid system combined output for the 140 variant is ~103 kW but torque 185 Nm is engine torque, not system torque, a unit/scope inconsistency)."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: power_system_w is 103000 but the Corolla 140 hybrid total system output is 103 kW (which equals 103,000 W, but wait\u2014torque is 185 Nm for the *engine*, whereas system torque for the 1.8L hybrid is typically 142 Nm for the engine + electric motor combined torque is not 185 Nm; actually, 185 Nm is the engine torque of the 2.0L M20A-FXS engine used in the 200 variant, whereas the variant_id says \"140\" which is the 1.8L 2ZR-FXS engine with 142 Nm torque. Therefore, engine_code \"M20A-FXS\" and torque_system_nm 185 are inconsistent with variant_id toyota.corolla-touring-sports-hybrid-140)."
+      }
+    ],
+    "at": "2026-11-10T16:47:03.904957+00:00"
   },
   {
     "task": {
@@ -158,8 +362,20 @@
       "make": "Toyota",
       "model": "RAV4 Plug-in Hybrid"
     },
-    "verdict": "FAIL: performance power figures inconsistent \u2014 power_engine_w 112000 + power_electric_w 80000 = 192000 W, not the stated power_system_total_w 225000 W (Toyota RAV4 PHEV 300 is 225 kW system / 163 kW combined, so engine/electric values are wrong), and torque 360 Nm is implausible for this variant.",
-    "at": "2026-11-10T09:18:09.051984+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: performance numbers are internally inconsistent \u2014 power_system_total_w (225000) does not equal power_engine_w + power_electric_w (112000 + 113000 = 225000, which actually matches), but the variant_id \"phev-300\" implies 300 hp (~224 kW) while the stated total is 225 kW, and more critically the 0\u2013100 kph of 6.2 s, 18.7 kWh gross battery, 75 km WLTC EV range, and 1390 Wh/km consumption are mutually implausible (75 km \u00d7 1390 Wh/km \u2248 104 kWh, far exceeding the 18.7 kWh pack), indicating hallucinated/inconsistent numbers."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: confidence is above \"low\" constraint check passed, but schema_version requires \"1.0.0\" (found \"1.0\"), and protocol v1.0.0 mandates strict matching."
+      }
+    ],
+    "at": "2026-11-10T16:47:43.545064+00:00"
   },
   {
     "task": {
@@ -167,8 +383,20 @@
       "make": "Fiat",
       "model": "500e 42 kWh"
     },
-    "verdict": "FAIL: power_max_continuous 87000 is stored in watts but the key implies a continuous power field with no unit suffix, and 87 kW is inconsistent with the 500e's ~87 kW peak (not continuous) rating; also charging_max_dc 85000 W (85 kW) exceeds the 500e's actual ~85 kW peak only briefly and conflicts with charge_time_dc_10_to_80_percent 0.33 h (20 min) which is optimistic/inconsistent, and torque_max 220 Nm lacks unit key while other numeric fields use explicit units.",
-    "at": "2026-11-10T09:18:27.221018+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: provenance sources are generic/unverifiable placeholders (EU type-approval URL with fabricated ID, configurator link) and key figures (87 kW power, 42/37 kWh capacities, 320 km WLTP, 85 kW DC, 0.33 h 10\u201380%, 11 kW AC, 4.5 h AC 0\u2013100%) lack traceable per-field provenance, so hallucinated/inconsistent numbers cannot be ruled out."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "PASS"
+      }
+    ],
+    "at": "2026-11-10T16:48:26.685751+00:00"
   },
   {
     "task": {
@@ -176,8 +404,20 @@
       "make": "Renault",
       "model": "5 E-Tech"
     },
-    "verdict": "FAIL: power_max_continuous_w is 110300 W (110.3 kW) but variant_id and model designate 150 hp/110 kW \u2014 inconsistent with the \"150\" designation and likely conflates continuous vs peak power; also seats=4 is questionable for a 5-door hatchback and charge_time_ac_0_to_100_pct_min=555 (9.25 h) is inconsistent with 47 kWh net at 11 kW AC (~4.3 h), indicating hallucinated/inconsistent numbers.",
-    "at": "2026-11-10T09:18:43.196034+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: power_max_continuous_w and power_max_peak_w are both 110000, but the notes state 110 kW is the continuous rating while peak power for the 150 hp motor should be higher (110 kW \u2248 150 hp is peak, not continuous), creating an inconsistent/duplicated power figure; additionally the 0\u2013100 kph time of 8.3 s and top speed 150 kph are unverified against the cited sources, and braking distance lacks provenance."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "PASS"
+      }
+    ],
+    "at": "2026-11-10T16:49:14.210667+00:00"
   },
   {
     "task": {
@@ -185,8 +425,20 @@
       "make": "Renault",
       "model": "Megane E-Tech"
     },
-    "verdict": "FAIL: hallucinated/inconsistent numbers \u2014 length_mm 4200 is wrong for M\u00e9gane E-Tech (actual ~4210mm is close but the real issue is power_max_continuous_w 110000 conflicts with the 60kWh variant's 96kW/160kW motor specs, and torque 220Nm vs actual 300Nm; also acceleration 8.7s and top speed 150kph don't match the 96kW/220Nm pairing), plus provenance URLs are unverifiable/fabricated (EU type-approval CoC URL is a placeholder pattern, not a real document link).",
-    "at": "2026-11-10T09:19:01.330625+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: performance.power_max_continuous_w (96000) is inconsistent with power_max_peak_w (160000) and torque/acceleration figures for this variant, and the continuous power value appears hallucinated/unsupported by the cited sources."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: missing required keys or schema version mismatch / missing provenance details (Wait, checking protocol rules: Confidence is \"low\" which is allowed, BUT check for missing required keys or protocol rules: Protocol v1.04 requires confidence above \"low\"? The prompt says: \"Reject (FAIL) if: hallucinated or inconsistent numbers, missing provenance URLs, wrong units (e.g. kW stored in power_w), missing required keys, confidence above \"low\".\" Wait, the prompt says \"confidence above \"low\"\" -> meaning confidence *cannot* be above low? No, \"confidence above 'low'\" usually means medium/high is banned, or it means confidence must be low? Wait, let's re-read the prompt carefully: \"Reject (FAIL) if: ... confidence above \"low\".\" But the data has confidence: \"low\". Let's check other fields. Wait, the schema version in the prompt says schema v1.0.0, data says `\"schema_version\": \"1.0\"`). "
+      }
+    ],
+    "at": "2026-11-10T16:50:02.671248+00:00"
   },
   {
     "task": {
@@ -194,8 +446,20 @@
       "make": "Tesla",
       "model": "Model Y Juniper"
     },
-    "verdict": "FAIL: drive is \"front-wheel drive\" but Tesla Model Y Juniper RWD is rear-wheel drive (inconsistent), and provenance.sources is empty (missing provenance URLs).",
-    "at": "2026-11-10T09:19:13.292486+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: provenance URLs are fabricated/unverifiable (future-dated 2026 retrieval, non-existent press-kit/CoC PDFs) and numbers are inconsistent with the real Model Y RWD (e.g., 60 kWh gross/57.6 kWh net, 455 km WLTP, 208 kW, 6.5 s, 217 kph, 1950 kg, 2400 kg GVWR, 854 L trunk, \u20ac48,990) \u2014 hallucinated specs with no valid source backing."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "FAIL: schema requires confidence to be 'low', but let me check further... wait, confidence is 'low', which is allowed. However, check the JSON strictly against rules: missing required keys? No. Wrong units? power_max_w is in watts (208000 W = 208 kW, correct unit). Hallucinated or inconsistent numbers? Let's check `provenance` URLs. Are they valid or fake? The URLs contain parameters like `trim=juniper` and `_media/tesla-model-y-juniper-at-press-kit-202411.pdf` which point to an unreleased/fictional vehicle state or synthetic URLs for a future date (curated_utc: 2026-11-10, yet the text talks about Model Y Juniper which is unverified). Wait, look closer at the prompt instructions: \"Reject (FAIL) if: hallucinated or inconsistent numbers, missing provenance URLs, wrong units, missing required keys, confidence above 'low'.\" Confidence *is* \"low\", but check the provenance URLs or numbers. Actually, let's examine if any rule is violated. Wait, look at `provenance.sources` - they look like typical LLM hallucinations for URLs (tesla.com/.../design?trim=juniper...). More directly, look at the date: `2026-11-10`. Since today is earlier than November 2026, or the Model Y Juniper specs in 2024/2026 are speculative/hallucinated by the model generating this JSON, let's check standard CarAutopsy failure reasons. Wait, let's look at `power_max_w`: 208000 W. Is there a concrete failure? Let's output FAIL due to hallucinated/unverifiable future/synthetic URLs and data. Or is it PASS? Wait, let's re-read carefully: \"confidence above 'low'\". Here confidence is `\"low\"`. But check `provenance.sources`: URL 1 has `trim=juniper` which is a colloquial/codeword internet rumor for the refreshed Model Y (officially called Model Y refresh / new Model Y, but Tesla never officially named it \"Juniper\" in their configurator URLs). Therefore, the URL `https://www.tesla.com/en_AT/modely/design?trim=juniper...` is a hallucinated URL structure containing the internet slang/rumor term \"juniper\". Tesla configurators use variant IDs or numbers, not `trim=juniper`. Hence, hallucinated provenance URL."
+      }
+    ],
+    "at": "2026-11-10T16:50:44.935066+00:00"
   },
   {
     "task": {
@@ -203,7 +467,19 @@
       "make": "Tesla",
       "model": "Model Y Juniper Long Range"
     },
-    "verdict": "FAIL: \"Juniper\" is a trim/refresh designation, not a valid trim for a 2024 Model Y (Juniper is the 2025+ refresh), and production dates 2024-03-01 to 2024-09-30 with status \"discontinued\" are inconsistent with a 2024 model year still in production; also power_max 358000 W (358 kW) and torque 639 Nm do not match the LR AWD spec, and the eurocarnews approval PDF URL appears fabricated (hallucinated provenance).",
-    "at": "2026-11-10T09:19:29.975951+00:00"
+    "verdict": "INDEPENDENT_AUDIT_FAILED",
+    "audits": [
+      {
+        "provider": "deepseek",
+        "vendor": "deepseek",
+        "verdict": "FAIL: all required data fields are null (no identity, performance, energy, dimensions, warranty values), provenance.sources is empty (missing provenance URLs), and status is null \u2014 the record contains no verifiable data to audit."
+      },
+      {
+        "provider": "gemini",
+        "vendor": "google",
+        "verdict": "PASS"
+      }
+    ],
+    "at": "2026-11-10T16:51:18.609926+00:00"
   }
 ]
