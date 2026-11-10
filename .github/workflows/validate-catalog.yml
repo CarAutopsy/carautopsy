@@ -12,5 +12,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Run Python unit tests
         run: python -m unittest discover -s tests -v
+      - name: Validate vehicle catalog
+        run: python scripts/validate_catalog.py
       - name: Compile provider modules
         run: python -m py_compile scripts/autonomous_pipeline.py scripts/provider_retry.py
