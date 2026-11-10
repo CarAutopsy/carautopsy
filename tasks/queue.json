@@ -1,15 +1,5 @@
 [
   {
-    "variant_id": "tesla.model-3.highland.rwd-60",
-    "make": "Tesla",
-    "model": "Model 3 Highland"
-  },
-  {
-    "variant_id": "tesla.model-y.juniper.lr-awd",
-    "make": "Tesla",
-    "model": "Model Y Juniper Long Range"
-  },
-  {
     "variant_id": "vw.id-4.pro-77kwh",
     "make": "Volkswagen",
     "model": "ID.4 Pro"
@@ -123,5 +113,10 @@
     "variant_id": "tesla.model-y.juniper.rwd-60",
     "make": "Tesla",
     "model": "Model Y Juniper"
+  },
+  {
+    "variant_id": "tesla.model-y.juniper.lr-awd",
+    "make": "Tesla",
+    "model": "Model Y Juniper Long Range"
   }
 ]
