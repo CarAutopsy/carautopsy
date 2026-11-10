@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import yaml, requests
 from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
-from hive_batch import bounded_batch_size
+from hive_batch import bounded_batch_size, next_unattempted_task
 
 ROOT = Path.cwd()
 
@@ -162,17 +162,21 @@ MAX_VERDICT_CHARS = 240
 # A single research PR may contain a small batch; never let one run fan out.
 RESEARCH_BATCH_SIZE = bounded_batch_size(os.getenv("HIVE_RESEARCH_BATCH_SIZE"), default=3, maximum=5)
 
-def curate_one():
-    """Research and independently audit at most one queued vehicle variant."""
+def curate_one(attempted_variant_ids=None):
+    """Research and independently audit at most one not-yet-attempted batch variant."""
     global audit_failures_this_run, research_failures_this_run
     qp = ROOT / "tasks" / "queue.json"
     if not qp.exists(): return False, "no queue"
     tasks = json.loads(qp.read_text())
     if not tasks: return False, "queue empty"
     
+    attempted_variant_ids = attempted_variant_ids if attempted_variant_ids is not None else set()
     skipped = 0
     while tasks:
-        task = tasks[0]
+        task = next_unattempted_task(tasks, attempted_variant_ids)
+        if task is None:
+            qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+            return False, f"all remaining queued variants already attempted in this batch (skipped {skipped} existing)"
         vid, make, model = task["variant_id"], task["make"], task["model"]
         existing = ROOT / "catalog" / "variants" / f"{vid}.json"
         
@@ -213,6 +217,9 @@ Rules: variant_id must be "{vid}". SI units: power in W (integer), battery in Wh
 Every non-null technical claim must be supported by a directly relevant official provenance URL. Do not invent URLs, engine codes, trim details, or precision absent from the source. Resolve this previous audit finding explicitly: {prior_failure or "No previous finding"}.
 provenance.sources must list the official URL(s) used, with retrieved date {datetime.now(timezone.utc).date().isoformat()}."""
         
+        # Count the variant before provider calls so failures cannot be retried
+        # again during this same batch; it remains queued for a later run.
+        attempted_variant_ids.add(vid)
         raw, res_name, res_vendor = call_any(rp)
         veh = None
         if raw:
@@ -336,12 +343,13 @@ if RESEARCH_ONLY and has_open_research_pr():
     sys.exit(0)
 
 batch_messages = []
+attempted_variant_ids = set()
 for _ in range(RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1):
     queue_path = ROOT / "tasks" / "queue.json"
     queued = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
     if not queued:
         break
-    did_work, batch_msg = curate_one()
+    did_work, batch_msg = curate_one(attempted_variant_ids if RESEARCH_ONLY else None)
     if not did_work:
         break
     batch_messages.append(batch_msg)
