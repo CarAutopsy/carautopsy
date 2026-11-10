@@ -173,6 +173,13 @@ def curate_one():
                 pass  # malformed -> fall through and re-curate it
         
         print(f"Hive processing: {make} {model} ({vid})")
+        fp = ROOT / "tasks" / "failed.json"
+        failed = json.loads(fp.read_text()) if fp.exists() else []
+        prior_failure = next(
+            (item.get("verdict", "") for item in reversed(failed)
+             if (item.get("task") or {}).get("variant_id") == vid),
+            ""
+        )
         rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
@@ -180,6 +187,7 @@ FORBIDDEN: EV Database, classifieds, forums.
 Return ONLY a valid JSON object with exactly these top-level keys:
 schema_version, variant_id, status, identity, performance, energy, dimensions, emissions, offers, warranty, extensions, provenance.
 Rules: variant_id must be "{vid}". SI units: power in W (integer), battery in Wh (integer), mass in kg, price in minor units (cents) with currency EUR and country AT. Unknown = null, never 0.
+Every non-null technical claim must be supported by a directly relevant official provenance URL. Do not invent URLs, engine codes, trim details, or precision absent from the source. Resolve this previous audit finding explicitly: {prior_failure or "No previous finding"}.
 provenance.sources must list the official URL(s) used, with retrieved date {datetime.now(timezone.utc).date().isoformat()}."""
         
         raw, res_name, res_vendor = call_any(rp)
@@ -231,6 +239,8 @@ Reply with exactly one line: PASS or FAIL: reason"""
             audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
+            failed = [item for item in failed
+                      if (item.get("task") or {}).get("variant_id") != vid]
             failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "audits": audit_results, "at": datetime.now(timezone.utc).isoformat()})
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
             tasks = tasks[1:]
@@ -239,6 +249,10 @@ Reply with exactly one line: PASS or FAIL: reason"""
         out = ROOT / "catalog" / "variants" / f"{vid}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(veh, indent=2) + "\n", encoding="utf-8")
+        # A successfully re-audited record clears its previous failed-ledger entry.
+        failed = [item for item in failed
+                  if (item.get("task") or {}).get("variant_id") != vid]
+        fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
         tasks = tasks[1:]
         qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
         return True, f"curated {vid} (skipped {skipped} existing)"
