@@ -1,66 +1,61 @@
-# Austria M1 tax rules — 2026 baseline; calculation engine migration pending.
-# Official reference: BMF NoVA (Rechtslage ab 1. Juli 2025) and
-# BMF Motorbezogene Versicherungssteuer (Steuersatz).
-# DRAFT: Do not treat this pack as legally verified or production-ready.
+# Austria M1 tax rules. Draft pending legal sign-off and catalog data completeness.
 country: AT
-version: "1.1.0-draft"
+version: "1.2.0-draft"
 currency: EUR
 status: draft
 nova:
-  description: "2026 M1 passenger-car NoVA; taxable base must exclude VAT and NoVA."
-  effective_from: "2026-01-01"
+  description: "M1 NoVA. Purchase base must explicitly exclude VAT and NoVA."
+  effective_from: "2025-07-01"
   exemptions: [bev, fcev]
-  formula:
-    co2_deduction_gkm: 91
-    divisor: 5
-    rounding: commercial_half_up
-    min_percentage: 0
-    max_percentage: 80
-    fixed_deduction_eur: 350
-  malus:
-    threshold_gkm: 155
-    rate_eur_per_gkm_over_threshold: 80
+  annual_rules:
+    2025: {co2_deduction_gkm: 94, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 155, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
+    2026: {co2_deduction_gkm: 91, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 155, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
+    2027: {co2_deduction_gkm: 88, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 150, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
+    2028: {co2_deduction_gkm: 85, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 145, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
+    2029: {co2_deduction_gkm: 82, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 140, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
 motorbezogene_versicherungssteuer:
-  description: "2026 M1 passenger-car monthly tax; depends on first registration and powertrain."
-  effective_from: "2026-01-01"
-  exemptions: []
-  ice_m1:
-    first_registration_year: 2026
-    power:
-      threshold_kw: 59
-      minimum_taxable_kw: 5
-      rate_eur_per_kw: 0.72
-    co2:
-      threshold_gkm: 97
-      minimum_taxable_gkm: 5
-      rate_eur_per_gkm: 0.72
+  description: "M1 monthly motor-related insurance tax. Thresholds are fixed by first-registration year."
   bev_m1:
+    effective_from: "2025-04-01"
     power:
       deduction_kw: 45
       minimum_taxable_kw: 10
       tiers:
         - {up_to_kw: 35, rate_eur_per_kw: 0.25}
         - {up_to_kw: 60, rate_eur_per_kw: 0.35}
-        - {above_kw: 60, rate_eur_per_kw: 0.45}
+        - {rate_eur_per_kw: 0.45}
     weight:
       deduction_kg: 900
       minimum_taxable_kg: 200
       tiers:
         - {up_to_kg: 500, rate_eur_per_kg: 0.015}
         - {up_to_kg: 1200, rate_eur_per_kg: 0.030}
-        - {above_kg: 1200, rate_eur_per_kg: 0.045}
-  phev_m1:
-    first_registration_year: 2026
-    co2_threshold_gkm: 24
-    note: "Use combustion-engine power and weighted WLTP CO2; implementation pending."
+        - {rate_eur_per_kg: 0.045}
+  annual_rules:
+    2024:
+      ice: {power_deduction_kw: 61, co2_deduction_gpkm: 103, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+      phev: {power_deduction_kw: 61, co2_deduction_gpkm: 13, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+    2025:
+      ice: {power_deduction_kw: 60, co2_deduction_gpkm: 100, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+      phev: {power_deduction_kw: 60, co2_deduction_gpkm: 12, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+    2026:
+      ice: {power_deduction_kw: 59, co2_deduction_gpkm: 97, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+      phev: {power_deduction_kw: 59, co2_deduction_gpkm: 24, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+    2027:
+      ice: {power_deduction_kw: 58, co2_deduction_gpkm: 94, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+      phev: {power_deduction_kw: 58, co2_deduction_gpkm: 24, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+    2028:
+      phev: {power_deduction_kw: 57, co2_deduction_gpkm: 36, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
+    2029:
+      phev: {power_deduction_kw: 56, co2_deduction_gpkm: 35, minimum_taxable_kw: 5, minimum_taxable_gpkm: 5, rate_eur: 0.72}
 sources:
   - id: at-bmf-nova
-    name: "BMF - Normverbrauchsabgabe (NoVA)"
-    url: "https://www.bmf.gv.at/themen/steuern/verkehr-und-immobilien/normverbrauchsabgabe.html"
+    name: "BMF - NoVA tax rate, legal position from 1 July 2025"
+    url: "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/normverbrauchsabgabe-uebersicht/nova-steuersatz/rechtslage_ab_1_juli_2025.html"
     retrieved: "2026-11-10"
     licence: "Public / Statutory"
   - id: at-bmf-motorbez
-    name: "BMF - Motorbezogene Versicherungssteuer"
-    url: "https://www.bmf.gv.at/themen/steuern/verkehr-und-immobilien/motorbezogene-versicherungssteuer.html"
+    name: "BMF - Motorbezogene Versicherungssteuer, tax rate"
+    url: "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/motorbezogene-versicherungsteuer/steuersatz-motorbezogene-vers.html"
     retrieved: "2026-11-10"
     licence: "Public / Statutory"
