@@ -134,12 +134,17 @@ if "--provider-smoke-test" in sys.argv:
     import time
     sys.exit(provider_smoke_test())
 
-from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
+RESEARCH_ONLY = "--research-only" in sys.argv
 
-taxes, defaults, inspections = load_country_config(ROOT)
-# Stop before curation, queue/catalog writes, or TCO artifact publication.
-assert_tax_pack_publishable(taxes)
-analyze = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
+if RESEARCH_ONLY:
+    taxes = defaults = inspections = None
+    analyze = None
+else:
+    from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
+    taxes, defaults, inspections = load_country_config(ROOT)
+    # TCO publication remains blocked until the statutory pack is verified.
+    assert_tax_pack_publishable(taxes)
+    analyze = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
 
 audit_failures_this_run = 0
 
@@ -246,6 +251,32 @@ def run(cmd):
 
 curated, msg = curate_one()
 print(f"Curation: {msg}")
+
+if RESEARCH_ONLY:
+    # Research-only runs never calculate or publish TCO. Accepted research,
+    # queue progress and failed-audit records are submitted for human review.
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    if not dirty:
+        print("Research-only run made no changes.")
+        if audit_failures_this_run:
+            sys.exit(1)
+        sys.exit(0)
+    run(["git", "config", "user.name", "hive-bot"])
+    run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
+    branch = "hive/research-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    run(["git", "checkout", "-b", branch])
+    run(["git", "add", "catalog/variants", "tasks/queue.json", "tasks/failed.json"])
+    run(["git", "commit", "-m", f"chore(hive): {msg}"])
+    run(["git", "push", "-u", "origin", branch])
+    run(["gh", "pr", "create", "--title", f"Hive research: {msg}",
+         "--body", "Automated vehicle research proposal. Two independent AI vendors must explicitly approve each record. All AI-generated data remains low-confidence and requires human review before acceptance.",
+         "--base", "main", "--head", branch])
+    print("Research proposal pushed; awaiting human review.")
+    if audit_failures_this_run:
+        sys.exit(1)
+    sys.exit(0)
 
 results = []
 for p in sorted((ROOT / "catalog" / "variants").glob("*.json")):
