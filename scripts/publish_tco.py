@@ -17,9 +17,11 @@ def load(p):
     with open(p, encoding="utf-8") as f:
         return clean(json.load(f) if p.suffix == ".json" else yaml.safe_load(f))
 
-from tco_engine import calculate_tco, load_country_config
+from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
 
 taxes, defaults, inspections = load_country_config(ROOT)
+# Run-level guard: do not scan vehicles or touch the output artifact on draft packs.
+assert_tax_pack_publishable(taxes)
 tco = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
 
 results = []
