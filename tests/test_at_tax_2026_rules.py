@@ -10,6 +10,7 @@ from tco_engine import motor_monthly, nova
 
 RULES = yaml.safe_load((ROOT / "country-packs/AT/taxes.yaml").read_text(encoding="utf-8"))
 MANIFEST = yaml.safe_load((ROOT / "country-packs/AT/manifest.yaml").read_text(encoding="utf-8"))
+INCENTIVES = yaml.safe_load((ROOT / "country-packs/AT/incentives.yaml").read_text(encoding="utf-8"))
 
 
 def vehicle(pt="ice_petrol", power_kw=140, co2=180, date="2026-01-15"):
@@ -28,6 +29,19 @@ class Austrian2026RuleTests(unittest.TestCase):
     def test_pack_remains_draft(self):
         self.assertEqual(RULES["status"], "draft")
         self.assertEqual(MANIFEST["status"], "draft")
+
+    def test_incentives_do_not_claim_bev_motor_tax_exemption(self):
+        exemptions = INCENTIVES.get("rules", {}).get("exemptions", [])
+        self.assertNotIn("motorbezogene_versicherungssteuer", exemptions)
+
+    def test_legacy_pack_builder_is_non_mutating_and_consistent(self):
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "build_at_country_pack.py")],
+            cwd=ROOT, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("No files changed", result.stdout)
 
     def test_ice_2026_bmf_example(self):
         self.assertAlmostEqual(motor_monthly(vehicle(), RULES), 118.08)
