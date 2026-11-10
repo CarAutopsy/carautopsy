@@ -7,6 +7,7 @@ from provider_retry import generate_content_with_fallback
 ROOT = Path.cwd()
 
 def clean(o):
+    """Recursively normalize keys and trim string values in decoded data."""
     if isinstance(o, dict):
         return {re.sub(r'[^a-zA-Z0-9_]', '', str(k)): clean(v) for k, v in o.items()}
     if isinstance(o, list): return [clean(i) for i in o]
@@ -14,10 +15,12 @@ def clean(o):
     return o
 
 def load(p):
+    """Load and normalize a JSON or YAML file from the repository."""
     with open(p, encoding="utf-8") as f:
         return clean(json.load(f) if p.suffix == ".json" else yaml.safe_load(f))
 
 def clean_json_response(t):
+    """Extract a JSON object from a provider response or fenced code block."""
     m = re.search(r"```json\s*(\{.*?\})\s*```", t, re.DOTALL)
     if m: return m.group(1)
     m = re.search(r"\{.*\}", t, re.DOTALL)
@@ -50,6 +53,7 @@ def call_provider(prompt, key, url, model, temperature=0.1):
 
 
 def call_llm(prompt, key, url, model):
+    """Call one model and treat provider errors as unavailable."""
     if not key:
         return None
     try:
@@ -76,6 +80,7 @@ PROVIDERS = [
 ]
 
 def call_any(prompt, exclude_vendors=None):
+    """Return the first successful response from a non-excluded vendor."""
     excluded = set(exclude_vendors or [])
     for name, vendor, key, url, model in PROVIDERS:
         if not key or vendor in excluded:
@@ -87,6 +92,7 @@ def call_any(prompt, exclude_vendors=None):
     return None, None, None
 
 def call_vendor(prompt, vendor):
+    """Call a specific independent vendor for an audit response."""
     for name, provider_vendor, key, url, model in PROVIDERS:
         if provider_vendor != vendor or not key:
             continue
@@ -134,16 +140,22 @@ if "--provider-smoke-test" in sys.argv:
     import time
     sys.exit(provider_smoke_test())
 
-from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
+RESEARCH_ONLY = "--research-only" in sys.argv
 
-taxes, defaults, inspections = load_country_config(ROOT)
-# Stop before curation, queue/catalog writes, or TCO artifact publication.
-assert_tax_pack_publishable(taxes)
-analyze = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
+if RESEARCH_ONLY:
+    taxes = defaults = inspections = None
+    analyze = None
+else:
+    from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
+    taxes, defaults, inspections = load_country_config(ROOT)
+    # TCO publication remains blocked until the statutory pack is verified.
+    assert_tax_pack_publishable(taxes)
+    analyze = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
 
 audit_failures_this_run = 0
 
 def curate_one():
+    """Research and independently audit at most one queued vehicle variant."""
     global audit_failures_this_run
     qp = ROOT / "tasks" / "queue.json"
     if not qp.exists(): return False, "no queue"
@@ -168,6 +180,20 @@ def curate_one():
                 pass  # malformed -> fall through and re-curate it
         
         print(f"Hive processing: {make} {model} ({vid})")
+        fp = ROOT / "tasks" / "failed.json"
+        failed = json.loads(fp.read_text()) if fp.exists() else []
+        prior_entry = next(
+            (item for item in reversed(failed)
+             if (item.get("task") or {}).get("variant_id") == vid),
+            None,
+        )
+        prior_audits = (prior_entry or {}).get("audits") or []
+        prior_failure = "; ".join(
+            f"{audit.get('provider', audit.get('vendor', 'auditor'))}: "
+            f"{audit.get('verdict', 'no verdict')}"
+            for audit in prior_audits
+            if isinstance(audit, dict)
+        ) or ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
         rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
@@ -175,6 +201,7 @@ FORBIDDEN: EV Database, classifieds, forums.
 Return ONLY a valid JSON object with exactly these top-level keys:
 schema_version, variant_id, status, identity, performance, energy, dimensions, emissions, offers, warranty, extensions, provenance.
 Rules: variant_id must be "{vid}". SI units: power in W (integer), battery in Wh (integer), mass in kg, price in minor units (cents) with currency EUR and country AT. Unknown = null, never 0.
+Every non-null technical claim must be supported by a directly relevant official provenance URL. Do not invent URLs, engine codes, trim details, or precision absent from the source. Resolve this previous audit finding explicitly: {prior_failure or "No previous finding"}.
 provenance.sources must list the official URL(s) used, with retrieved date {datetime.now(timezone.utc).date().isoformat()}."""
         
         raw, res_name, res_vendor = call_any(rp)
@@ -226,6 +253,8 @@ Reply with exactly one line: PASS or FAIL: reason"""
             audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
+            failed = [item for item in failed
+                      if (item.get("task") or {}).get("variant_id") != vid]
             failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "audits": audit_results, "at": datetime.now(timezone.utc).isoformat()})
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
             tasks = tasks[1:]
@@ -234,6 +263,10 @@ Reply with exactly one line: PASS or FAIL: reason"""
         out = ROOT / "catalog" / "variants" / f"{vid}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(veh, indent=2) + "\n", encoding="utf-8")
+        # A successfully re-audited record clears its previous failed-ledger entry.
+        failed = [item for item in failed
+                  if (item.get("task") or {}).get("variant_id") != vid]
+        fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
         tasks = tasks[1:]
         qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
         return True, f"curated {vid} (skipped {skipped} existing)"
@@ -242,10 +275,67 @@ Reply with exactly one line: PASS or FAIL: reason"""
     return (skipped > 0), f"queue exhausted; skipped {skipped} existing"
 
 def run(cmd):
+    """Run a checked subprocess command and print its invocation.""" 
     print("$ " + " ".join(cmd)); subprocess.run(cmd, check=True)
+
+def has_open_research_pr():
+    """Return whether a Hive research proposal is already awaiting review."""
+    open_prs = subprocess.run(
+        ["gh", "pr", "list", "--state", "open", "--base", "main",
+         "--json", "headRefName", "--jq",
+         '[.[] | select(.headRefName | startswith("hive/research-"))] | length'],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    return bool(open_prs and open_prs != "0")
+
+
+# Check before provider calls so hourly runs do not spend API credits while
+# an earlier research proposal is still awaiting human review.
+if RESEARCH_ONLY and has_open_research_pr():
+    print("An open Hive research PR already exists; skipping this run.")
+    sys.exit(0)
 
 curated, msg = curate_one()
 print(f"Curation: {msg}")
+
+if RESEARCH_ONLY:
+    # Inspect only paths staged below; unrelated files must not cause empty commits.
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--",
+         "catalog/variants", "tasks/queue.json", "tasks/failed.json"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    if not dirty:
+        print("Research-only run made no changes.")
+        if audit_failures_this_run:
+            sys.exit(1)
+        sys.exit(0)
+    run(["git", "config", "user.name", "hive-bot"])
+    run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
+    branch = "hive/research-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    run(["git", "checkout", "-b", branch])
+    run(["git", "add", "catalog/variants", "tasks/queue.json", "tasks/failed.json"])
+    substantive = subprocess.run(
+        ["git", "diff", "--cached", "--quiet", "--",
+         "catalog/variants", "tasks/failed.json"],
+        check=False,
+    )
+    if substantive.returncode == 0:
+        print("Queue-only research change; skipping PR to avoid reordering-only proposals.")
+        if audit_failures_this_run:
+            sys.exit(1)
+        sys.exit(0)
+    if substantive.returncode != 1:
+        raise RuntimeError("Could not determine whether research produced substantive changes.")
+    run(["git", "commit", "-m", f"chore(hive): {msg}"])
+    run(["git", "push", "-u", "origin", branch])
+    run(["gh", "pr", "create", "--title", f"Hive research: {msg}",
+         "--body", "Automated vehicle research proposal. Two independent AI vendors must explicitly approve each record. All AI-generated data remains low-confidence and requires human review before acceptance.",
+         "--base", "main", "--head", branch])
+    print("Research proposal pushed; awaiting human review.")
+    if audit_failures_this_run:
+        sys.exit(1)
+    sys.exit(0)
 
 results = []
 for p in sorted((ROOT / "catalog" / "variants").glob("*.json")):

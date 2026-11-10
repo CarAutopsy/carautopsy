@@ -1,1 +1,117 @@
-[]
+[
+  {
+    "variant_id": "vw.id-4.pro-77kwh",
+    "make": "Volkswagen",
+    "model": "ID.4 Pro"
+  },
+  {
+    "variant_id": "vw.id-3.pro-58kwh",
+    "make": "Volkswagen",
+    "model": "ID.3 Pro"
+  },
+  {
+    "variant_id": "vw.golf-8.etsi-150",
+    "make": "Volkswagen",
+    "model": "Golf 8 eTSI"
+  },
+  {
+    "variant_id": "skoda.enyaq-iv-80",
+    "make": "Skoda",
+    "model": "Enyaq iV 80"
+  },
+  {
+    "variant_id": "skoda.octavia-combi-20tdi-150",
+    "make": "Skoda",
+    "model": "Octavia Combi 2.0 TDI"
+  },
+  {
+    "variant_id": "bmw.ix3-impulse-80kwh",
+    "make": "BMW",
+    "model": "iX3"
+  },
+  {
+    "variant_id": "bmw.330e-xdrive-g20",
+    "make": "BMW",
+    "model": "330e xDrive"
+  },
+  {
+    "variant_id": "mercedes.eqb-300-4matic",
+    "make": "Mercedes-Benz",
+    "model": "EQB 300"
+  },
+  {
+    "variant_id": "mercedes.c300de-w206",
+    "make": "Mercedes-Benz",
+    "model": "C 300 de"
+  },
+  {
+    "variant_id": "audi.q4-etron-50-quattro",
+    "make": "Audi",
+    "model": "Q4 e-tron 50"
+  },
+  {
+    "variant_id": "hyundai.ioniq-5.long-range-awd",
+    "make": "Hyundai",
+    "model": "IONIQ 5 Long Range"
+  },
+  {
+    "variant_id": "hyundai.tucson-16t-gdi-hybrid",
+    "make": "Hyundai",
+    "model": "Tucson Hybrid"
+  },
+  {
+    "variant_id": "kia.ev6.gt-line-77kwh-awd",
+    "make": "Kia",
+    "model": "EV6 GT-Line"
+  },
+  {
+    "variant_id": "kia.ev3.my25.long-range-rwd",
+    "make": "Kia",
+    "model": "EV3 Long Range"
+  },
+  {
+    "variant_id": "kia.niro-ev-64kwh",
+    "make": "Kia",
+    "model": "Niro EV"
+  },
+  {
+    "variant_id": "toyota.yaris.hybrid-130",
+    "make": "Toyota",
+    "model": "Yaris Hybrid"
+  },
+  {
+    "variant_id": "toyota.corolla-touring-sports-hybrid-140",
+    "make": "Toyota",
+    "model": "Corolla Touring Sports Hybrid"
+  },
+  {
+    "variant_id": "toyota.rav4.phev-300",
+    "make": "Toyota",
+    "model": "RAV4 Plug-in Hybrid"
+  },
+  {
+    "variant_id": "fiat.500e.hatch.42kwh",
+    "make": "Fiat",
+    "model": "500e 42 kWh"
+  },
+  {
+    "variant_id": "renault.5.etech.52kwh-150",
+    "make": "Renault",
+    "model": "5 E-Tech"
+  },
+  {
+    "variant_id": "renault.megane-etech-60kwh",
+    "make": "Renault",
+    "model": "Megane E-Tech"
+  },
+  {
+    "variant_id": "tesla.model-y.juniper.rwd-60",
+    "make": "Tesla",
+    "model": "Model Y Juniper"
+  },
+  {
+    "variant_id": "tesla.model-y.juniper.lr-awd",
+    "make": "Tesla",
+    "model": "Model Y Juniper Long Range"
+  }
+]
