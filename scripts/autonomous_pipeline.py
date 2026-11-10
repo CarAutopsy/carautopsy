@@ -110,10 +110,20 @@ def curate_one():
     if not qp.exists(): return False, "no queue"
     tasks = json.loads(qp.read_text())
     if not tasks: return False, "queue empty"
-    task = tasks[0]
-    vid, make, model = task["variant_id"], task["make"], task["model"]
-    print(f"Hive processing: {make} {model} ({vid})")
-    rp = f"""You are the CarAutopsy Researcher agent.
+    skipped = []
+    while tasks:
+        task = tasks[0]
+        vid, make, model = task["variant_id"], task["make"], task["model"]
+        existing = ROOT / "catalog" / "variants" / f"{vid}.json"
+        if existing.exists():
+            try:
+                ev = load(existing)
+                if (ev.get("identity") or {}).get("powertrain"):
+                    skipped.append(vid); tasks = tasks[1:]; continue
+            except Exception:
+                pass  # malformed -> re-curate it below
+        print(f"Hive processing: {make} {model} ({vid})")
+        rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
 FORBIDDEN: EV Database, classifieds, forums.
@@ -121,43 +131,46 @@ Return ONLY a valid JSON object with exactly these top-level keys:
 schema_version, variant_id, status, identity, performance, energy, dimensions, emissions, offers, warranty, extensions, provenance.
 Rules: variant_id must be "{vid}". SI units: power in W (integer), battery in Wh (integer), mass in kg, price in minor units (cents) with currency EUR and country AT. Unknown = null, never 0.
 provenance.sources must list the official URL(s) used, with retrieved date {datetime.now(timezone.utc).date().isoformat()}."""
-    raw = call_llm(rp, QWEN, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus")
-    veh = None
-    if raw:
-        try:
-            veh = json.loads(clean_json_response(raw))
-            assert isinstance(veh, dict) and "identity" in veh
-        except Exception as e:
-            print(f"Researcher bad JSON: {e}"); veh = None
-    if veh is None:
-        tasks.append(task); qp.write_text(json.dumps(tasks[1:], indent=2) + "\n", encoding="utf-8")
-        return True, "research failed, task requeued"
-    veh["variant_id"] = vid; veh.setdefault("schema_version", "1.0.0"); veh.setdefault("status", "current")
-    prov = veh.setdefault("provenance", {}); prov["confidence"] = "low"; prov["reviewed_by"] = None
-    veh.setdefault("extensions", {})["hive"] = {"researcher": "qwen", "auditor": "deepseek",
-                                                "curated_utc": datetime.now(timezone.utc).isoformat()}
-    ap = f"""You are the CarAutopsy Auditor agent.
+        raw = call_llm(rp, QWEN, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus")
+        veh = None
+        if raw:
+            try:
+                veh = json.loads(clean_json_response(raw))
+                assert isinstance(veh, dict) and "identity" in veh
+            except Exception as e:
+                print(f"Researcher bad JSON: {e}"); veh = None
+        if veh is None:
+            tasks = tasks[1:] + [task]
+            qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+            return True, f"research failed for {vid}, requeued; skipped {len(skipped)} existing"
+        veh["variant_id"] = vid; veh.setdefault("schema_version", "1.0.0"); veh.setdefault("status", "current")
+        prov = veh.setdefault("provenance", {}); prov["confidence"] = "low"; prov["reviewed_by"] = None
+        veh.setdefault("extensions", {})["hive"] = {"researcher": "qwen", "auditor": "deepseek",
+                                                    "curated_utc": datetime.now(timezone.utc).isoformat()}
+        ap = f"""You are the CarAutopsy Auditor agent.
 Review this vehicle JSON against Vehicle Catalog Protocol v1.04 and schema v1.0.0.
 Reject (FAIL) if: hallucinated or inconsistent numbers, missing provenance URLs,
 wrong units (e.g. kW stored in power_w), missing required keys, confidence above "low".
 Data:
 {json.dumps(veh, indent=2)}
 Reply with exactly one line: PASS or FAIL: reason"""
-    av = call_llm(ap, DEEP, "https://api.deepseek.com/chat/completions", "deepseek-chat")
-    verdict = av.strip().splitlines()[0] if av else "OFFLINE"
-    print(f"Auditor says: {verdict}")
-    if verdict.upper().startswith("FAIL"):
-        fp = ROOT / "tasks" / "failed.json"
-        failed = json.loads(fp.read_text()) if fp.exists() else []
-        failed.append({"task": task, "verdict": verdict, "at": datetime.now(timezone.utc).isoformat()})
-        fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
-        qp.write_text(json.dumps(tasks[1:], indent=2) + "\n", encoding="utf-8")
-        return True, "audit failed, parked in failed.json"
-    out = ROOT / "catalog" / "variants" / f"{vid}.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(veh, indent=2) + "\n", encoding="utf-8")
-    qp.write_text(json.dumps(tasks[1:], indent=2) + "\n", encoding="utf-8")
-    return True, f"curated {vid}"
+        av = call_llm(ap, DEEP, "https://api.deepseek.com/chat/completions", "deepseek-chat")
+        verdict = av.strip().splitlines()[0] if av else "OFFLINE"
+        print(f"Auditor says: {verdict}")
+        if verdict.upper().startswith("FAIL"):
+            fp = ROOT / "tasks" / "failed.json"
+            failed = json.loads(fp.read_text()) if fp.exists() else []
+            failed.append({"task": task, "verdict": verdict, "at": datetime.now(timezone.utc).isoformat()})
+            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+            tasks = tasks[1:]; continue
+        out = ROOT / "catalog" / "variants" / f"{vid}.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(veh, indent=2) + "\n", encoding="utf-8")
+        tasks = tasks[1:]
+        qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+        return True, f"curated {vid} (skipped {len(skipped)} existing)"
+    qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+    return (len(skipped) > 0), f"queue exhausted; skipped {len(skipped)} existing"
 
 def run(cmd):
     print("$ " + " ".join(cmd)); subprocess.run(cmd, check=True)
