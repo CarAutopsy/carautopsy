@@ -325,7 +325,7 @@ if RESEARCH_ONLY:
     )
     if substantive.returncode == 0:
         print("Queue-only research change; skipping PR to avoid reordering-only proposals.")
-        if audit_failures_this_run:
+        if audit_failures_this_run or research_failures_this_run:
             sys.exit(1)
         sys.exit(0)
     if substantive.returncode != 1:
