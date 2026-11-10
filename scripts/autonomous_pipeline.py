@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 import yaml, requests
 from provider_retry import generate_content_with_fallback
+from hive_audit import concise_audit_verdict
 
 ROOT = Path.cwd()
 
@@ -155,19 +156,8 @@ else:
 audit_failures_this_run = 0
 research_failures_this_run = 0
 MAX_AUDIT_ATTEMPTS = 3
+MAX_RESEARCH_ATTEMPTS = 3
 MAX_VERDICT_CHARS = 240
-
-def concise_audit_verdict(raw):
-    """Accept only explicit PASS/FAIL; never persist model reasoning."""
-    if not isinstance(raw, str):
-        return "INVALID_AUDIT_RESPONSE"
-    for line in raw.splitlines():
-        line = line.strip().lstrip(">*- ").strip()
-        if re.match(r"^PASS\b", line, re.IGNORECASE):
-            return "PASS"
-        if re.match(r"^FAIL\s*:", line, re.IGNORECASE):
-            return re.sub(r"\s+", " ", line)[:MAX_VERDICT_CHARS]
-    return "INVALID_AUDIT_RESPONSE"
 
 def curate_one():
     """Research and independently audit at most one queued vehicle variant."""
@@ -231,9 +221,24 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
         
         if veh is None:
             research_failures_this_run += 1
-            tasks = tasks[1:] + [task]  # Requeue at end
+            previous = next((item for item in reversed(failed)
+                             if (item.get("task") or {}).get("variant_id") == vid), {})
+            attempts = int(previous.get("research_attempts", 0)) + 1
+            failed = [item for item in failed
+                      if (item.get("task") or {}).get("variant_id") != vid]
+            failed.append({"task": task, "verdict": "RESEARCH_FAILED",
+                           "research_attempts": attempts,
+                           "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
+                           "at": datetime.now(timezone.utc).isoformat()})
+            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+            if attempts < MAX_RESEARCH_ATTEMPTS:
+                tasks = tasks[1:] + [task]
+                outcome = f"research failed for {vid}; retry {attempts}/{MAX_RESEARCH_ATTEMPTS} queued"
+            else:
+                tasks = tasks[1:]
+                outcome = f"research failed for {vid}; retry limit reached; retained for human review"
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
-            return True, f"research failed for {vid}, requeued; skipped {skipped} existing"
+            return True, f"{outcome} (skipped {skipped} existing)"
         
         veh["variant_id"] = vid
         veh.setdefault("schema_version", "1.0.0")
