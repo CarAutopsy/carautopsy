@@ -1,47 +1,56 @@
-"""Regression targets for the Austrian 2026 tax migration.
-
-These tests validate the staged BMF rule data, not the legacy TCO engine.
-The draft PR is NOT merge-ready until the engine consumes these rules.
-"""
+"""Regression tests exercise the actual Austrian tax engine, not just YAML values."""
+import sys
 import unittest
 from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+from tco_engine import motor_monthly, nova
+
 RULES = yaml.safe_load((ROOT / "country-packs/AT/taxes.yaml").read_text(encoding="utf-8"))
 MANIFEST = yaml.safe_load((ROOT / "country-packs/AT/manifest.yaml").read_text(encoding="utf-8"))
 
+
+def vehicle(pt="ice_petrol", power_kw=140, co2=180, date="2026-01-15"):
+    return {
+        "identity": {"powertrain": pt, "vehicle_class": "M1"},
+        "registration": {"first_registration_date": date},
+        "performance": {"combustion_engine_power_w": power_kw * 1000,
+                        "electric_motor_continuous_power_w": power_kw * 1000},
+        "dimensions": {"own_weight_kg": 1450},
+        "emissions": {"co2_wltp_gpkm": co2, "co2_wltp_weighted_combined_gpkm": co2},
+        "offers": [{"purchase_price_excl_vat_eur": 10000}],
+    }
+
+
 class Austrian2026RuleTests(unittest.TestCase):
-    def test_not_marked_verified(self):
+    def test_pack_remains_draft(self):
         self.assertEqual(RULES["status"], "draft")
         self.assertEqual(MANIFEST["status"], "draft")
 
-    def test_nova_2026_parameters(self):
-        f = RULES["nova"]["formula"]
-        self.assertEqual((f["co2_deduction_gkm"], f["divisor"], f["max_percentage"]), (91, 5, 80))
-        self.assertEqual(f["rounding"], "commercial_half_up")
-        self.assertEqual(RULES["nova"]["malus"], {
-            "threshold_gkm": 155, "rate_eur_per_gkm_over_threshold": 80
-        })
+    def test_ice_2026_bmf_example(self):
+        self.assertAlmostEqual(motor_monthly(vehicle(), RULES), 118.08)
 
-    def test_ice_2026_monthly_example(self):
-        f = RULES["motorbezogene_versicherungssteuer"]["ice_m1"]
-        # 140 kW and 180 g/km, first registered 2026.
-        p = max(f["power"]["minimum_taxable_kw"], 140 - f["power"]["threshold_kw"])
-        c = max(f["co2"]["minimum_taxable_gkm"], 180 - f["co2"]["threshold_gkm"])
-        self.assertAlmostEqual(p * f["power"]["rate_eur_per_kw"] +
-                               c * f["co2"]["rate_eur_per_gkm"], 118.08)
+    def test_ice_2025_uses_its_own_thresholds(self):
+        self.assertAlmostEqual(motor_monthly(vehicle(date="2025-01-15"), RULES), 115.20)
 
-    def test_bev_2026_monthly_example(self):
-        f = RULES["motorbezogene_versicherungssteuer"]["bev_m1"]
-        # 60 kW continuous rated power, 1450 kg: BMF example EUR 12.75.
-        power = max(f["power"]["minimum_taxable_kw"], 60 - f["power"]["deduction_kw"])
-        weight = max(f["weight"]["minimum_taxable_kg"], 1450 - f["weight"]["deduction_kg"])
-        monthly = power * f["power"]["tiers"][0]["rate_eur_per_kw"] + (
-            min(weight, 500) * f["weight"]["tiers"][0]["rate_eur_per_kg"] +
-            max(0, weight - 500) * f["weight"]["tiers"][1]["rate_eur_per_kg"]
-        )
-        self.assertAlmostEqual(monthly, 12.75)
+    def test_bev_bmf_examples_and_top_tiers(self):
+        v = vehicle("bev", 60, 0)
+        self.assertAlmostEqual(motor_monthly(v, RULES), 12.75)
+        v = vehicle("bev", 210, 0)
+        v["dimensions"]["own_weight_kg"] = 2200
+        self.assertAlmostEqual(motor_monthly(v, RULES), 97.75)
+
+    def test_phev_bmf_2026_example(self):
+        v = vehicle("phev", 120, 30)
+        self.assertAlmostEqual(motor_monthly(v, RULES), 48.24)
+
+    def test_nova_2026_rounding_and_malus(self):
+        v = vehicle(co2=165)
+        # 14.8% is commercially rounded to 15%; €10,000 * 15% + €800 - €350.
+        self.assertAlmostEqual(nova(v, RULES), 1950.0)
+
 
 if __name__ == "__main__":
     unittest.main()
