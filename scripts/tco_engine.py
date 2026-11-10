@@ -150,7 +150,9 @@ def motor_monthly(v, t):
     raise ValueError(f"Motor-tax rules unsupported for powertrain {pt!r}; refusing zero-tax fallback")
 
 
-def calculate_tco(v, t, d, i):
+def calculate_tco(v, t, d, i, allow_draft=False):
+    if t.get("status") == "draft" and not allow_draft:
+        raise ValueError("Austria tax pack is draft; TCO publication is disabled pending legal verification")
     identity = v.get("identity") or {}
     pt = identity.get("powertrain")
     if not pt:
