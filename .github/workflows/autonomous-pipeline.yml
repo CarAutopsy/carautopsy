@@ -48,6 +48,7 @@ jobs:
       - name: Hive research + two independent AI audits
         if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
         env:
+          GH_TOKEN: ${{ github.token }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_CARAUTOPSY_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
