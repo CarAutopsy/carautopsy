@@ -163,10 +163,10 @@ def concise_audit_verdict(raw):
         return "INVALID_AUDIT_RESPONSE"
     for line in raw.splitlines():
         line = line.strip().lstrip(">*- ").strip()
-        if re.match(r"^PASS\\b", line, re.IGNORECASE):
+        if re.match(r"^PASS\b", line, re.IGNORECASE):
             return "PASS"
-        if re.match(r"^FAIL\\s*:", line, re.IGNORECASE):
-            return re.sub(r"\\s+", " ", line)[:MAX_VERDICT_CHARS]
+        if re.match(r"^FAIL\s*:", line, re.IGNORECASE):
+            return re.sub(r"\s+", " ", line)[:MAX_VERDICT_CHARS]
     return "INVALID_AUDIT_RESPONSE"
 
 def curate_one():
