@@ -97,6 +97,11 @@ class TcoConfigTests(unittest.TestCase):
         v["registration"]["first_registration_date"] = "2026-01-15"
         self.assertAlmostEqual(motor_monthly(v, self.t), 118.08)
 
+    def test_bev_rules_apply_to_existing_vehicles_from_2025(self):
+        v = self.vehicle("bev")
+        v["registration"]["first_registration_date"] = "2023-06-01"
+        self.assertAlmostEqual(motor_monthly(v, self.t), 12.75)
+
     def test_bev_all_power_and_weight_tiers(self):
         v = self.vehicle("bev")
         self.assertAlmostEqual(motor_monthly(v, self.t), 12.75)
