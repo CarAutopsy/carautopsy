@@ -205,10 +205,11 @@ def curate_one():
         prior_audits = (prior_entry or {}).get("audits") or []
         prior_failure = "; ".join(
             f"{audit.get('provider', audit.get('vendor', 'auditor'))}: "
-            f"{audit.get('verdict', 'no verdict')}"
+            f"{str(audit.get('verdict', 'no verdict')).splitlines()[0][:MAX_VERDICT_CHARS]}"
             for audit in prior_audits
             if isinstance(audit, dict)
         ) or ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
+        prior_failure = prior_failure[:600]
         rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
