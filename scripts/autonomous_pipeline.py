@@ -68,6 +68,50 @@ def call_vendor(prompt, vendor):
             return out, name
     return None, None
 
+def provider_smoke_test():
+    """Exercise one endpoint per independent vendor without touching catalog or queue."""
+    prompt = "Reply with exactly: CARAUTOPSY_PROVIDER_OK"
+    checks = []
+    # qwen-intl and qwen-cn share a vendor/key; test only one endpoint.
+    smoke_providers = [
+        ("qwen-intl", "qwen", QWEN_KEY, "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
+        ("deepseek", "deepseek", DEEP_KEY, "https://api.deepseek.com/chat/completions", "deepseek-chat"),
+        ("gemini", "google", GEMINI_KEY, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", GEMINI_MODEL),
+    ]
+    for name, vendor, key, url, model in smoke_providers:
+        if not key:
+            checks.append({"provider": name, "vendor": vendor, "model": model, "status": "MISSING_SECRET"})
+            continue
+        started = time.monotonic()
+        try:
+            response = requests.post(
+                url,
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0},
+                timeout=45,
+            )
+            elapsed_ms = round((time.monotonic() - started) * 1000)
+            response.raise_for_status()
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("empty response content")
+            checks.append({"provider": name, "vendor": vendor, "model": model, "status": "PASS",
+                           "latency_ms": elapsed_ms, "response_chars": len(content.strip())})
+        except Exception as exc:
+            elapsed_ms = round((time.monotonic() - started) * 1000)
+            # Do not print response bodies or credentials; expose only a short exception description.
+            checks.append({"provider": name, "vendor": vendor, "model": model, "status": "FAIL",
+                           "latency_ms": elapsed_ms, "error": type(exc).__name__ + ": " + str(exc)[:240]})
+    print("PROVIDER_SMOKE_TEST=" + json.dumps(checks, ensure_ascii=False))
+    failed = [item for item in checks if item["status"] != "PASS"]
+    print(f"Provider smoke test: {len(checks) - len(failed)}/{len(checks)} passed.")
+    return 1 if failed else 0
+
+if "--provider-smoke-test" in sys.argv:
+    import time
+    sys.exit(provider_smoke_test())
+
 taxes = load(ROOT / "country-packs/AT/taxes.yaml")
 defaults = load(ROOT / "country-packs/AT/defaults.yaml")
 FUEL = {"ice_diesel": 6.5, "ice_petrol": 6.0, "hev": 4.5, "phev": 5.0}
