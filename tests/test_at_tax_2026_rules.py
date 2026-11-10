@@ -51,6 +51,16 @@ class Austrian2026RuleTests(unittest.TestCase):
         # 14.8% is commercially rounded to 15%; €10,000 * 15% + €800 - €350.
         self.assertAlmostEqual(nova(v, RULES), 1950.0)
 
+    def test_nova_2027_uses_year_specific_deduction_and_same_155_malus(self):
+        v = vehicle(co2=165, date="2027-01-15")
+        # (165 - 88) / 5 = 15.4%, rounded to 15%; malus remains above 155.
+        self.assertAlmostEqual(nova(v, RULES), 1950.0)
+
+    def test_nova_pre_july_2025_fails_closed(self):
+        v = vehicle(date="2025-06-30")
+        with self.assertRaisesRegex(ValueError, "before 2025-07-01"):
+            nova(v, RULES)
+
 
 if __name__ == "__main__":
     unittest.main()
