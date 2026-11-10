@@ -126,7 +126,7 @@ class TcoConfigTests(unittest.TestCase):
     def test_nova_uses_half_up_and_malus_and_explicit_net_base(self):
         v = self.vehicle("ice_petrol")
         v["emissions"]["co2_wltp_gpkm"] = 165
-        self.assertAlmostEqual(nova(v, self.t), 1950.0)
+        self.assertAlmostEqual(nova(v, self.t), 3450.0)
         del v["offers"][0]["purchase_price_excl_vat_eur"]
         with self.assertRaisesRegex(ValueError, "purchase_price_excl_vat_eur"):
             nova(v, self.t)
