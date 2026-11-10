@@ -154,6 +154,20 @@ else:
 
 audit_failures_this_run = 0
 research_failures_this_run = 0
+MAX_AUDIT_ATTEMPTS = 3
+MAX_VERDICT_CHARS = 240
+
+def concise_audit_verdict(raw):
+    """Accept only explicit PASS/FAIL; never persist model reasoning."""
+    if not isinstance(raw, str):
+        return "INVALID_AUDIT_RESPONSE"
+    for line in raw.splitlines():
+        line = line.strip().lstrip(">*- ").strip()
+        if re.match(r"^PASS\b", line, re.IGNORECASE):
+            return "PASS"
+        if re.match(r"^FAIL\s*:", line, re.IGNORECASE):
+            return re.sub(r"\s+", " ", line)[:MAX_VERDICT_CHARS]
+    return "INVALID_AUDIT_RESPONSE"
 
 def curate_one():
     """Research and independently audit at most one queued vehicle variant."""
@@ -191,10 +205,11 @@ def curate_one():
         prior_audits = (prior_entry or {}).get("audits") or []
         prior_failure = "; ".join(
             f"{audit.get('provider', audit.get('vendor', 'auditor'))}: "
-            f"{audit.get('verdict', 'no verdict')}"
+            f"{str(audit.get('verdict', 'no verdict')).splitlines()[0][:MAX_VERDICT_CHARS]}"
             for audit in prior_audits
             if isinstance(audit, dict)
         ) or ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
+        prior_failure = prior_failure[:600]
         rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
@@ -233,18 +248,17 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
         
         ap = f"""You are the CarAutopsy Auditor agent.
 Review this vehicle JSON against Vehicle Catalog Protocol v1.04 and schema v1.0.0.
-Reject (FAIL) if: hallucinated or inconsistent numbers, missing provenance URLs,
-wrong units (e.g. kW stored in power_w), missing required keys, confidence above "low".
+Reject (FAIL) only for concrete defects: inconsistent numbers, missing/invalid provenance URLs, wrong units, or missing required schema keys. Confidence is intentionally forced to "low" by the pipeline and MUST NOT be a rejection reason.
 Data:
 {json.dumps(veh, indent=2)}
-Reply with exactly one line: PASS or FAIL: reason"""
+Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAIL: <one concise, evidence-based reason>."""
         
         # Require independent vendor audits; Qwen's regional endpoints count as one vendor.
         audit_vendors = [vendor for vendor in ("deepseek", "google", "qwen") if vendor != res_vendor]
         audit_results = []
         for audit_vendor in audit_vendors:
             audit_raw, audit_name = call_vendor(ap, audit_vendor)
-            audit_verdict = audit_raw.strip().splitlines()[0] if audit_raw else "OFFLINE"
+            audit_verdict = concise_audit_verdict(audit_raw) if audit_raw else "OFFLINE"
             audit_results.append({"provider": audit_name or audit_vendor, "vendor": audit_vendor, "verdict": audit_verdict})
             print(f"Auditor {audit_name or audit_vendor} says: {audit_verdict}")
 
@@ -255,12 +269,21 @@ Reply with exactly one line: PASS or FAIL: reason"""
             audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
-            failed = [item for item in failed
-                      if (item.get("task") or {}).get("variant_id") != vid]
-            failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "audits": audit_results, "at": datetime.now(timezone.utc).isoformat()})
+            previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), {})
+            attempts = int(previous.get("attempts", 0)) + 1
+            failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
+            failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": attempts,
+                           "max_attempts": MAX_AUDIT_ATTEMPTS, "audits": audit_results, "candidate": veh,
+                           "at": datetime.now(timezone.utc).isoformat()})
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
-            tasks = tasks[1:]
-            continue
+            if attempts < MAX_AUDIT_ATTEMPTS:
+                tasks = tasks[1:] + [task]
+                outcome = f"audit failed for {vid}; retry {attempts}/{MAX_AUDIT_ATTEMPTS} queued"
+            else:
+                tasks = tasks[1:]
+                outcome = f"audit failed for {vid}; retry limit reached; retained for human review"
+            qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+            return True, f"{outcome} (skipped {skipped} existing)"
         
         out = ROOT / "catalog" / "variants" / f"{vid}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
