@@ -153,6 +153,18 @@ def motor_monthly(v, t):
     raise ValueError(f"Motor-tax rules unsupported for powertrain {pt!r}; refusing zero-tax fallback")
 
 
+def assert_tax_pack_publishable(taxes):
+    """Require explicit statutory verification before any production publication."""
+    status = taxes.get("status")
+    if status != "verified":
+        raise ValueError(f"Austria tax pack status is {status!r}; publication requires status 'verified'")
+    if not taxes.get("nova", {}).get("annual_rules"):
+        raise ValueError("Austria NoVA annual_rules are missing; publication refused")
+    motor = taxes.get("motorbezogene_versicherungssteuer", {})
+    if not motor.get("bev_m1") or not motor.get("annual_rules"):
+        raise ValueError("Austria motor-tax schedules are incomplete; publication refused")
+
+
 def calculate_tco(v, t, d, i, allow_draft=False):
     if t.get("status") == "draft" and not allow_draft:
         raise ValueError("Austria tax pack is draft; TCO publication is disabled pending legal verification")
