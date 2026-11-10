@@ -1,5 +1,7 @@
 country: AT
 version: "1.0.0"
+horizon_years_default: 5
+annual_km_default: 15000
 tyres:
   replacement_interval_km: 30000
   average_cost_eur: 800
