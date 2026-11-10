@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: '0 * * * *'
   workflow_dispatch:
+    inputs:
+      run_mode:
+        description: "Choose full pipeline or isolated provider API smoke test"
+        required: true
+        default: "full"
+        type: choice
+        options:
+          - full
+          - provider-smoke-test
 
 permissions:
   contents: write
@@ -30,4 +39,9 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_CARAUTOPSY_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.8-flash
-        run: python scripts/autonomous_pipeline.py
+        run: |
+          if [ "${{ inputs.run_mode }}" = "provider-smoke-test" ]; then
+            python scripts/autonomous_pipeline.py --provider-smoke-test
+          else
+            python scripts/autonomous_pipeline.py
+          fi
