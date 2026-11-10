@@ -52,9 +52,14 @@ class Austrian2026RuleTests(unittest.TestCase):
     def test_bev_bmf_examples_and_top_tiers(self):
         v = vehicle("bev", 60, 0)
         self.assertAlmostEqual(motor_monthly(v, RULES), 12.75)
-        v = vehicle("bev", 210, 0)
+        # BMF 100 kW / 2,000 kg example crosses power tier 2.
+        v = vehicle("bev", 100, 0)
+        v["dimensions"]["own_weight_kg"] = 2000
+        self.assertAlmostEqual(motor_monthly(v, RULES), 41.25)
+        # BMF 150 kW / 2,200 kg example crosses power tier 3 and weight tier 3.
+        v = vehicle("bev", 150, 0)
         v["dimensions"]["own_weight_kg"] = 2200
-        self.assertAlmostEqual(motor_monthly(v, RULES), 97.75)
+        self.assertAlmostEqual(motor_monthly(v, RULES), 70.75)
 
     def test_phev_bmf_2026_example(self):
         v = vehicle("phev", 120, 30)
