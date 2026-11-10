@@ -19,10 +19,10 @@ class TcoConfigTests(unittest.TestCase):
             "variant_id": "test",
             "identity": {"make": "Test", "model": "Car", "powertrain": pt, "vehicle_class": "M1"},
             "registration": {"first_registration_date": "2026-01-15"},
-            "performance": {"power_w": 100000, "combustion_engine_power_w": 100000,
+            "performance": {"power_w": 100000, "combustion_engine_power_w": 140000,
                             "electric_motor_continuous_power_w": 60000},
             "dimensions": {"own_weight_kg": 1450},
-            "emissions": {"co2_wltp_gpkm": 120, "co2_wltp_weighted_combined_gpkm": 30},
+            "emissions": {"co2_wltp_gpkm": 180, "co2_wltp_weighted_combined_gpkm": 30},
             "offers": [{"purchase_price_excl_vat_eur": 20000, "list_price_minor": 2400000}],
         }
         if pt == "bev":
@@ -102,6 +102,7 @@ class TcoConfigTests(unittest.TestCase):
 
     def test_phev_uses_combustion_power_and_weighted_co2(self):
         v = self.vehicle("phev")
+        v["performance"]["combustion_engine_power_w"] = 120000
         self.assertAlmostEqual(motor_monthly(v, self.t), 48.24)
         v["emissions"]["co2_wltp_weighted_combined_gpkm"] = None
         with self.assertRaisesRegex(ValueError, "weighted_combined"):
