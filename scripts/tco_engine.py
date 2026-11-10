@@ -123,6 +123,9 @@ def motor_monthly(v, t):
     if vehicle_class != "M1":
         raise ValueError(f"Motorbezogene Versicherungssteuer unsupported for vehicle class {vehicle_class}")
     year, first_date = _first_registration_year(v)
+    max_mass = float(_required(v, "dimensions.max_permissible_mass_kg", "dimensions.max_permissible_mass_kg"))
+    if max_mass > 3500:
+        raise ValueError("Motorbezogene Versicherungssteuer M1 calculation supports only vehicles up to 3,500 kg")
     rules = t.get("motorbezogene_versicherungssteuer", {})
     if pt == "bev":
         spec = rules["bev_m1"]
