@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Iterable
 
-from jsonschema import Draft7Validator
+from jsonschema import Draft7Validator\nfrom jsonschema.exceptions import SchemaError
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +26,7 @@ def validate_catalog(
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         Draft7Validator.check_schema(schema)
         validator = Draft7Validator(schema)
-    except (OSError, json.JSONDecodeError, ValueError) as exc:
+    except (OSError, json.JSONDecodeError, ValueError, SchemaError) as exc:
         return [f"Schema error ({schema_path}): {exc}"]
 
     if not catalog_dir.is_dir():
