@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import yaml, requests
 from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
+from hive_batch import bounded_batch_size
 
 ROOT = Path.cwd()
 
@@ -158,6 +159,8 @@ research_failures_this_run = 0
 MAX_AUDIT_ATTEMPTS = 3
 MAX_RESEARCH_ATTEMPTS = 3
 MAX_VERDICT_CHARS = 240
+# A single research PR may contain a small batch; never let one run fan out.
+RESEARCH_BATCH_SIZE = bounded_batch_size(os.getenv("HIVE_RESEARCH_BATCH_SIZE"), default=3, maximum=5)
 
 def curate_one():
     """Research and independently audit at most one queued vehicle variant."""
@@ -332,8 +335,22 @@ if RESEARCH_ONLY and has_open_research_pr():
     print("An open Hive research PR already exists; skipping this run.")
     sys.exit(0)
 
-curated, msg = curate_one()
-print(f"Curation: {msg}")
+batch_messages = []
+for _ in range(RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1):
+    queue_path = ROOT / "tasks" / "queue.json"
+    queued = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
+    if not queued:
+        break
+    did_work, batch_msg = curate_one()
+    if not did_work:
+        break
+    batch_messages.append(batch_msg)
+
+curated = bool(batch_messages)
+msg = "; ".join(batch_messages) if batch_messages else "queue empty"
+print(f"Research batch: {len(batch_messages)}/{RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1} item(s)")
+for batch_msg in batch_messages:
+    print(f"Curation: {batch_msg}")
 
 if RESEARCH_ONLY:
     # Inspect only paths staged below; unrelated files must not cause empty commits.
