@@ -97,6 +97,12 @@ class TcoConfigTests(unittest.TestCase):
         v["registration"]["first_registration_date"] = "2026-01-15"
         self.assertAlmostEqual(motor_monthly(v, self.t), 118.08)
 
+    def test_m1_mass_above_3500kg_is_unsupported(self):
+        v = self.vehicle("ice_petrol")
+        v["dimensions"]["max_permissible_mass_kg"] = 3600
+        with self.assertRaisesRegex(ValueError, "up to 3,500 kg"):
+            motor_monthly(v, self.t)
+
     def test_bev_rules_apply_to_existing_vehicles_from_2025(self):
         v = self.vehicle("bev")
         v["registration"]["first_registration_date"] = "2023-06-01"
