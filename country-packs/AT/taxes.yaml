@@ -10,9 +10,9 @@ nova:
   annual_rules:
     2025: {co2_deduction_gkm: 94, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 155, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
     2026: {co2_deduction_gkm: 91, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 155, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
-    2027: {co2_deduction_gkm: 88, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 150, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
-    2028: {co2_deduction_gkm: 85, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 145, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
-    2029: {co2_deduction_gkm: 82, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 140, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
+    2027: {co2_deduction_gkm: 88, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 155, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
+    2028: {co2_deduction_gkm: 85, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 155, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
+    2029: {co2_deduction_gkm: 82, divisor: 5, min_percentage: 0, max_percentage: 80, rounding: commercial_half_up, malus_threshold_gkm: 155, malus_eur_per_gkm: 80, fixed_deduction_eur: 350}
 motorbezogene_versicherungssteuer:
   description: "M1 monthly motor-related insurance tax. Thresholds are fixed by first-registration year."
   bev_m1:
