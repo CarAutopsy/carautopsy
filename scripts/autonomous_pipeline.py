@@ -153,10 +153,11 @@ else:
     analyze = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
 
 audit_failures_this_run = 0
+research_failures_this_run = 0
 
 def curate_one():
     """Research and independently audit at most one queued vehicle variant."""
-    global audit_failures_this_run
+    global audit_failures_this_run, research_failures_this_run
     qp = ROOT / "tasks" / "queue.json"
     if not qp.exists(): return False, "no queue"
     tasks = json.loads(qp.read_text())
@@ -214,6 +215,7 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
                 print(f"Researcher bad JSON: {e}"); veh = None
         
         if veh is None:
+            research_failures_this_run += 1
             tasks = tasks[1:] + [task]  # Requeue at end
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"research failed for {vid}, requeued; skipped {skipped} existing"
@@ -282,8 +284,9 @@ def has_open_research_pr():
     """Return whether a Hive research proposal is already awaiting review."""
     open_prs = subprocess.run(
         ["gh", "pr", "list", "--state", "open", "--base", "main",
-         "--json", "headRefName", "--jq",
-         '[.[] | select(.headRefName | startswith("hive/research-"))] | length'],
+         "--json", "headRefName,headRepository", "--jq",
+         '[.[] | select(.headRefName | startswith("hive/research-")) '
+         '| select(.headRepository.nameWithOwner == "CarAutopsy/carautopsy")] | length'],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     return bool(open_prs and open_prs != "0")
@@ -307,7 +310,7 @@ if RESEARCH_ONLY:
     ).stdout.strip()
     if not dirty:
         print("Research-only run made no changes.")
-        if audit_failures_this_run:
+        if audit_failures_this_run or research_failures_this_run:
             sys.exit(1)
         sys.exit(0)
     run(["git", "config", "user.name", "hive-bot"])
@@ -333,7 +336,7 @@ if RESEARCH_ONLY:
          "--body", "Automated vehicle research proposal. Two independent AI vendors must explicitly approve each record. All AI-generated data remains low-confidence and requires human review before acceptance.",
          "--base", "main", "--head", branch])
     print("Research proposal pushed; awaiting human review.")
-    if audit_failures_this_run:
+    if audit_failures_this_run or research_failures_this_run:
         sys.exit(1)
     sys.exit(0)
 
