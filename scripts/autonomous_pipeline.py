@@ -223,17 +223,20 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
             research_failures_this_run += 1
             previous = next((item for item in reversed(failed)
                              if (item.get("task") or {}).get("variant_id") == vid), {})
-            attempts = int(previous.get("research_attempts", 0)) + 1
+            research_attempts = int(previous.get("research_attempts", 0)) + 1
+            audit_attempts = int(previous.get("attempts", 0))
             failed = [item for item in failed
                       if (item.get("task") or {}).get("variant_id") != vid]
             failed.append({"task": task, "verdict": "RESEARCH_FAILED",
-                           "research_attempts": attempts,
+                           "research_attempts": research_attempts,
                            "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
+                           "attempts": audit_attempts,
+                           **{key: previous[key] for key in ("audits", "candidate") if key in previous},
                            "at": datetime.now(timezone.utc).isoformat()})
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
-            if attempts < MAX_RESEARCH_ATTEMPTS:
+            if research_attempts < MAX_RESEARCH_ATTEMPTS:
                 tasks = tasks[1:] + [task]
-                outcome = f"research failed for {vid}; retry {attempts}/{MAX_RESEARCH_ATTEMPTS} queued"
+                outcome = f"research failed for {vid}; retry {research_attempts}/{MAX_RESEARCH_ATTEMPTS} queued"
             else:
                 tasks = tasks[1:]
                 outcome = f"research failed for {vid}; retry limit reached; retained for human review"
@@ -276,9 +279,12 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
             failed = json.loads(fp.read_text()) if fp.exists() else []
             previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), {})
             attempts = int(previous.get("attempts", 0)) + 1
+            research_attempts = int(previous.get("research_attempts", 0))
             failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
             failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": attempts,
-                           "max_attempts": MAX_AUDIT_ATTEMPTS, "audits": audit_results, "candidate": veh,
+                           "max_attempts": MAX_AUDIT_ATTEMPTS, "research_attempts": research_attempts,
+                           "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
+                           "audits": audit_results, "candidate": veh,
                            "at": datetime.now(timezone.utc).isoformat()})
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
             if attempts < MAX_AUDIT_ATTEMPTS:
