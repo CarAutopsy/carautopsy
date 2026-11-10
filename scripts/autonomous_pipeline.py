@@ -37,20 +37,34 @@ def call_llm(prompt, key, url, model):
 # Provider fallback routing
 QWEN_KEY = os.getenv("QWEN_API_KEY")
 DEEP_KEY = os.getenv("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_CARAUTOPSY_KEY")
+GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 PROVIDERS = [
-    ("qwen-intl", QWEN_KEY, "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
-    ("qwen-cn",   QWEN_KEY, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
-    ("deepseek",  DEEP_KEY, "https://api.deepseek.com/chat/completions", "deepseek-chat"),
+    ("qwen-intl", "qwen", QWEN_KEY, "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
+    ("qwen-cn", "qwen", QWEN_KEY, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus"),
+    ("deepseek", "deepseek", DEEP_KEY, "https://api.deepseek.com/chat/completions", "deepseek-chat"),
+    ("gemini", "google", GEMINI_KEY, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", GEMINI_MODEL),
 ]
 
-def call_any(prompt, exclude=None):
-    for name, key, url, model in PROVIDERS:
-        if not key or name == exclude:
+def call_any(prompt, exclude_vendors=None):
+    excluded = set(exclude_vendors or [])
+    for name, vendor, key, url, model in PROVIDERS:
+        if not key or vendor in excluded:
             continue
         out = call_llm(prompt, key, url, model)
         if out:
             print(f"   [provider: {name}]")
+            return out, name, vendor
+    return None, None, None
+
+def call_vendor(prompt, vendor):
+    for name, provider_vendor, key, url, model in PROVIDERS:
+        if provider_vendor != vendor or not key:
+            continue
+        out = call_llm(prompt, key, url, model)
+        if out:
+            print(f"   [audit provider: {name}]")
             return out, name
     return None, None
 
@@ -121,7 +135,10 @@ def analyze(v):
         "data_confidence": (v.get("provenance") or {}).get("confidence"),
     }
 
+audit_failures_this_run = 0
+
 def curate_one():
+    global audit_failures_this_run
     qp = ROOT / "tasks" / "queue.json"
     if not qp.exists(): return False, "no queue"
     tasks = json.loads(qp.read_text())
@@ -154,7 +171,7 @@ schema_version, variant_id, status, identity, performance, energy, dimensions, e
 Rules: variant_id must be "{vid}". SI units: power in W (integer), battery in Wh (integer), mass in kg, price in minor units (cents) with currency EUR and country AT. Unknown = null, never 0.
 provenance.sources must list the official URL(s) used, with retrieved date {datetime.now(timezone.utc).date().isoformat()}."""
         
-        raw, res_name = call_any(rp)
+        raw, res_name, res_vendor = call_any(rp)
         veh = None
         if raw:
             try:
@@ -187,20 +204,23 @@ Data:
 {json.dumps(veh, indent=2)}
 Reply with exactly one line: PASS or FAIL: reason"""
         
-        # Try a different provider for audit if possible
-        av, aud_name = call_any(ap, exclude=res_name)
-        if av is None:
-            av, aud_name = call_any(ap)
-            
-        veh["extensions"]["hive"]["auditor"] = aud_name or "unknown"
-        
-        verdict = av.strip().splitlines()[0] if av else "OFFLINE"
-        print(f"Auditor says: {verdict}")
-        
-        if verdict.upper().startswith("FAIL"):
+        # Require independent vendor audits; Qwen's regional endpoints count as one vendor.
+        audit_vendors = [vendor for vendor in ("deepseek", "google", "qwen") if vendor != res_vendor]
+        audit_results = []
+        for audit_vendor in audit_vendors:
+            audit_raw, audit_name = call_vendor(ap, audit_vendor)
+            audit_verdict = audit_raw.strip().splitlines()[0] if audit_raw else "OFFLINE"
+            audit_results.append({"provider": audit_name or audit_vendor, "vendor": audit_vendor, "verdict": audit_verdict})
+            print(f"Auditor {audit_name or audit_vendor} says: {audit_verdict}")
+
+        veh["extensions"]["hive"]["audits"] = audit_results
+        # Fail closed: every available independent vendor must explicitly PASS.
+        passed = len(audit_results) >= 2 and all(item["verdict"].upper().startswith("PASS") for item in audit_results)
+        if not passed:
+            audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
-            failed.append({"task": task, "verdict": verdict, "at": datetime.now(timezone.utc).isoformat()})
+            failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "audits": audit_results, "at": datetime.now(timezone.utc).isoformat()})
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
             tasks = tasks[1:]
             continue
@@ -263,8 +283,13 @@ if changed:
     out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Wrote {len(results)} autopsies")
 
-if not curated and not changed:
-    print("No changes. Exiting."); sys.exit(0)
+# Include queue/failed-ledger updates in the commit decision, not only catalog output.
+if not subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True).stdout.strip():
+    print("No changes. Exiting.")
+    if audit_failures_this_run:
+        print(f"Pipeline rejected {audit_failures_this_run} vehicle record(s).")
+        sys.exit(1)
+    sys.exit(0)
 
 run(["git", "config", "user.name", "hive-bot"])
 run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
@@ -272,3 +297,6 @@ run(["git", "add", "-A"])
 run(["git", "commit", "-m", f"chore(autonomous): {msg} | {len(results)} autopsies"])
 run(["git", "push", "origin", "main"])
 print("Committed and pushed to main.")
+if audit_failures_this_run:
+    print(f"Pipeline rejected {audit_failures_this_run} vehicle record(s); marking workflow failed.")
+    sys.exit(1)
