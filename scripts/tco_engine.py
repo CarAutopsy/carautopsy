@@ -100,6 +100,8 @@ def nova(v, t):
     if vehicle_class != "M1":
         raise ValueError(f"NoVA calculation unsupported for vehicle class {vehicle_class}")
     year, _ = _first_registration_year(v)
+    if year == 2025 and _first_registration_year(v)[1] < date(2025, 7, 1):
+        raise ValueError("NoVA rules unavailable before 2025-07-01")
     schedule = rules.get("annual_rules", {}).get(year)
     if not schedule:
         raise ValueError(f"NoVA rules unavailable for first-registration year {year}")
@@ -123,8 +125,6 @@ def motor_monthly(v, t):
     year, first_date = _first_registration_year(v)
     rules = t.get("motorbezogene_versicherungssteuer", {})
     if pt == "bev":
-        if first_date < date.fromisoformat(rules["bev_m1"]["effective_from"]):
-            raise ValueError("BEV motor-tax rules unavailable before 2025-04-01")
         spec = rules["bev_m1"]
         power_kw = float(_required(v, "performance.electric_motor_continuous_power_w", "performance.electric_motor_continuous_power_w")) / 1000
         weight_kg = float(_required(v, "dimensions.own_weight_kg", "dimensions.own_weight_kg"))
