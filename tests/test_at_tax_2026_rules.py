@@ -18,7 +18,7 @@ def vehicle(pt="ice_petrol", power_kw=140, co2=180, date="2026-01-15"):
         "registration": {"first_registration_date": date},
         "performance": {"combustion_engine_power_w": power_kw * 1000,
                         "electric_motor_continuous_power_w": power_kw * 1000},
-        "dimensions": {"own_weight_kg": 1450},
+        "dimensions": {"own_weight_kg": 1450, "max_permissible_mass_kg": 2000},
         "emissions": {"co2_wltp_gpkm": co2, "co2_wltp_weighted_combined_gpkm": co2},
         "offers": [{"purchase_price_excl_vat_eur": 10000}],
     }
