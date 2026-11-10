@@ -269,8 +269,6 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
             audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
-            failed = [item for item in failed
-                      if (item.get("task") or {}).get("variant_id") != vid]
             previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), {})
             attempts = int(previous.get("attempts", 0)) + 1
             failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
