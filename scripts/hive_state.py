@@ -26,6 +26,7 @@ FAILED = "tasks/failed.json"
 DEFAULT_MAX_ATTEMPTS = 3
 TRAILER = "Hive-Ledger-SHA256"
 PROPOSAL_HEAD_TRAILER = "Hive-Proposal-Head"
+STATE_CONTEXT_TRAILER = "Hive-State-Context"
 
 _ACKNOWLEDGED = {}
 
@@ -142,6 +143,15 @@ def _declared_proposal_head(root, tip):
     return None
 
 
+def _declared_state_context(root, tip):
+    body = _git(root, ["log", "-1", "--format=%B", tip]).stdout.decode()
+    for line in body.splitlines():
+        if line.startswith(STATE_CONTEXT_TRAILER + ":"):
+            value = line.split(":", 1)[1].strip()
+            return value or None
+    return None
+
+
 def _write_state_files(root, files):
     if any(content is None for content in files.values()):
         raise RuntimeError("Hive state tip is missing a required ledger file")
@@ -209,40 +219,53 @@ def reconcile_with_pr(root):
         return "adopted"
 
     recorded_head = _declared_proposal_head(root, tip)
+    state_context = _declared_state_context(root, tip)
     current_head = _git(root, ["rev-parse", "HEAD"]).stdout.decode().strip()
-    if not recorded_head:
-        # Legacy mirrors predate proposal-head metadata. Adopt conservatively.
-        _write_state_files(root, files)
-        _ack(root, tip)
-        print("Adopted legacy Hive state without proposal-head metadata.")
-        return "adopted"
-
-    if recorded_head != current_head and _is_ancestor(root, recorded_head, current_head):
-        _ack(root, tip)
-        print("Hive state references an older proposal head; healing from the newer proposal ledger.")
-        save_state(root, "chore(hive-state): heal from newer proposal head")
-        return "healed"
-
-    if recorded_head != current_head and not _is_ancestor(root, current_head, recorded_head):
-        raise RuntimeError(
-            "Hive state and checked-out proposal have divergent histories; refusing to overwrite either ledger"
-        )
-
     working = {}
     for rel in (FAILED, QUEUE):
         path = root / rel
-        working[rel] = path.read_bytes() if path.exists() else b"[]\n"
+        working[rel] = path.read_bytes() if path.exists() else b"[]\\n"
+
+    if state_context == "standalone":
+        if working == files:
+            _ack(root, tip)
+            return "in-sync"
+        _write_state_files(root, files)
+        _ack(root, tip)
+        print("Adopted standalone Hive state accumulated without an active proposal.")
+        return "adopted"
+
+    if state_context == "proposal":
+        if not recorded_head:
+            raise StateNotReconciled("proposal state is missing its recorded proposal HEAD")
+        if recorded_head != current_head and _is_ancestor(root, recorded_head, current_head):
+            _ack(root, tip)
+            print("Hive state references an older proposal head; healing from the newer proposal ledger.")
+            save_state(root, "chore(hive-state): heal from newer proposal head",
+                       proposal_head=current_head)
+            return "healed"
+        if recorded_head != current_head and not _is_ancestor(root, current_head, recorded_head):
+            raise StateNotReconciled(
+                "Hive state and checked-out proposal have divergent histories; refusing to overwrite either ledger"
+            )
+        if working == files:
+            _ack(root, tip)
+            return "in-sync"
+        _write_state_files(root, files)
+        _ack(root, tip)
+        print("Adopted the ledger associated with the same or newer proposal head.")
+        return "adopted"
+
     if working == files:
         _ack(root, tip)
         return "in-sync"
+    raise StateNotReconciled(
+        "legacy Hive state has no context metadata and differs from the proposal ledger; "
+        "refusing an ambiguous reconciliation"
+    )
 
-    _write_state_files(root, files)
-    _ack(root, tip)
-    print("Adopted the ledger associated with the same or newer proposal head.")
-    return "adopted"
 
-
-def save_state(root, message):
+def save_state(root, message, proposal_head=None):
     """Commit the working-tree ledger to the state branch. Returns True if pushed.
 
     Uses git plumbing so the working tree, index and current branch are untouched.
@@ -265,14 +288,18 @@ def save_state(root, message):
                           input_bytes=contents[rel]).stdout.decode().strip()
 
     digest = ledger_digest(contents[FAILED], contents[QUEUE])
-    proposal_head = _git(root, ["rev-parse", "HEAD"]).stdout.decode().strip()
+    if proposal_head is not None:
+        proposal_head = str(proposal_head)
     if tip:
         same_ledger = all(
             _git(root, ["rev-parse", f"{tip}:{rel}"], check=False).stdout.decode().strip() == sha
             for rel, sha in blobs.items()
         )
+        same_context = _declared_state_context(root, tip) == (
+            "proposal" if proposal_head else "standalone"
+        )
         same_proposal = _declared_proposal_head(root, tip) == proposal_head
-        if same_ledger and same_proposal:
+        if same_ledger and same_context and same_proposal:
             return False
 
     listing = (f"100644 blob {blobs[FAILED]}\tfailed.json\n"
@@ -284,9 +311,11 @@ def save_state(root, message):
            "GIT_AUTHOR_NAME": "hive-bot", "GIT_AUTHOR_EMAIL": "hive-bot@users.noreply.github.com",
            "GIT_COMMITTER_NAME": "hive-bot", "GIT_COMMITTER_EMAIL": "hive-bot@users.noreply.github.com"}
     commit_message = (
-        f"{message}\n\n{TRAILER}: {digest}\n"
-        f"{PROPOSAL_HEAD_TRAILER}: {proposal_head}"
+        f"{message}\\n\\n{TRAILER}: {digest}\\n"
+        f"{STATE_CONTEXT_TRAILER}: {'proposal' if proposal_head else 'standalone'}"
     )
+    if proposal_head:
+        commit_message += f"\\n{PROPOSAL_HEAD_TRAILER}: {proposal_head}"
     args = ["commit-tree", root_tree, "-m", commit_message]
     if tip:
         args += ["-p", tip]
