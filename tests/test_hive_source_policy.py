@@ -56,7 +56,7 @@ class SourcePolicyTests(unittest.TestCase):
 
     def test_malformed_robots_denies(self):
         fetcher = Mock(return_value=SimpleNamespace(outcome="retrieved_unverified", body=b"not a robots file"))
-        with self.assertRaisesRegex(SourcePolicyDenied, "missing a valid"):
+        with self.assertRaisesRegex(SourcePolicyDenied, "malformed directive"):
             check_source_access(URL, config=config(), fetcher=fetcher, today=date(2026, 11, 11))
 
     def test_malformed_disallow_without_colon_denies(self):
