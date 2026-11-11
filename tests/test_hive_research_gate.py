@@ -105,8 +105,8 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
                 json.dumps([{"variant_id": "fixture-vehicle", "make": "Fixture", "model": "Vehicle"}]),
                 encoding="utf-8",
             )
-            (sandbox / "tasks" / "failed.json").write_text("[]\\n", encoding="utf-8")
-            (sandbox / "hive" / "state" / "state.json").write_text('{"attempts": 0}\\n', encoding="utf-8")
+            (sandbox / "tasks" / "failed.json").write_text("[]\n", encoding="utf-8")
+            (sandbox / "hive" / "state" / "state.json").write_text('{"attempts": 0}\n', encoding="utf-8")
             provider_marker = sandbox / "provider-called.marker"
             env = self._sandbox(sandbox, {
                 "QWEN_API_KEY": "test-key-not-a-real-secret",
