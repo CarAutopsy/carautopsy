@@ -6,7 +6,7 @@ from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
-from hive_state import load_state, reconcile_with_pr, save_state
+from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
 
 ROOT = Path.cwd()
 
@@ -329,6 +329,7 @@ def run(cmd):
 def get_open_research_pr():
     """Return the sole open Hive PR, if any; fail closed on ambiguous state."""
     def fetch_page(limit):
+        """Fetch a bounded page of open PR metadata from the GitHub CLI."""
         raw = subprocess.run(
             ["gh", "pr", "list", "--state", "open", "--base", "main",
              "--limit", str(limit), "--json", "number,headRefName,headRepository"],
@@ -423,7 +424,9 @@ if RESEARCH_ONLY:
         sys.exit(0)
     if staged.returncode != 1:
         raise RuntimeError("Could not determine whether staged research changes exist.")
-    run(["git", "commit", "-m", f"chore(hive): {msg}"])
+    state_base = proposal_state_base(ROOT)
+    run(["git", "commit", "-m", f"chore(hive): {msg}", "-m",
+         f"Hive-State-Base: {state_base or 'none'}"])
     run(["git", "push", "-u", "origin", branch])
     if open_research_pr:
         print(f"Updated existing Hive research PR #{open_research_pr['number']}; awaiting human review.")
@@ -433,7 +436,7 @@ if RESEARCH_ONLY:
              "--base", "main", "--head", branch])
         print("Research proposal pushed; awaiting human review.")
     # Mirror the ledger so hive/state never lags the PR branch.
-    save_state(ROOT, f"chore(hive-state): {msg}")
+    save_state(ROOT, f"chore(hive-state): {msg}", proposal_head=subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip())
     if audit_failures_this_run or research_failures_this_run:
         print(
             f"Research cycle completed and saved for human review: "
