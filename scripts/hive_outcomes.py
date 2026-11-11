@@ -88,7 +88,13 @@ def _prior_counters(previous):
     code = outcome["code"]
     if code in COUNTER_BY_OUTCOME:
         field, ceiling = COUNTER_BY_OUTCOME[code]
-        if outcome["retryable"] != (result[field] < ceiling):
+        expected_retryable = result[field] < ceiling and all(
+            result[name] < limit for name, limit in {
+                "provider_attempts": 3, "format_attempts": 3,
+                "provenance_attempts": 2, "attempts": 3,
+            }.items()
+        )
+        if outcome["retryable"] != expected_retryable:
             return None
     elif outcome["retryable"]:
         return None
@@ -108,7 +114,12 @@ def record_outcome(task, previous, code, *, stage, provider_statuses=None, now=N
     if code in COUNTER_BY_OUTCOME:
         field, ceiling = COUNTER_BY_OUTCOME[code]
         counters[field] += 1
-        retryable = counters[field] < ceiling
+        retryable = counters[field] < ceiling and all(
+            counters[name] < limit for name, limit in {
+                "provider_attempts": 3, "format_attempts": 3,
+                "provenance_attempts": 2, "attempts": 3,
+            }.items()
+        )
     safe_statuses = []
     for item in provider_statuses or []:
         if isinstance(item, dict):
@@ -154,8 +165,10 @@ def exhausted_outcome(entry):
     if requires_manual_review(entry):
         return True
     outcome = entry["outcome"]
-    code = outcome["code"]
-    if code not in COUNTER_BY_OUTCOME:
-        return False
-    field, ceiling = COUNTER_BY_OUTCOME[code]
-    return outcome["counters"][field] >= ceiling
+    return any(
+        outcome["counters"][field] >= ceiling
+        for field, ceiling in {
+            "provider_attempts": 3, "format_attempts": 3,
+            "provenance_attempts": 2, "attempts": 3,
+        }.items()
+    )
