@@ -184,31 +184,38 @@ class StateBranchTests(unittest.TestCase):
         self.write(self.a, [task("a"), task("b")], [])
         hive_state.save_state(self.a, "proposal baseline")
         baseline = hive_state._tip(self.a)
-        self.write(self.a, [task("b")], [])
-        hive_state.save_state(self.a, "state with deliberate removal")
-        self.write(self.b, [task("a"), task("b")], [])
+        self.sh("git", "checkout", "-b", "proposal-removal", cwd=self.a)
         self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
                 "commit", "--allow-empty", "-m", "proposal", "-m",
-                f"Hive-State-Base: {baseline}", cwd=self.b)
+                f"Hive-State-Base: {baseline}", cwd=self.a)
+        proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
+        self.sh("git", "push", "origin", "proposal-removal", cwd=self.a)
+        hive_state.save_state(self.a, "proposal mirror", proposal_head=proposal_head)
+        self.write(self.a, [task("b")], [])
+        hive_state.save_state(self.a, "state with deliberate removal")
+        self.sh("git", "fetch", "origin", "proposal-removal", cwd=self.b)
+        self.sh("git", "checkout", "-b", "reopened-removal", "FETCH_HEAD", cwd=self.b)
         self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
         self.assertEqual(self.read(self.b, "queue.json"), [task("b")])
 
-    def test_reconcile_adopts_newer_retry_progress_for_same_proposal_head(self):
+    def test_reconcile_rejects_standalone_retry_without_proposal_ancestry(self):
         self.write(self.a, [task("b")], [entry("a", attempts=1)])
         hive_state.save_state(self.a, "proposal baseline")
         baseline = hive_state._tip(self.a)
         self.sh("git", "checkout", "-b", "proposal-retry", cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        self.sh("git", "add", "tasks", cwd=self.a)
         self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
-                "commit", "--allow-empty", "-m", "proposal snapshot", "-m",
+                "commit", "-m", "proposal retry progress", "-m",
                 f"Hive-State-Base: {baseline}", cwd=self.a)
         self.sh("git", "push", "origin", "proposal-retry", cwd=self.a)
-        proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
-        self.sh("git", "checkout", "--detach", proposal_head + "^", cwd=self.a)
-        self.write(self.a, [task("b")], [entry("a", attempts=2)])
-        hive_state.save_state(self.a, "new retry progress")
+        self.sh("git", "checkout", "--detach", baseline, cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=1)])
+        hive_state.save_state(self.a, "stale standalone retry progress")
         self.sh("git", "fetch", "origin", "proposal-retry", cwd=self.b)
         self.sh("git", "checkout", "-b", "reopened-retry", "FETCH_HEAD", cwd=self.b)
-        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        with self.assertRaises(hive_state.StateNotReconciled):
+            hive_state.reconcile_with_pr(self.b)
         self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
 
     def test_reconcile_adopts_a_hand_edited_state_instead_of_overwriting_it(self):
