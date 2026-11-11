@@ -9,6 +9,7 @@ import hive_outcomes as outcomes
 class OutcomeClassificationTests(unittest.TestCase):
     def test_provider_transport_does_not_consume_quality_budget(self):
         self.assertEqual(outcomes.classify_research_response(None, None), outcomes.PROVIDER_TRANSPORT_FAILURE)
+        self.assertEqual(outcomes.classify_research_response(None, None, failure_code=outcomes.RESPONSE_FORMAT_FAILURE), outcomes.RESPONSE_FORMAT_FAILURE)
         self.assertEqual(outcomes.classify_audit_results([{"verdict": "PASS"}, {"verdict": "OFFLINE"}]), outcomes.PROVIDER_TRANSPORT_FAILURE)
         entry, retry = outcomes.record_outcome({"variant_id": "a"}, None, outcomes.PROVIDER_TRANSPORT_FAILURE, stage="research", now="2026-11-11T00:00:00Z", attempt_id="a1")
         self.assertTrue(retry)
