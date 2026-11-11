@@ -148,6 +148,60 @@ def record_outcome(task, previous, code, *, stage, provider_statuses=None, now=N
     return entry, retryable
 
 
+
+def migrate_legacy_entry(entry):
+    """Migrate only a fully classifiable one-attempt audit record; otherwise leave it untouched."""
+    if not isinstance(entry, dict) or not isinstance(entry.get("task"), dict):
+        return entry, False
+    if isinstance(entry.get("outcome"), dict):
+        return entry, False
+    if entry.get("verdict") != "INDEPENDENT_AUDIT_FAILED" or entry.get("attempts") != 1:
+        return entry, False
+    audits = entry.get("audits")
+    if not isinstance(audits, list) or len(audits) < 2:
+        return entry, False
+    code = classify_audit_results(audits)
+    if code not in COUNTER_BY_OUTCOME:
+        return entry, False
+    safe_audits = []
+    for item in audits:
+        verdict = str(item.get("verdict", "")).strip()
+        status = "PASS" if verdict.upper() == "PASS" else (
+            "OFFLINE" if verdict.upper() == "OFFLINE" else (
+                "INVALID" if verdict.upper() == "INVALID_AUDIT_RESPONSE" else "FAIL"
+            )
+        )
+        safe_audits.append({
+            "provider": str(item.get("provider", "auditor"))[:40],
+            "vendor": str(item.get("vendor", "unknown"))[:40],
+            "verdict": status,
+        })
+    migrated, _ = record_outcome(
+        entry["task"], None, code, stage="legacy_migration",
+        provider_statuses=safe_audits, now=entry.get("at"),
+    )
+    migrated["audits"] = safe_audits
+    candidate = entry.get("candidate")
+    if isinstance(candidate, dict):
+        candidate = dict(candidate)
+        extensions = candidate.get("extensions")
+        if isinstance(extensions, dict) and isinstance(extensions.get("hive"), dict):
+            extensions = dict(extensions)
+            hive = dict(extensions["hive"])
+            hive["audits"] = safe_audits
+            extensions["hive"] = hive
+            candidate["extensions"] = extensions
+        migrated["candidate"] = candidate
+    counters = migrated["outcome"]["counters"]
+    migrated.update({
+        "attempts": counters["attempts"], "max_attempts": 3,
+        "research_attempts": counters["research_attempts"], "max_research_attempts": 3,
+        "provider_attempts": counters["provider_attempts"],
+        "format_attempts": counters["format_attempts"],
+        "provenance_attempts": counters["provenance_attempts"],
+    })
+    return migrated, True
+
 def requires_manual_review(entry):
     """Legacy, malformed, or unknown outcome records are quarantined."""
     if not isinstance(entry, dict):
