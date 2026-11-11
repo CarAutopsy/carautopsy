@@ -19,8 +19,9 @@ MAX_RETRIEVED_AT_CHARS = 64
 MAX_TOTAL_EVIDENCE_JSON_CHARS = 70_000
 MAX_CANDIDATE_JSON_CHARS = 1_000_000
 MAX_CANDIDATE_DEPTH = 64
-TECHNICAL_CLAIM_ROOTS = ("performance", "energy", "dimensions", "emissions", "offers", "warranty", "registration")
+TECHNICAL_CLAIM_ROOTS = ("identity", "performance", "energy", "dimensions", "emissions", "offers", "warranty", "registration")
 NON_CLAIM_OFFER_FIELDS = {"offer_id", "country", "currency"}
+NON_CLAIM_IDENTITY_FIELDS = {"make", "model"}
 MAX_CLAIM_QUOTE_CHARS = 2_000
 
 
@@ -147,6 +148,8 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
         if isinstance(value, dict):
             for key, child in value.items():
                 if path == "offers" and key in NON_CLAIM_OFFER_FIELDS:
+                    continue
+                if path == "identity" and key in NON_CLAIM_IDENTITY_FIELDS:
                     continue
                 walk(child, f"{path}.{key}" if path else str(key))
         elif isinstance(value, list):
