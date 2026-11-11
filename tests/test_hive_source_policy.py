@@ -21,6 +21,8 @@ def config(**overrides):
         "automated_access_allowed": True,
         "terms_url": "https://oem.example/terms",
         "terms_reviewed_at": "2026-11-01",
+        "terms_reviewed_by": "repository-owner",
+        "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/37",
         "approved_urls": [URL],
     }
     value = {"version": 1, "approved_hosts": [HOST], "source_policies": [entry]}
@@ -71,6 +73,14 @@ class SourcePolicyTests(unittest.TestCase):
         value["source_policies"][0]["automated_access_allowed"] = False
         with self.assertRaisesRegex(SourcePolicyDenied, "do not permit"):
             check_source_access(URL, config=value, fetcher=Mock(), today=date(2026, 11, 11))
+
+    def test_terms_approval_requires_reviewer_and_review_reference(self):
+        for key in ("terms_reviewed_by", "terms_review_ref"):
+            value = config()
+            value["source_policies"][0].pop(key)
+            with self.subTest(key=key):
+                with self.assertRaises(SourcePolicyDenied):
+                    check_source_access(URL, config=value, fetcher=Mock(), today=date(2026, 11, 11))
 
     def test_terms_review_must_be_recent_and_valid(self):
         for reviewed in ("2025-01-01", "2026-12-01", "not-a-date"):
