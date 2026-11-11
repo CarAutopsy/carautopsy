@@ -121,6 +121,18 @@ class HiveCandidateGateTests(unittest.TestCase):
         with self.assertRaisesRegex(CandidateRejected, "performance.torque_nm"):
             validate_candidate(candidate, self.task, evidence)
 
+    def test_duplicate_declared_sources_are_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["provenance"]["sources"].append(dict(candidate["provenance"]["sources"][0]))
+        with self.assertRaisesRegex(CandidateRejected, "duplicate source_id"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_technical_claim_count_is_bounded(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {f"spec_{index}": index for index in range(201)}
+        with self.assertRaisesRegex(CandidateRejected, "too many technical claims"):
+            validate_candidate(candidate, self.task, self.evidence)
+
     def test_non_object_candidate_is_rejected(self):
         with self.assertRaisesRegex(CandidateRejected, "JSON object"):
             validate_candidate([], self.task, self.evidence)
