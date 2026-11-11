@@ -52,11 +52,10 @@ def extract_source_text(
     parse_timeout_seconds: float = MAX_PARSE_SECONDS,
     clock=time.monotonic,
 ) -> ExtractedContent:
-    """Extract visible text with strict byte/page/character and cooperative time bounds.
+    """Extract visible text with strict byte/page/character and isolated parser bounds.
 
-    PDF parsing is page-limited and checks elapsed time between pages. Deployments
-    requiring a hard CPU/memory deadline must run this parser in an OS-limited worker;
-    this in-process helper is not itself a process sandbox.
+    HTML and PDF parsing run in POSIX workers with CPU, address-space, and wall-time
+    ceilings. Plain UTF-8 text is decoded in-process because it has no document parser.
     """
     if not isinstance(body, bytes):
         raise ExtractionRejected("source body must be bytes")
