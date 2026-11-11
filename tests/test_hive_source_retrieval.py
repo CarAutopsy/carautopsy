@@ -63,6 +63,9 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.factory.assert_called_once_with("oem.example", "8.8.8.8", 8.0)
         self.assertEqual(self.connection.request_args[0:2], ("GET", "/specs/model.html"))
         self.assertEqual(self.connection.request_args[2]["Host"], "oem.example")
+        user_agent = self.connection.request_args[2]["User-Agent"]
+        self.assertIn("https://github.com/CarAutopsy/carautopsy", user_agent)
+        self.assertNotIn("@", user_agent)
         self.assertTrue(self.connection.closed)
 
     def test_http_scheme_is_rejected_before_dns_or_network(self):
