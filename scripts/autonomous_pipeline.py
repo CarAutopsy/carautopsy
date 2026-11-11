@@ -8,7 +8,7 @@ from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
 from hive_research_gate import ResearchPaused, require_verified_retrieval
-from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, record_outcome, requires_manual_review
+from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, record_outcome, requires_manual_review, migrate_legacy_entry
 
 ROOT = Path.cwd()
 
@@ -215,6 +215,11 @@ def curate_one(attempted_variant_ids=None):
              if (item.get("task") or {}).get("variant_id") == vid),
             None,
         )
+        prior_entry, migrated_legacy = migrate_legacy_entry(prior_entry)
+        if migrated_legacy:
+            failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
+            failed.append(prior_entry)
+            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
         if prior_entry and requires_manual_review(prior_entry):
             entry, _ = record_outcome(task, prior_entry, MANUAL_REVIEW_REQUIRED, stage="legacy_reconciliation")
             failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
