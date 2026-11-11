@@ -3,7 +3,7 @@
 Status: acceptance criteria, not completed execution evidence.
 
 ## Implemented in this documentation commit
-Executable schema-contract cases in tests/test_hive_schema_contract.py: minimal sparse record; all required root keys; make vs brand; offers array; source objects; confidence enum; negative power and mass; fractional monetary minor units; valid and invalid calendar dates with explicit FormatChecker; nullable fields; additional-property permissiveness; optional source URL. These test the actual repository schema, not a copied schema.
+Executable schema-contract cases in tests/test_hive_schema_contract.py: minimal sparse record; all required root keys; make vs brand; offers array; source objects; confidence enum; negative power and mass; fractional monetary minor units; valid and invalid calendar dates with explicit FormatChecker; nullable fields; optional source URL. Current permissive schema gaps are documented separately rather than asserted as desirable behavior. These test the actual repository schema, not a copied schema.
 
 ## Candidate-gate tests still required
 Reject non-object candidates, mismatched reserved ID/make/model, malformed schema, unsupported source URLs, absent evidence, duplicate source IDs, missing evidence fields and oversized excerpts. Verify exact size boundaries, input immutability, low confidence normalization and removal of model-owned Hive metadata. Reject NaN/Infinity. A schema-valid sparse draft must fail evidence sufficiency.
