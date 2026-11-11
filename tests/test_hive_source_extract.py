@@ -4,6 +4,7 @@ import subprocess
 import unittest
 from unittest.mock import patch
 
+from scripts.hive_html_worker import _apply_resource_limits as _apply_html_resource_limits
 from scripts.hive_pdf_worker import _apply_resource_limits, _extract_pdf_body
 from scripts.hive_source_extract import (
     ExtractionRejected,
@@ -66,6 +67,35 @@ class HiveSourceExtractionTests(unittest.TestCase):
     def test_empty_source_is_rejected(self):
         with self.assertRaises(ExtractionRejected):
             extract_source_text(b"   ", "text/plain")
+
+    def test_html_uses_isolated_worker_and_minimal_environment(self):
+        completed = subprocess.CompletedProcess(
+            args=["python"], returncode=0, stdout=b'{"text":"safe html"}', stderr=b"",
+        )
+        with patch("scripts.hive_source_extract.subprocess.run", return_value=completed) as run:
+            result = extract_source_text(b"<p>safe html</p>", "text/html")
+        self.assertEqual(result.text, "safe html")
+        self.assertEqual(result.locator_texts, {"document": "safe html"})
+        kwargs = run.call_args.kwargs
+        self.assertLessEqual(kwargs["timeout"], 6.5)
+        self.assertNotIn("QWEN_API_KEY", kwargs["env"])
+        self.assertNotIn("DEEPSEEK_API_KEY", kwargs["env"])
+        self.assertTrue(kwargs["start_new_session"])
+
+    def test_html_worker_timeout_is_fail_closed(self):
+        with patch(
+            "scripts.hive_source_extract.subprocess.run",
+            side_effect=subprocess.TimeoutExpired("html-worker", 6.5),
+        ):
+            with self.assertRaisesRegex(ExtractionRejected, "HTML parsing exceeded"):
+                extract_source_text(b"<p>slow</p>", "text/html")
+
+    def test_html_worker_sets_hard_address_space_and_cpu_limits(self):
+        import resource
+        with patch("resource.setrlimit") as setrlimit:
+            _apply_html_resource_limits()
+        setrlimit.assert_any_call(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
+        setrlimit.assert_any_call(resource.RLIMIT_CPU, (5, 6))
 
     def test_pdf_uses_isolated_worker_with_minimal_environment(self):
         payload = {"text": "[page:1]\npage one\n\n[page:2]\npage two", "locators": ["page:1", "page:2"]}
