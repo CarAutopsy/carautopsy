@@ -44,8 +44,20 @@ def retrieve_approved_evidence(
     if not isinstance(hosts, list) or not hosts or not isinstance(policies, list) or not policies:
         raise EvidenceRetrievalRejected("no owner-approved source URLs are configured")
 
+    seeded_urls = []
+    for entry in policies:
+        if not isinstance(entry, dict):
+            raise EvidenceRetrievalRejected("source policy entry is malformed")
+        urls = entry.get("approved_urls")
+        if not isinstance(urls, list) or not urls:
+            raise EvidenceRetrievalRejected("source policy entry has no owner-approved URLs")
+        seeded_urls.extend(urls)
+    if len(seeded_urls) > 10:
+        raise EvidenceRetrievalRejected("owner-approved source list exceeds the ten-source limit")
+    if any(not isinstance(url, str) for url in seeded_urls) or len(set(seeded_urls)) != len(seeded_urls):
+        raise EvidenceRetrievalRejected("duplicate or invalid owner-approved source URL")
+
     evidence = []
-    seen_urls = set()
     total_chars = 0
     for entry in policies:
         if not isinstance(entry, dict):
@@ -54,10 +66,6 @@ def retrieve_approved_evidence(
         if not isinstance(urls, list) or not urls:
             raise EvidenceRetrievalRejected("source policy entry has no owner-approved URLs")
         for url in urls:
-            if url in seen_urls:
-                raise EvidenceRetrievalRejected("duplicate owner-approved source URL")
-            seen_urls.add(url)
-
             try:
                 # Check owner terms and fetch/parse robots.txt before requesting the
                 # source document. The second request uses the same pinned transport;
