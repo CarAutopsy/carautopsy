@@ -292,7 +292,8 @@
                 "maxLength": 2000
               }
             }
-          }
+          },
+          "maxItems": 200
         }
       },
       "additionalProperties": true
