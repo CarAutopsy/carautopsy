@@ -241,7 +241,7 @@ class StateBranchTests(unittest.TestCase):
         self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=1)])
         self.assertEqual(hive_state._tip(self.b), baseline)
 
-    def test_standalone_state_wins_only_when_descended_from_proposal_baseline(self):
+    def test_standalone_state_is_adopted_after_successful_proposal_mirror(self):
         self.write(self.a, [task("b")], [entry("a", attempts=0)])
         hive_state.save_state(self.a, "baseline state")
         baseline = hive_state._tip(self.a)
@@ -253,13 +253,35 @@ class StateBranchTests(unittest.TestCase):
                 f"Hive-State-Base: {baseline}", cwd=self.a)
         proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
         self.sh("git", "push", "origin", "proposal", cwd=self.a)
-        # New retry progress after the proposal consumed its baseline is safe to adopt.
-        self.sh("git", "checkout", "--detach", proposal_head + "^", cwd=self.a)
+        # Successful mirror records the proposal as a parent of hive/state.
+        hive_state.save_state(self.a, "proposal mirror", proposal_head=proposal_head)
         self.write(self.a, [task("b")], [entry("a", attempts=2)])
         hive_state.save_state(self.a, "standalone retry progress")
         self.sh("git", "fetch", "origin", "proposal", cwd=self.b)
         self.sh("git", "checkout", "-b", "reopened-proposal", "FETCH_HEAD", cwd=self.b)
         self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
+
+    def test_stale_standalone_descendant_cannot_replace_newer_proposal_ledger(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=0)])
+        hive_state.save_state(self.a, "baseline state")
+        baseline = hive_state._tip(self.a)
+        self.sh("git", "checkout", "-b", "proposal-stale", cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        self.sh("git", "add", "tasks", cwd=self.a)
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
+                "commit", "-m", "proposal advanced", "-m",
+                f"Hive-State-Base: {baseline}", cwd=self.a)
+        proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
+        self.sh("git", "push", "origin", "proposal-stale", cwd=self.a)
+        # Simulate failed proposal mirroring, then standalone progress from stale baseline.
+        self.sh("git", "checkout", "--detach", baseline, cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=1)])
+        hive_state.save_state(self.a, "stale standalone progress")
+        self.sh("git", "fetch", "origin", "proposal-stale", cwd=self.b)
+        self.sh("git", "checkout", "-b", "reopened-stale", "FETCH_HEAD", cwd=self.b)
+        with self.assertRaises(hive_state.StateNotReconciled):
+            hive_state.reconcile_with_pr(self.b)
         self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
 
 
