@@ -48,8 +48,18 @@ def _host_policy(config: dict, host: str, today: date) -> dict:
     if item.get("automated_access_allowed") is not True:
         raise SourcePolicyDenied("owner-reviewed source terms do not permit automated access")
     approved_urls = item.get("approved_urls")
-    if not isinstance(approved_urls, list) or not approved_urls or any(not isinstance(value, str) for value in approved_urls):
+    if not isinstance(approved_urls, list) or not approved_urls:
         raise SourcePolicyDenied("owner-reviewed exact source URL list is missing")
+    approved_url_values = []
+    for source in approved_urls:
+        if not isinstance(source, dict) or not isinstance(source.get("url"), str):
+            raise SourcePolicyDenied("approved source entries must bind exact URLs to variant IDs")
+        variant_ids = source.get("variant_ids")
+        if not isinstance(variant_ids, list) or not variant_ids or any(not isinstance(value, str) or not value.strip() for value in variant_ids):
+            raise SourcePolicyDenied("approved source entries require explicit variant IDs")
+        approved_url_values.append(source["url"])
+    if len(set(approved_url_values)) != len(approved_url_values):
+        raise SourcePolicyDenied("duplicate exact source URL in owner policy")
     terms_url = item.get("terms_url")
     review_ref = item.get("terms_review_ref")
     for label, value in (("source terms URL", terms_url), ("source terms review reference", review_ref)):
@@ -98,7 +108,7 @@ def check_source_access(
         raise SourcePolicyDenied("source URL must be HTTPS with a hostname and no credentials")
     current_day = today or datetime.now(timezone.utc).date()
     policy_entry = _host_policy(config, host, current_day)
-    if url not in policy_entry["approved_urls"]:
+    if url not in [source["url"] for source in policy_entry["approved_urls"]]:
         raise SourcePolicyDenied("source URL is not in the owner-reviewed exact URL list")
 
     robots_url = urlunsplit(("https", host, "/robots.txt", "", ""))
