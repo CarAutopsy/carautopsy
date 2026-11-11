@@ -191,15 +191,17 @@ def _validate_claim_evidence(
     """Require each non-null technical claim to cite an exact supplied text span."""
     required_paths = _technical_claim_paths(candidate)
     bindings = provenance.get("claim_evidence")
+    if bindings is not None:
+        if not isinstance(bindings, list):
+            raise CandidateRejected("claim_evidence must be an array")
+        if len(bindings) > MAX_CLAIM_BINDINGS:
+            raise CandidateRejected("claim evidence exceeds the binding-count limit")
     if not required_paths:
         if bindings not in (None, []):
-            if not isinstance(bindings, list):
-                raise CandidateRejected("claim_evidence must be an array")
+            raise CandidateRejected("claim evidence was supplied without any claim paths")
         return
     if not isinstance(bindings, list) or not bindings:
         raise CandidateRejected("every non-null technical claim requires claim_evidence")
-    if len(bindings) > MAX_CLAIM_BINDINGS:
-        raise CandidateRejected("claim evidence exceeds the binding-count limit")
     evidence_by_id = {item["source_id"]: item for item in evidence}
     locator_text_cache = {source_id: item.get("locator_texts", {}) for source_id, item in evidence_by_id.items()}
     declared_ids = {
