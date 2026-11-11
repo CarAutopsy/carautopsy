@@ -7,6 +7,7 @@ from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
+from hive_research_gate import ResearchPaused, require_verified_retrieval
 
 ROOT = Path.cwd()
 
@@ -145,6 +146,18 @@ if "--provider-smoke-test" in sys.argv:
     sys.exit(provider_smoke_test())
 
 RESEARCH_ONLY = "--research-only" in sys.argv
+
+# Fail closed until issue #37 supplies verified retrieval and issue #44 binds
+# retrieved evidence into the researcher/auditor contract. Smoke tests and the
+# full TCO route intentionally bypass this research-only safety gate.
+VERIFIED_RETRIEVAL_AVAILABLE = False
+
+if RESEARCH_ONLY:
+    try:
+        require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)
+    except ResearchPaused as exc:
+        print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
+        sys.exit(exc.exit_code)
 
 if RESEARCH_ONLY:
     taxes = defaults = inspections = None
