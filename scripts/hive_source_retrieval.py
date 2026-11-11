@@ -45,6 +45,8 @@ class RetrievalDenied(ValueError):
 
 
 def _normalise_allowlist(approved_hosts: Iterable[str]) -> set[str]:
+    if isinstance(approved_hosts, (str, bytes)) or approved_hosts is None:
+        raise RetrievalDenied("approved hosts must be an explicit collection of exact hostnames")
     hosts = set()
     for host in approved_hosts:
         if not isinstance(host, str) or not host or host != host.strip():
@@ -180,7 +182,7 @@ def fetch_source(
         try:
             connection.request("GET", path, headers={
                 "Host": host,
-                "User-Agent": "CarAutopsy-Research-Bot/1.0",
+                "User-Agent": "CarAutopsy-Research-Bot/1.0 (contact: ermiya.karan@gmx.ch)",
                 "Accept": "text/html, text/plain, application/pdf",
                 "Accept-Encoding": "identity",
                 "Connection": "close",
@@ -192,6 +194,9 @@ def fetch_source(
             if status < 200 or status >= 300:
                 return RetrievalResult(url, "rejected", "http_status_not_success", status_code=status, resolved_ip=pinned_ip)
             content_type = response.getheader("Content-Type", "").split(";", 1)[0].strip().lower()
+            content_encoding = response.getheader("Content-Encoding", "identity").strip().lower()
+            if content_encoding not in ("", "identity"):
+                return RetrievalResult(url, "rejected", "unsupported_content_encoding", status_code=status, content_type=content_type or None, resolved_ip=pinned_ip)
             if content_type not in ALLOWED_CONTENT_TYPES:
                 return RetrievalResult(url, "rejected", "unsupported_content_type", status_code=status, content_type=content_type or None, resolved_ip=pinned_ip)
             declared = response.getheader("Content-Length")
@@ -219,7 +224,9 @@ def fetch_source(
             connection.close()
     except RetrievalDenied as exc:
         return RetrievalResult(url if isinstance(url, str) else "", "rejected", str(exc))
-    except (OSError, TimeoutError, ssl.SSLError, http.client.HTTPException):
+    except (socket.timeout, TimeoutError):
+        return RetrievalResult(url if isinstance(url, str) else "", "rejected", "request_timeout")
+    except (OSError, ssl.SSLError, http.client.HTTPException):
         return RetrievalResult(url if isinstance(url, str) else "", "rejected", "network_or_tls_failure")
 
 
