@@ -6,7 +6,7 @@ Status: retrieval primitive implemented; runtime integration and operational rea
 
 `data-connectors/approved-source-hosts.json` is the owner-controlled exact-host allowlist. It is intentionally empty. Do not add domains automatically from candidate data. A hostname may be added only after an owner review confirms source relevance, automated-access terms and robots policy. Wildcards, URL paths, ports and candidate-controlled allowlists are forbidden.
 
-`fetch_source()` requires both the explicit allowlist and a `robots_allowed(url)` policy callback. Missing callbacks, policy exceptions and denial all stop before DNS or network access. The callback must check robots.txt and source terms for the exact URL and must itself fail closed. The retrieval primitive does not pretend that an allowlisted host is permission to crawl it.
+`scripts/hive_source_policy.py` loads owner-reviewed exact host and exact URL entries from the manifest. Each source entry requires `automated_access_allowed: true`, a terms URL, and a terms review date no older than 180 days. The exact source URL must be listed; candidate data cannot add hosts or paths. Before fetching the source, the policy checker retrieves `/robots.txt` through the same DNS-pinned HTTPS transport and applies the rules for `CarAutopsy-Research-Bot`. Missing, unavailable, malformed, stale, ambiguous, or denying policy results fail closed. The low-level `fetch_source()` callback remains mandatory as a second guard.
 
 ## Network controls
 
@@ -27,8 +27,16 @@ A successful HTTP response is recorded as `retrieved_unverified`. This means onl
 
 ## Not enabled
 
-This change does not wire retrieval into `autonomous_pipeline.py`, implement a production robots.txt fetcher, curate approved source domains, parse PDFs, or perform semantic claim verification. The allowlist remains empty and `VERIFIED_RETRIEVAL_AVAILABLE` must remain false. Do not enable paid research until those dependencies are implemented, reviewed and proven end to end.
+The new policy checker, evidence adapter, and bounded HTML/plain-text/PDF extractor are still isolated building blocks: they are not wired into `autonomous_pipeline.py`, do not curate approved source URLs, and do not perform semantic claim verification. PDF extraction has byte/page/character limits and cooperative elapsed-time checks, but it is not yet isolated in an OS-limited worker; hard CPU/memory containment remains an acceptance requirement. The manifest remains empty and `VERIFIED_RETRIEVAL_AVAILABLE` must remain false. Do not enable paid research until these dependencies are integrated, independently reviewed, and proven end to end.
 
 ## Tests
 
 `tests/test_hive_source_retrieval.py` covers invalid schemes and hosts, empty allowlist, credentials, ports, IP literals, placeholders, private and mixed DNS answers, DNS failure, redirects, content types, declared and streamed size limits, required robots policy, bounded timeout, safe diagnostics, and the pinned-IP/original-host TLS seam. Tests use fakes and make no live requests.
+
+
+## New isolated implementation building blocks
+
+- `scripts/hive_source_policy.py`: owner-reviewed exact URL and terms metadata checks plus live robots.txt parsing.
+- `scripts/hive_source_extract.py`: visible HTML text, strict UTF-8 plain text, and page-bounded PDF extraction. Script/style/template/noscript/SVG/canvas/iframe/object content is excluded from HTML.
+- `scripts/hive_evidence.py`: retrieves only exact URLs from the owner manifest, checks policy before the source request, extracts bounded text, assigns stable source IDs, and returns only the candidate gate's bounded evidence fields. Raw response bytes are not returned or persisted.
+- Tests use mocked transport and synthetic documents only. They do not establish live OEM permission, source authenticity, factual claim support, or production readiness.
