@@ -117,6 +117,13 @@ def validate_candidate(
         if url != evidence_by_id[source_id]:
             raise CandidateRejected(f"candidate provenance URL does not match evidence source {source_id}")
 
+    # These fields are pipeline-owned, never trusted from model output.
+    provenance["confidence"] = "low"
+    provenance["reviewed_by"] = None
+    extensions = result.get("extensions")
+    if isinstance(extensions, dict):
+        extensions.pop("hive", None)
+
     try:
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         Draft7Validator.check_schema(schema)
@@ -128,13 +135,6 @@ def validate_candidate(
         error = sorted(errors, key=lambda item: list(map(str, item.absolute_path)))[0]
         location = ".".join(str(part) for part in error.absolute_path) or "<root>"
         raise CandidateRejected(f"schema violation at {location}: {error.message}")
-
-    # These fields are pipeline-owned, never trusted from model output.
-    provenance["confidence"] = "low"
-    provenance["reviewed_by"] = None
-    extensions = result.get("extensions")
-    if isinstance(extensions, dict):
-        extensions.pop("hive", None)
 
     try:
         json.dumps(result, ensure_ascii=False, allow_nan=False)
