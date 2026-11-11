@@ -177,6 +177,10 @@ def _validate_claim_evidence(
     if not isinstance(bindings, list) or not bindings:
         raise CandidateRejected("every non-null technical claim requires claim_evidence")
     evidence_by_id = {item["source_id"]: item for item in evidence}
+    declared_ids = {
+        item.get("source_id") for item in (provenance.get("sources") or [])
+        if isinstance(item, dict)
+    }
     covered: set[str] = set()
     seen: set[tuple[str, str, str]] = set()
     for index, binding in enumerate(bindings):
@@ -188,8 +192,8 @@ def _validate_claim_evidence(
         quote = binding.get("quote")
         if not isinstance(claim_path, str) or claim_path not in required_paths:
             raise CandidateRejected(f"claim evidence item {index} references an unknown claim path")
-        if not isinstance(source_id, str) or source_id not in evidence_by_id:
-            raise CandidateRejected(f"claim evidence item {index} references an unknown source")
+        if not isinstance(source_id, str) or source_id not in evidence_by_id or source_id not in declared_ids:
+            raise CandidateRejected(f"claim evidence item {index} references an unknown or undeclared source")
         if not isinstance(locator, str) or not locator.strip() or len(locator) > 128:
             raise CandidateRejected(f"claim evidence item {index} has an invalid locator")
         if not isinstance(quote, str) or not quote.strip() or len(quote) > MAX_CLAIM_QUOTE_CHARS:
