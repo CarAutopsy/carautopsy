@@ -8,6 +8,7 @@ from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
 from hive_research_gate import ResearchPaused, require_verified_retrieval
+from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, record_outcome, requires_manual_review
 
 ROOT = Path.cwd()
 
@@ -214,6 +215,14 @@ def curate_one(attempted_variant_ids=None):
              if (item.get("task") or {}).get("variant_id") == vid),
             None,
         )
+        if prior_entry and requires_manual_review(prior_entry):
+            entry, _ = record_outcome(task, prior_entry, MANUAL_REVIEW_REQUIRED, stage="legacy_reconciliation")
+            failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
+            failed.append(entry)
+            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+            tasks = [item for item in tasks if item.get("variant_id") != vid]
+            qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+            return True, f"legacy retry state for {vid} quarantined for human review"
         prior_audits = (prior_entry or {}).get("audits") or []
         prior_failure = "; ".join(
             f"{audit.get('provider', audit.get('vendor', 'auditor'))}: "
@@ -244,27 +253,35 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
             except Exception as e:
                 print(f"Researcher bad JSON: {e}"); veh = None
         
-        if veh is None:
+        research_code = classify_research_response(raw, veh)
+        if research_code is not None:
             research_failures_this_run += 1
             previous = next((item for item in reversed(failed)
-                             if (item.get("task") or {}).get("variant_id") == vid), {})
-            research_attempts = int(previous.get("research_attempts", 0)) + 1
-            audit_attempts = int(previous.get("attempts", 0))
+                             if (item.get("task") or {}).get("variant_id") == vid), None)
+            entry, retryable = record_outcome(
+                task, previous, research_code, stage="research",
+                provider_statuses=[{"provider": res_name or "provider-pool",
+                                    "status": "OFFLINE" if research_code == "provider_transport_failure" else "INVALID"}],
+            )
+            counters = entry["outcome"]["counters"]
+            entry.update({
+                "attempts": counters["attempts"], "max_attempts": MAX_AUDIT_ATTEMPTS,
+                "research_attempts": counters["research_attempts"],
+                "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
+                "provider_attempts": counters["provider_attempts"],
+                "format_attempts": counters["format_attempts"],
+                "provenance_attempts": counters["provenance_attempts"],
+            })
             failed = [item for item in failed
                       if (item.get("task") or {}).get("variant_id") != vid]
-            failed.append({"task": task, "verdict": "RESEARCH_FAILED",
-                           "research_attempts": research_attempts,
-                           "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
-                           "attempts": audit_attempts,
-                           **{key: previous[key] for key in ("audits", "candidate") if key in previous},
-                           "at": datetime.now(timezone.utc).isoformat()})
+            failed.append(entry)
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
-            if research_attempts < MAX_RESEARCH_ATTEMPTS:
+            if retryable:
                 tasks = tasks[1:] + [task]
-                outcome = f"research failed for {vid}; retry {research_attempts}/{MAX_RESEARCH_ATTEMPTS} queued"
+                outcome = f"{research_code} for {vid}; retry queued"
             else:
-                tasks = tasks[1:]
-                outcome = f"research failed for {vid}; retry limit reached; retained for human review"
+                tasks = [item for item in tasks if item.get("variant_id") != vid]
+                outcome = f"{research_code} retry ceiling reached; retained for human review"
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"{outcome} (skipped {skipped} existing)"
         
@@ -295,29 +312,51 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
             audit_results.append({"provider": audit_name or audit_vendor, "vendor": audit_vendor, "verdict": audit_verdict})
             print(f"Auditor {audit_name or audit_vendor} says: {audit_verdict}")
 
-        veh["extensions"]["hive"]["audits"] = audit_results
-        # Fail closed: every available independent vendor must explicitly PASS.
-        passed = len(audit_results) >= 2 and all(item["verdict"].upper().startswith("PASS") for item in audit_results)
-        if not passed:
-            audit_failures_this_run += 1
+        audit_code = classify_audit_results(audit_results)
+        safe_audits = []
+        for item in audit_results:
+            verdict = str(item.get("verdict", "")).strip()
+            status = "PASS" if verdict.upper() == "PASS" else (
+                "OFFLINE" if verdict.upper() == "OFFLINE" else (
+                    "INVALID" if verdict.upper() == "INVALID_AUDIT_RESPONSE" else "FAIL"
+                )
+            )
+            safe_audits.append({
+                "provider": str(item.get("provider", "auditor"))[:40],
+                "vendor": str(item.get("vendor", "unknown"))[:40],
+                "verdict": status,
+            })
+        veh["extensions"]["hive"]["audits"] = safe_audits
+        # Only deterministic outcome codes and safe provider statuses enter the ledger.
+        if audit_code != AUDIT_SUCCESS:
+            if audit_code == "vehicle_quality_rejection":
+                audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
-            previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), {})
-            attempts = int(previous.get("attempts", 0)) + 1
-            research_attempts = int(previous.get("research_attempts", 0))
+            previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), None)
+            entry, retryable = record_outcome(
+                task, previous, audit_code, stage="audit",
+                provider_statuses=safe_audits,
+            )
+            counters = entry["outcome"]["counters"]
+            entry.update({
+                "attempts": counters["attempts"], "max_attempts": MAX_AUDIT_ATTEMPTS,
+                "research_attempts": counters["research_attempts"],
+                "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
+                "provider_attempts": counters["provider_attempts"],
+                "format_attempts": counters["format_attempts"],
+                "provenance_attempts": counters["provenance_attempts"],
+                "audits": safe_audits, "candidate": veh,
+            })
             failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
-            failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": attempts,
-                           "max_attempts": MAX_AUDIT_ATTEMPTS, "research_attempts": research_attempts,
-                           "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
-                           "audits": audit_results, "candidate": veh,
-                           "at": datetime.now(timezone.utc).isoformat()})
+            failed.append(entry)
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
-            if attempts < MAX_AUDIT_ATTEMPTS:
+            if retryable:
                 tasks = tasks[1:] + [task]
-                outcome = f"audit failed for {vid}; retry {attempts}/{MAX_AUDIT_ATTEMPTS} queued"
+                outcome = f"{audit_code} for {vid}; retry queued"
             else:
-                tasks = tasks[1:]
-                outcome = f"audit failed for {vid}; retry limit reached; retained for human review"
+                tasks = [item for item in tasks if item.get("variant_id") != vid]
+                outcome = f"{audit_code} retry ceiling reached; retained for human review"
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"{outcome} (skipped {skipped} existing)"
         
