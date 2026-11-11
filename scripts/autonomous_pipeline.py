@@ -8,7 +8,7 @@ from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
 from hive_research_gate import ResearchPaused, require_verified_retrieval
-from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, record_outcome, requires_manual_review, migrate_legacy_entry
+from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
 ROOT = Path.cwd()
 
@@ -107,18 +107,25 @@ def call_any(prompt, exclude_vendors=None):
     return None, None, None, failure_code
 
 def call_vendor(prompt, vendor):
-    """Call one independent vendor and preserve its safe failure class."""
+    """Try every configured endpoint for one vendor before classifying its failure."""
+    failures = []
+    matched = False
     for name, provider_vendor, key, url, model in PROVIDERS:
         if provider_vendor != vendor:
             continue
+        matched = True
         if not key:
-            return None, None, "provider_transport_failure"
+            failures.append("provider_transport_failure")
+            continue
         out, failure = call_llm(prompt, key, url, model)
         if out:
             print(f"   [audit provider: {name}]")
             return out, name, None
-        return None, None, failure
-    return None, None, "provider_transport_failure"
+        failures.append(failure)
+    if not matched:
+        return None, None, "provider_transport_failure"
+    failure_code = "response_format_failure" if "response_format_failure" in failures else "provider_transport_failure"
+    return None, None, failure_code
 
 def provider_smoke_test():
     """Exercise one endpoint per independent vendor without touching catalog or queue."""
@@ -232,6 +239,10 @@ def curate_one(attempted_variant_ids=None):
             failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
             failed.append(prior_entry)
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+        if prior_entry and not requires_manual_review(prior_entry) and exhausted_outcome(prior_entry):
+            tasks = [item for item in tasks if item.get("variant_id") != vid]
+            qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+            return True, f"retry ceiling already exhausted for {vid}; retained for human review"
         if prior_entry and requires_manual_review(prior_entry):
             entry, _ = record_outcome(task, prior_entry, MANUAL_REVIEW_REQUIRED, stage="legacy_reconciliation")
             failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
@@ -240,14 +251,13 @@ def curate_one(attempted_variant_ids=None):
             tasks = [item for item in tasks if item.get("variant_id") != vid]
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"legacy retry state for {vid} quarantined for human review"
-        prior_audits = (prior_entry or {}).get("audits") or []
-        prior_failure = "; ".join(
-            f"{audit.get('provider', audit.get('vendor', 'auditor'))}: "
-            f"{str(audit.get('verdict', 'no verdict')).splitlines()[0][:MAX_VERDICT_CHARS]}"
-            for audit in prior_audits
-            if isinstance(audit, dict)
-        ) or ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
-        prior_failure = prior_failure[:600]
+        prior_categories = (prior_entry or {}).get("defect_categories") or []
+        prior_failure = ", ".join(
+            category for category in prior_categories
+            if category in {"provenance_evidence", "unit_mismatch", "schema_compliance", "numeric_consistency", "technical_specification", "unspecified_quality_defect"}
+        )
+        if not prior_failure:
+            prior_failure = ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
         rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
@@ -355,7 +365,15 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
             previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), None)
             entry, retryable = record_outcome(
                 task, previous, audit_code, stage="audit",
-                provider_statuses=safe_audits,
+                provider_statuses=[
+                    {"provider": item["provider"], "status": item["verdict"]}
+                    for item in safe_audits
+                ],
+                defect_categories=[
+                    classify_defect_category(item.get("verdict", ""))
+                    for item in audit_results
+                    if str(item.get("verdict", "")).upper().startswith("FAIL:")
+                ],
             )
             counters = entry["outcome"]["counters"]
             entry.update({
