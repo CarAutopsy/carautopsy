@@ -5,7 +5,7 @@ import yaml, requests
 from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
-from hive_pr import select_open_research_pr
+from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 
 ROOT = Path.cwd()
 
@@ -327,12 +327,16 @@ def run(cmd):
 
 def get_open_research_pr():
     """Return the sole open Hive PR, if any; fail closed on ambiguous state."""
-    raw = subprocess.run(
-        ["gh", "pr", "list", "--state", "open", "--base", "main",
-         "--json", "number,headRefName,headRepository"],
-        capture_output=True, text=True, check=True,
-    ).stdout
-    return select_open_research_pr(json.loads(raw), "CarAutopsy/carautopsy")
+    def fetch_page(limit):
+        raw = subprocess.run(
+            ["gh", "pr", "list", "--state", "open", "--base", "main",
+             "--limit", str(limit), "--json", "number,headRefName,headRepository"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        return json.loads(raw)
+
+    pull_requests = fetch_all_open_pull_requests(fetch_page)
+    return select_open_research_pr(pull_requests, "CarAutopsy/carautopsy")
 
 
 # Reuse the pending proposal branch instead of stopping the scheduler.
