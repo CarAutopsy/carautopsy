@@ -165,9 +165,15 @@ class StateBranchTests(unittest.TestCase):
         self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
 
     def test_reconcile_does_not_restore_tasks_removed_from_state(self):
+        self.write(self.a, [task("a"), task("b")], [])
+        hive_state.save_state(self.a, "proposal baseline")
+        baseline = hive_state._tip(self.a)
         self.write(self.a, [task("b")], [])
         hive_state.save_state(self.a, "state with deliberate removal")
         self.write(self.b, [task("a"), task("b")], [])
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
+                "commit", "--allow-empty", "-m", "proposal", "-m",
+                f"Hive-State-Base: {baseline}", cwd=self.b)
         self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
         self.assertEqual(self.read(self.b, "queue.json"), [task("b")])
 
