@@ -146,7 +146,7 @@ class HiveCandidateGateTests(unittest.TestCase):
     def test_serialized_evidence_bundle_has_a_combined_limit(self):
         evidence = [{
             "source_id": str(index),
-            "url": "https://oem.example/" + ("x" * 2048),
+            "url": "https://oem.example/" + ("x" * 2028),
             "retrieved_at": "2026-11-11T12:00:00Z",
             "text": "x" * 12_000,
         } for index in range(5)]
