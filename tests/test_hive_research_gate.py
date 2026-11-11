@@ -1,8 +1,6 @@
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -31,10 +29,11 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
         source = (ROOT / "scripts" / "autonomous_pipeline.py").read_text(encoding="utf-8")
         gate = source.index("require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)")
         for operation in (
-            "def call_provider(",
-            "def curate_one(",
-            "get_open_research_pr()",
+            "raw, res_name, res_vendor = call_any(rp)",
+            "audit_raw, audit_name = call_vendor(ap, audit_vendor)",
+            "open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None",
             "load_state(ROOT)",
+            "curate_one(attempted_variant_ids if RESEARCH_ONLY else None)",
             "reconcile_with_pr(ROOT)",
             "save_state(ROOT",
             'run(["git", "checkout"',
