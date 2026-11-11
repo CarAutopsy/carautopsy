@@ -95,6 +95,15 @@ class HiveSchemaContractTests(unittest.TestCase):
         del self.record["provenance"]["claim_evidence"][0]["quote"]
         self.assert_invalid(self.record)
 
+    def test_claim_evidence_binding_count_is_bounded(self):
+        self.record["provenance"]["claim_evidence"] = [{
+            "claim_path": f"performance.value_{index}",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "source span",
+        } for index in range(201)]
+        self.assert_invalid(self.record)
+
     def test_confidence_enum(self):
         """Enforce the declared provenance confidence enumeration."""
         for confidence in ('low', 'medium', 'high', 'official'):
