@@ -1,6 +1,6 @@
 """Security regression tests for the fail-closed Hive source retriever."""
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from scripts.hive_source_retrieval import fetch_source, _parse_source_url, _is_placeholder_identifier
 
@@ -142,7 +142,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "response_too_large")
 
     def test_streamed_oversized_response_is_rejected(self):
-        self.connection.response = FakeResponse(body=b"x" * 1001)
+        self.connection.response = FakeResponse(headers={"Content-Type": "text/html"}, body=b"x" * 1001)
         result = self.fetch(max_bytes=1000)
         self.assertEqual(result.reason, "response_too_large")
 
@@ -169,6 +169,19 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         record = result.safe_record()
         self.assertNotIn("body", record)
         self.assertEqual(record["outcome"], "retrieved_unverified")
+
+    def test_pinned_transport_dials_validated_ip_and_keeps_hostname_for_tls(self):
+        from scripts.hive_source_retrieval import _PinnedHTTPSConnection
+        connection = _PinnedHTTPSConnection("oem.example", "8.8.8.8", 3)
+        raw_socket = object()
+        wrapped_socket = object()
+        with patch("scripts.hive_source_retrieval.socket.create_connection", return_value=raw_socket) as dial, \
+             patch.object(connection, "_context") as tls:
+            tls.wrap_socket.return_value = wrapped_socket
+            connection.connect()
+        dial.assert_called_once_with(("8.8.8.8", 443), 3, None)
+        tls.wrap_socket.assert_called_once_with(raw_socket, server_hostname="oem.example")
+        self.assertIs(connection.sock, wrapped_socket)
 
     def test_allowlist_does_not_accept_wildcards(self):
         with self.assertRaises(ValueError):
