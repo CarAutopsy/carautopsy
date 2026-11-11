@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from scripts.hive_source_policy import SourcePolicyDenied, _robots_can_fetch, check_source_access, load_policy
+from scripts.hive_source_policy import USER_AGENT, SourcePolicyDenied, _robots_can_fetch, check_source_access, load_policy
 
 
 HOST = "oem.example"
