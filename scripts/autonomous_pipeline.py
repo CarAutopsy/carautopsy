@@ -5,6 +5,7 @@ import yaml, requests
 from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
+from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 
 ROOT = Path.cwd()
 
@@ -324,23 +325,29 @@ def run(cmd):
     """Run a checked subprocess command and print its invocation.""" 
     print("$ " + " ".join(cmd)); subprocess.run(cmd, check=True)
 
-def has_open_research_pr():
-    """Return whether a Hive research proposal is already awaiting review."""
-    open_prs = subprocess.run(
-        ["gh", "pr", "list", "--state", "open", "--base", "main",
-         "--json", "headRefName,headRepository", "--jq",
-         '[.[] | select(.headRefName | startswith("hive/research-")) '
-         '| select(.headRepository.nameWithOwner == "CarAutopsy/carautopsy")] | length'],
-        capture_output=True, text=True, check=True,
-    ).stdout.strip()
-    return bool(open_prs and open_prs != "0")
+def get_open_research_pr():
+    """Return the sole open Hive PR, if any; fail closed on ambiguous state."""
+    def fetch_page(limit):
+        raw = subprocess.run(
+            ["gh", "pr", "list", "--state", "open", "--base", "main",
+             "--limit", str(limit), "--json", "number,headRefName,headRepository"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        return json.loads(raw)
+
+    pull_requests = fetch_all_open_pull_requests(fetch_page)
+    return select_open_research_pr(pull_requests, "CarAutopsy/carautopsy")
 
 
-# Check before provider calls so hourly runs do not spend API credits while
-# an earlier research proposal is still awaiting human review.
-if RESEARCH_ONLY and has_open_research_pr():
-    print("An open Hive research PR already exists; skipping this run.")
-    sys.exit(0)
+# Reuse the pending proposal branch instead of stopping the scheduler.
+# This carries queue/failed-ledger state forward between 15-minute runs and
+# accumulates candidate work in one human-review PR without creating duplicates.
+open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None
+if open_research_pr:
+    # Start from the pending proposal's queue/ledger snapshot, not stale main.
+    run(["git", "fetch", "origin", open_research_pr["headRefName"]])
+    run(["git", "checkout", "-B", open_research_pr["headRefName"],
+         f"origin/{open_research_pr['headRefName']}"])
 
 batch_messages = []
 attempted_variant_ids = set()
@@ -374,29 +381,50 @@ if RESEARCH_ONLY:
         sys.exit(0)
     run(["git", "config", "user.name", "hive-bot"])
     run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
-    branch = "hive/research-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    run(["git", "checkout", "-b", branch])
+    if open_research_pr:
+        branch = open_research_pr["headRefName"]
+    else:
+        branch = "hive/research-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        run(["git", "checkout", "-b", branch])
     run(["git", "add", "catalog/variants", "tasks/queue.json", "tasks/failed.json"])
     substantive = subprocess.run(
         ["git", "diff", "--cached", "--quiet", "--",
          "catalog/variants", "tasks/failed.json"],
         check=False,
     )
-    if substantive.returncode == 0:
+    if substantive.returncode == 0 and not open_research_pr:
         print("Queue-only research change; skipping PR to avoid reordering-only proposals.")
-        if audit_failures_this_run or research_failures_this_run:
-            sys.exit(1)
         sys.exit(0)
-    if substantive.returncode != 1:
+    if substantive.returncode not in (0, 1):
         raise RuntimeError("Could not determine whether research produced substantive changes.")
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--quiet"],
+        check=False,
+    )
+    if staged.returncode == 0:
+        print("No proposal changes to publish.")
+        sys.exit(0)
+    if staged.returncode != 1:
+        raise RuntimeError("Could not determine whether staged research changes exist.")
     run(["git", "commit", "-m", f"chore(hive): {msg}"])
     run(["git", "push", "-u", "origin", branch])
-    run(["gh", "pr", "create", "--title", f"Hive research: {msg}",
-         "--body", "Automated vehicle research proposal. Two independent AI vendors must explicitly approve each record. All AI-generated data remains low-confidence and requires human review before acceptance.",
-         "--base", "main", "--head", branch])
-    print("Research proposal pushed; awaiting human review.")
+    if open_research_pr:
+        print(f"Updated existing Hive research PR #{open_research_pr['number']}; awaiting human review.")
+    else:
+        run(["gh", "pr", "create", "--title", f"Hive research: {msg}",
+             "--body", "Automated vehicle research proposal. Two independent AI vendors must explicitly approve each record. All AI-generated data remains low-confidence and requires human review before acceptance.",
+             "--base", "main", "--head", branch])
+        print("Research proposal pushed; awaiting human review.")
     if audit_failures_this_run or research_failures_this_run:
-        sys.exit(1)
+        print(
+            f"Research cycle completed and saved for human review: "
+            f"{audit_failures_this_run} audit rejection(s), "
+            f"{research_failures_this_run} research failure(s)."
+        )
+    else:
+        print("Research cycle completed successfully; proposal is awaiting human review.")
+    # A rejected candidate is a data-quality outcome, not a failed scheduler
+    # execution. Rejections remain explicit in tasks/failed.json and the PR.
     sys.exit(0)
 
 results = []
