@@ -27,6 +27,7 @@ DEFAULT_MAX_ATTEMPTS = 3
 TRAILER = "Hive-Ledger-SHA256"
 PROPOSAL_HEAD_TRAILER = "Hive-Proposal-Head"
 STATE_CONTEXT_TRAILER = "Hive-State-Context"
+PROPOSAL_STATE_BASE_TRAILER = "Hive-State-Base"
 
 _ACKNOWLEDGED = {}
 
@@ -152,6 +153,26 @@ def _declared_state_context(root, tip):
     return None
 
 
+def _declared_proposal_state_base(root, proposal_head):
+    body = _git(root, ["log", "-1", "--format=%B", proposal_head]).stdout.decode()
+    for line in body.splitlines():
+        if line.startswith(PROPOSAL_STATE_BASE_TRAILER + ":"):
+            value = line.split(":", 1)[1].strip()
+            return None if value == "none" else (value or None)
+    return None
+
+
+def proposal_state_base(root):
+    """Return the reconciled hive/state tip that the next proposal commit consumes."""
+    root = Path(root)
+    tip = _tip(root)
+    if tip and _ACKNOWLEDGED.get(_key(root)) != tip:
+        raise StateNotReconciled(
+            "cannot record proposal baseline before hive/state has been reconciled"
+        )
+    return tip
+
+
 def _write_state_files(root, files):
     if any(content is None for content in files.values()):
         raise RuntimeError("Hive state tip is missing a required ledger file")
@@ -230,10 +251,26 @@ def reconcile_with_pr(root):
         if working == files:
             _ack(root, tip)
             return "in-sync"
-        _write_state_files(root, files)
-        _ack(root, tip)
-        print("Adopted standalone Hive state accumulated without an active proposal.")
-        return "adopted"
+        state_base = _declared_proposal_state_base(root, current_head)
+        if not state_base:
+            raise StateNotReconciled(
+                "proposal has no verifiable Hive-State-Base; refusing to adopt standalone state"
+            )
+        if tip == state_base or _is_ancestor(root, tip, state_base):
+            # The proposal already consumed this state snapshot. A failed mirror
+            # push must not let that older snapshot erase the proposal ledger.
+            _ack(root, tip)
+            print("Proposal ledger is ahead of the standalone state baseline; preserving proposal progress.")
+            return "proposal-ahead"
+        if _is_ancestor(root, state_base, tip):
+            _write_state_files(root, files)
+            _ack(root, tip)
+            print("Adopted standalone Hive progress committed after the proposal baseline.")
+            return "adopted"
+        raise StateNotReconciled(
+            "standalone Hive state is not descended from the proposal's recorded baseline; "
+            "refusing an ambiguous reconciliation"
+        )
 
     if state_context == "proposal":
         if not recorded_head:
