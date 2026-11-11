@@ -22,7 +22,14 @@ COUNTER_BY_OUTCOME = {
     PROVENANCE_REJECTION: ("provenance_attempts", 2),
     VEHICLE_QUALITY_REJECTION: ("attempts", 3),
 }
-PROVENANCE_MARKERS = ("provenance", "source url", "source-url", "citation", "coc", "certificate of conformity", "retrieval", "official url", "official source", "source document", "not cited", "unverifiable url", "fabricated url")
+PROVENANCE_MARKERS = ("provenance", "source url", "source-url", "citation", "certificate of conformity", "retrieval", "official url", "official source", "source document", "not cited", "unverifiable url", "fabricated url")
+DEFECT_CATEGORY_MARKERS = {
+    "provenance_evidence": ("provenance", "source url", "source-url", "citation", "certificate of conformity", "official source", "not cited", "unverifiable url", "fabricated url"),
+    "unit_mismatch": ("unit", "units", "watt", "kilowatt", "wh", "kg", "mm"),
+    "schema_compliance": ("schema", "required key", "missing field", "invalid field"),
+    "numeric_consistency": ("inconsistent", "conflict", "does not match", "out of range", "incorrect value"),
+    "technical_specification": ("specification", "powertrain", "battery", "drivetrain", "dimension", "performance"),
+}
 
 
 def classify_research_response(raw, parsed, failure_code=None):
@@ -49,7 +56,7 @@ def classify_audit_results(audits):
     if failures:
         if any(
             any(marker in value.lower() for marker in PROVENANCE_MARKERS)
-            or re.search(r"\\bcoc\\b", value.lower())
+            or re.search(r"\bcoc\b", value.lower())
             for value in failures
         ):
             return PROVENANCE_REJECTION
@@ -67,7 +74,7 @@ def _prior_counters(previous):
     if not isinstance(outcome, dict) or type(outcome.get("schema_version")) is not int or outcome.get("schema_version") != OUTCOME_SCHEMA_VERSION:
         return None
     code = outcome.get("code")
-    if code not in OUTCOME_CODES or code == AUDIT_SUCCESS:
+    if not isinstance(code, str) or code not in OUTCOME_CODES or code == AUDIT_SUCCESS:
         return None
     if not isinstance(outcome.get("attempt_id"), str) or not outcome["attempt_id"] or len(outcome["attempt_id"]) > 80:
         return None
@@ -81,9 +88,11 @@ def _prior_counters(previous):
     if not isinstance(counters, dict):
         return None
     names = ("provider_attempts", "format_attempts", "provenance_attempts", "attempts", "research_attempts")
+    if any(name not in counters for name in names):
+        return None
     result = {}
     for name in names:
-        value = counters.get(name, 0)
+        value = counters.get(name)
         if type(value) is not int or value < 0:
             return None
         result[name] = value
@@ -106,9 +115,38 @@ def _prior_counters(previous):
     return result
 
 
-def record_outcome(task, previous, code, *, stage, provider_statuses=None, now=None, attempt_id=None):
+def _safe_audit_records(audits):
+    """Reduce audit records to bounded provider identifiers and deterministic statuses."""
+    if not isinstance(audits, list):
+        return []
+    safe = []
+    for item in audits:
+        if not isinstance(item, dict):
+            continue
+        verdict = str(item.get("verdict", item.get("status", ""))).strip().upper()
+        status = "PASS" if verdict == "PASS" else (
+            "OFFLINE" if verdict == "OFFLINE" else (
+                "INVALID" if verdict in {"INVALID", "INVALID_AUDIT_RESPONSE"} else "FAIL"
+            )
+        )
+        safe.append({"provider": str(item.get("provider", "auditor"))[:40], "vendor": str(item.get("vendor", "unknown"))[:40], "verdict": status})
+    return safe
+
+
+def classify_defect_category(reason):
+    """Map untrusted auditor prose to a small allowlisted defect category."""
+    if not isinstance(reason, str):
+        return "unspecified_quality_defect"
+    lowered = reason.lower()
+    for category, markers in DEFECT_CATEGORY_MARKERS.items():
+        if any(marker in lowered for marker in markers):
+            return category
+    return "unspecified_quality_defect"
+
+
+def record_outcome(task, previous, code, *, stage, provider_statuses=None, defect_categories=None, now=None, attempt_id=None):
     """Build a safe durable entry and indicate whether its class may be retried."""
-    if code not in OUTCOME_CODES or code == AUDIT_SUCCESS:
+    if not isinstance(code, str) or code not in OUTCOME_CODES or code == AUDIT_SUCCESS:
         raise ValueError("failure recorder requires an allowlisted non-success outcome")
     counters = _prior_counters(previous)
     if counters is None:
@@ -118,13 +156,17 @@ def record_outcome(task, previous, code, *, stage, provider_statuses=None, now=N
     retryable = False
     if code in COUNTER_BY_OUTCOME:
         field, ceiling = COUNTER_BY_OUTCOME[code]
+        limits = {"provider_attempts": 3, "format_attempts": 3, "provenance_attempts": 2, "attempts": 3, "research_attempts": 3}
+        if any(counters[name] >= limit for name, limit in limits.items()):
+            entry = dict(previous) if isinstance(previous, dict) else {"task": task}
+            entry["task"] = task
+            entry["outcome"] = dict(previous["outcome"])
+            entry["outcome"]["retryable"] = False
+            return entry, False
         counters[field] += 1
-        retryable = counters[field] < ceiling and all(
-            counters[name] < limit for name, limit in {
-                "provider_attempts": 3, "format_attempts": 3,
-                "provenance_attempts": 2, "attempts": 3,
-            }.items()
-        )
+        if stage == "research":
+            counters["research_attempts"] += 1
+        retryable = counters[field] < ceiling and all(counters[name] < limit for name, limit in limits.items())
     safe_statuses = []
     for item in provider_statuses or []:
         if isinstance(item, dict):
@@ -138,6 +180,24 @@ def record_outcome(task, previous, code, *, stage, provider_statuses=None, now=N
         for key in ("audits", "candidate", "verdict", "at", "defect_categories"):
             if key in previous:
                 entry[key] = previous[key]
+        if "audits" in entry:
+            entry["audits"] = _safe_audit_records(entry["audits"])
+        if isinstance(entry.get("candidate"), dict):
+            candidate = dict(entry["candidate"])
+            extensions = candidate.get("extensions")
+            if isinstance(extensions, dict):
+                extensions = dict(extensions)
+                hive = extensions.get("hive")
+                if isinstance(hive, dict):
+                    hive = dict(hive)
+                    if "audits" in hive:
+                        hive["audits"] = _safe_audit_records(hive["audits"])
+                    extensions["hive"] = hive
+                candidate["extensions"] = extensions
+            entry["candidate"] = candidate
+    categories = sorted({value for value in (defect_categories or []) if value in set(DEFECT_CATEGORY_MARKERS) | {"unspecified_quality_defect"}})
+    if categories:
+        entry["defect_categories"] = categories
     entry["verdict"] = code.upper()
     entry["at"] = timestamp
     entry["outcome"] = {
@@ -158,7 +218,7 @@ def migrate_legacy_entry(entry):
     """Migrate only a fully classifiable one-attempt audit record; otherwise leave it untouched."""
     if not isinstance(entry, dict) or not isinstance(entry.get("task"), dict):
         return entry, False
-    if isinstance(entry.get("outcome"), dict):
+    if "outcome" in entry:
         return entry, False
     if (entry.get("verdict") != "INDEPENDENT_AUDIT_FAILED"
             or type(entry.get("attempts")) is not int or entry.get("attempts") != 1
@@ -178,22 +238,15 @@ def migrate_legacy_entry(entry):
     code = classify_audit_results(audits)
     if code not in COUNTER_BY_OUTCOME:
         return entry, False
-    safe_audits = []
-    for item in audits:
-        verdict = str(item.get("verdict", "")).strip()
-        status = "PASS" if verdict.upper() == "PASS" else (
-            "OFFLINE" if verdict.upper() == "OFFLINE" else (
-                "INVALID" if verdict.upper() == "INVALID_AUDIT_RESPONSE" else "FAIL"
-            )
-        )
-        safe_audits.append({
-            "provider": str(item.get("provider", "auditor"))[:40],
-            "vendor": str(item.get("vendor", "unknown"))[:40],
-            "verdict": status,
-        })
+    safe_audits = _safe_audit_records(audits)
+    provider_statuses = [{"provider": item["provider"], "status": item["verdict"]} for item in safe_audits]
+    defect_categories = [
+        classify_defect_category(item.get("verdict", ""))
+        for item in audits if isinstance(item, dict) and str(item.get("verdict", "")).upper().startswith("FAIL:")
+    ]
     migrated, _ = record_outcome(
         entry["task"], None, code, stage="legacy_migration",
-        provider_statuses=safe_audits, now=entry.get("at"),
+        provider_statuses=provider_statuses, defect_categories=defect_categories, now=entry.get("at"),
     )
     migrated["audits"] = safe_audits
     candidate = entry.get("candidate")
@@ -224,7 +277,7 @@ def requires_manual_review(entry):
     outcome = entry.get("outcome")
     if not isinstance(outcome, dict) or outcome.get("schema_version") != OUTCOME_SCHEMA_VERSION:
         return True
-    if outcome.get("code") not in OUTCOME_CODES:
+    if not isinstance(outcome.get("code"), str) or outcome.get("code") not in OUTCOME_CODES:
         return True
     return _prior_counters(entry) is None or outcome.get("code") == MANUAL_REVIEW_REQUIRED
 
@@ -238,6 +291,6 @@ def exhausted_outcome(entry):
         outcome["counters"][field] >= ceiling
         for field, ceiling in {
             "provider_attempts": 3, "format_attempts": 3,
-            "provenance_attempts": 2, "attempts": 3,
+            "provenance_attempts": 2, "attempts": 3, "research_attempts": 3,
         }.items()
     )
