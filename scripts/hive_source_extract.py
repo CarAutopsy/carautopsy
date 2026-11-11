@@ -1,7 +1,11 @@
 """Bounded text extraction for approved HTML, plain-text and PDF source bodies."""
 from __future__ import annotations
 
-import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from typing import Iterable
@@ -95,37 +99,51 @@ def extract_source_text(
         return ExtractedContent(result, ("document",), normalized_type)
 
     if normalized_type == "application/pdf":
+        if os.name != "posix":
+            raise ExtractionRejected("isolated PDF parsing requires POSIX resource limits")
+        worker = Path(__file__).with_name("hive_pdf_worker.py")
+        command = [
+            sys.executable, str(worker), str(max_pages), str(max_chars),
+            str(parse_timeout_seconds),
+        ]
+        # Deliberately pass a minimal environment so provider credentials and other
+        # application secrets are not inherited by the document parser process.
+        environment = {
+            "PATH": os.environ.get("PATH", ""),
+            "PYTHONIOENCODING": "utf-8",
+            "PYTHONUTF8": "1",
+        }
         try:
-            import pdfplumber
-            with pdfplumber.open(io.BytesIO(body)) as pdf:
-                if not pdf.pages:
-                    raise ExtractionRejected("PDF contains no pages")
-                if len(pdf.pages) > max_pages:
-                    raise ExtractionRejected("PDF exceeds the page limit")
-                chunks = []
-                locators = []
-                total = 0
-                for index, page in enumerate(pdf.pages, start=1):
-                    if clock() - started > parse_timeout_seconds:
-                        raise ExtractionRejected("PDF parsing exceeded the time limit")
-                    page_text = page.extract_text()
-                    if not isinstance(page_text, str) or not page_text.strip():
-                        continue
-                    if len(page_text) > MAX_PAGE_CHARS:
-                        raise ExtractionRejected(f"PDF page {index} exceeds the page character limit")
-                    total += len(page_text)
-                    if total > max_chars:
-                        raise ExtractionRejected("extracted text exceeds the configured character limit")
-                    locator = f"page:{index}"
-                    chunks.append(f"[{locator}]\n{page_text.strip()}")
-                    locators.append(locator)
-                result = _bound_text("\n\n".join(chunks), "PDF extraction")
-                if clock() - started > parse_timeout_seconds:
-                    raise ExtractionRejected("PDF parsing exceeded the time limit")
-                return ExtractedContent(result, tuple(locators), normalized_type)
-        except ExtractionRejected:
-            raise
-        except Exception as exc:
-            raise ExtractionRejected("PDF source is malformed or could not be parsed") from exc
+            completed = subprocess.run(
+                command,
+                input=body,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=parse_timeout_seconds + 1.5,
+                check=False,
+                cwd=tempfile.gettempdir(),
+                env=environment,
+                close_fds=True,
+                start_new_session=True,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise ExtractionRejected("PDF parsing exceeded the isolated worker time limit") from exc
+        except OSError as exc:
+            raise ExtractionRejected("isolated PDF worker could not be started") from exc
+        if completed.returncode != 0:
+            raise ExtractionRejected("isolated PDF worker rejected the document")
+        try:
+            payload = json.loads(completed.stdout.decode("utf-8", errors="strict"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ExtractionRejected("isolated PDF worker returned malformed output") from exc
+        text = payload.get("text") if isinstance(payload, dict) else None
+        locators = payload.get("locators") if isinstance(payload, dict) else None
+        if (
+            not isinstance(text, str) or not text.strip() or len(text) > max_chars
+            or not isinstance(locators, list)
+            or any(not isinstance(locator, str) for locator in locators)
+        ):
+            raise ExtractionRejected("isolated PDF worker output exceeded evidence limits")
+        return ExtractedContent(text, tuple(locators), normalized_type)
 
     raise ExtractionRejected("unsupported source content type")
