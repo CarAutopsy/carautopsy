@@ -19,6 +19,9 @@ MAX_RETRIEVED_AT_CHARS = 64
 MAX_TOTAL_EVIDENCE_JSON_CHARS = 70_000
 MAX_CANDIDATE_JSON_CHARS = 1_000_000
 MAX_CANDIDATE_DEPTH = 64
+TECHNICAL_CLAIM_ROOTS = ("performance", "energy", "dimensions", "emissions", "offers", "warranty", "registration")
+NON_CLAIM_OFFER_FIELDS = {"offer_id", "country", "currency"}
+MAX_CLAIM_QUOTE_CHARS = 2_000
 
 
 class CandidateRejected(ValueError):
@@ -136,6 +139,76 @@ def validate_evidence_bundle(evidence: Any) -> list[dict[str, str]]:
     return normalized
 
 
+def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
+    """Return paths for non-null canonical technical/registration/price claim values."""
+    paths: set[str] = set()
+
+    def walk(value: Any, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if path == "offers" and key in NON_CLAIM_OFFER_FIELDS:
+                    continue
+                walk(child, f"{path}.{key}" if path else str(key))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                walk(child, f"{path}[{index}]")
+        elif value is not None and (not isinstance(value, str) or value.strip()):
+            paths.add(path)
+
+    for root in TECHNICAL_CLAIM_ROOTS:
+        if root in candidate:
+            walk(candidate[root], root)
+    return paths
+
+
+def _validate_claim_evidence(
+    candidate: dict[str, Any],
+    evidence: list[dict[str, str]],
+    provenance: dict[str, Any],
+) -> None:
+    """Require each non-null technical claim to cite an exact supplied text span."""
+    required_paths = _technical_claim_paths(candidate)
+    bindings = provenance.get("claim_evidence")
+    if not required_paths:
+        if bindings not in (None, []):
+            if not isinstance(bindings, list):
+                raise CandidateRejected("claim_evidence must be an array")
+        return
+    if not isinstance(bindings, list) or not bindings:
+        raise CandidateRejected("every non-null technical claim requires claim_evidence")
+    evidence_by_id = {item["source_id"]: item for item in evidence}
+    covered: set[str] = set()
+    seen: set[tuple[str, str, str]] = set()
+    for index, binding in enumerate(bindings):
+        if not isinstance(binding, dict):
+            raise CandidateRejected(f"claim evidence item {index} must be an object")
+        claim_path = binding.get("claim_path")
+        source_id = binding.get("source_id")
+        locator = binding.get("locator")
+        quote = binding.get("quote")
+        if not isinstance(claim_path, str) or claim_path not in required_paths:
+            raise CandidateRejected(f"claim evidence item {index} references an unknown claim path")
+        if not isinstance(source_id, str) or source_id not in evidence_by_id:
+            raise CandidateRejected(f"claim evidence item {index} references an unknown source")
+        if not isinstance(locator, str) or not locator.strip() or len(locator) > 128:
+            raise CandidateRejected(f"claim evidence item {index} has an invalid locator")
+        if not isinstance(quote, str) or not quote.strip() or len(quote) > MAX_CLAIM_QUOTE_CHARS:
+            raise CandidateRejected(f"claim evidence item {index} has an invalid quote")
+        source_text = evidence_by_id[source_id]["text"]
+        if f"[{locator}]" not in source_text:
+            raise CandidateRejected(f"claim evidence locator {locator} is not present in source text")
+        if quote not in source_text:
+            raise CandidateRejected(f"claim evidence quote is not an exact source-text span")
+        identity = (claim_path, source_id, quote)
+        if identity in seen:
+            raise CandidateRejected("duplicate claim evidence binding")
+        seen.add(identity)
+        covered.add(claim_path)
+    missing = sorted(required_paths - covered)
+    if missing:
+        raise CandidateRejected("technical claims lack evidence bindings: " + ", ".join(missing[:10]))
+
+
 def validate_candidate(
     candidate: Any,
     task: dict[str, Any],
@@ -180,6 +253,8 @@ def validate_candidate(
             raise CandidateRejected(f"candidate provenance source {index} is not in the evidence bundle")
         if url != evidence_by_id[source_id]:
             raise CandidateRejected(f"candidate provenance URL does not match evidence source {source_id}")
+
+    _validate_claim_evidence(result, sources, provenance)
 
     # These fields are pipeline-owned, never trusted from model output.
     provenance["confidence"] = "low"
