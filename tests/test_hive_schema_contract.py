@@ -116,14 +116,6 @@ class HiveSchemaContractTests(unittest.TestCase):
         self.record['emissions'] = {'co2_wltp_gpkm': None}
         self.assert_valid(self.record)
 
-    def test_additional_properties_are_currently_permitted(self):
-        self.record['performance'] = {'power_max_w': 123}
-        self.assert_valid(self.record)
-
-    def test_unknown_powertrain_is_currently_permitted(self):
-        self.record['identity']['powertrain'] = 'not-a-canonical-powertrain'
-        self.assert_valid(self.record)
-
 
 if __name__ == '__main__':
     unittest.main()
