@@ -42,6 +42,8 @@ def _extract_pdf_body(body: bytes, max_pages: int, max_chars: int, timeout_secon
         text = "\n\n".join(chunks).strip()
         if not text:
             raise ValueError("no_extractable_text")
+        if len(text) > max_chars:
+            raise ValueError("document_character_limit")
         if clock() - started > timeout_seconds:
             raise TimeoutError("parse_timeout")
         return {"text": text, "locators": locators, "locator_texts": locator_texts}
