@@ -27,7 +27,7 @@ A successful HTTP response is recorded as `retrieved_unverified`. This means onl
 
 ## Not enabled
 
-The new policy checker, evidence adapter, and bounded HTML/plain-text/PDF extractor are still isolated building blocks: they are not wired into `autonomous_pipeline.py`, do not curate approved source URLs, and do not perform semantic claim verification. PDF extraction has byte/page/character limits and cooperative elapsed-time checks, but it is not yet isolated in an OS-limited worker; hard CPU/memory containment remains an acceptance requirement. The manifest remains empty and `VERIFIED_RETRIEVAL_AVAILABLE` must remain false. Do not enable paid research until these dependencies are integrated, independently reviewed, and proven end to end.
+The new policy checker, evidence adapter, and bounded HTML/plain-text/PDF extractor are still isolated building blocks: they are not wired into `autonomous_pipeline.py`, do not curate approved source URLs, and do not perform semantic claim verification. PDF extraction runs in a separate worker with a 512 MiB address-space ceiling, a 5-second CPU limit, a 6.5-second parent timeout, bounded input/pages/text, and a minimal environment without provider credentials. The worker does not establish a separate network namespace; its parser path must remain free of network access. The manifest remains empty and `VERIFIED_RETRIEVAL_AVAILABLE` must remain false. Do not enable paid research until these dependencies are integrated, independently reviewed, and proven end to end.
 
 ## Tests
 
@@ -37,7 +37,7 @@ The new policy checker, evidence adapter, and bounded HTML/plain-text/PDF extrac
 ## New isolated implementation building blocks
 
 - `scripts/hive_source_policy.py`: owner-reviewed exact URL and terms metadata checks plus live robots.txt parsing.
-- `scripts/hive_source_extract.py`: visible HTML text, strict UTF-8 plain text, and page-bounded PDF extraction. Script/style/template/noscript/SVG/canvas/iframe/object content is excluded from HTML.
+- `scripts/hive_source_extract.py`: visible HTML text, strict UTF-8 plain text, and page-bounded PDF extraction in an OS-resource-limited worker (512 MiB address space, 5-second CPU limit, bounded wall time). Script/style/template/noscript/SVG/canvas/iframe/object content is excluded from HTML.
 - `scripts/hive_evidence.py`: retrieves only exact URLs from the owner manifest, checks policy before the source request, extracts bounded text, assigns stable source IDs, and returns only the candidate gate's bounded evidence fields. Raw response bytes are not returned or persisted. PDF page markers and document locators remain adjacent to extracted text.
 - `scripts/hive_candidate.py`: additionally requires every non-null technical, price, registration, and non-reserved identity claim to bind to an exact quoted source-text span and locator from a declared provenance source. This proves traceability to supplied text, not semantic relevance; independent auditors must still assess whether the quote supports the claim.
 - Tests use mocked transport and synthetic documents only. They do not establish live OEM permission, source authenticity, factual claim support, or production readiness.
