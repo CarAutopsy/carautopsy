@@ -93,7 +93,9 @@ def retrieve_approved_evidence(
             if not isinstance(body, bytes) or not isinstance(retrieved_at, str) or not retrieved_at:
                 raise EvidenceRetrievalRejected("retrieval result lacks transient body or timestamp")
             try:
-                extracted = extractor(body, content_type, max_chars=20_000)
+                # Reserve space for the generated document locator marker so the
+                # final serialized excerpt never exceeds the shared 20k ceiling.
+                extracted = extractor(body, content_type, max_chars=19_989)
             except Exception as exc:
                 raise EvidenceRetrievalRejected("source extraction failed closed") from exc
             text = extracted.text
@@ -110,6 +112,7 @@ def retrieve_approved_evidence(
                 "url": url,
                 "retrieved_at": retrieved_at,
                 "text": text,
+                "locator_texts": dict(extracted.locator_texts),
             })
 
     try:
