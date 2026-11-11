@@ -23,6 +23,7 @@ def _extract_pdf_body(body: bytes, max_pages: int, max_chars: int, timeout_secon
             raise ValueError("page_limit")
         chunks = []
         locators = []
+        locator_texts = {}
         total = 0
         for index, page in enumerate(pdf.pages, start=1):
             if clock() - started > timeout_seconds:
@@ -43,7 +44,7 @@ def _extract_pdf_body(body: bytes, max_pages: int, max_chars: int, timeout_secon
             raise ValueError("no_extractable_text")
         if clock() - started > timeout_seconds:
             raise TimeoutError("parse_timeout")
-        return {"text": text, "locators": locators}
+        return {"text": text, "locators": locators, "locator_texts": locator_texts}
 
 
 def _apply_resource_limits() -> None:
