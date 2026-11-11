@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from scripts.hive_source_policy import SourcePolicyDenied, check_source_access, load_policy
+from scripts.hive_source_policy import SourcePolicyDenied, _robots_can_fetch, check_source_access, load_policy
 
 
 HOST = "oem.example"
@@ -58,6 +58,23 @@ class SourcePolicyTests(unittest.TestCase):
         fetcher = Mock(return_value=SimpleNamespace(outcome="retrieved_unverified", body=b"not a robots file"))
         with self.assertRaisesRegex(SourcePolicyDenied, "missing a valid"):
             check_source_access(URL, config=config(), fetcher=fetcher, today=date(2026, 11, 11))
+
+    def test_malformed_disallow_without_colon_denies(self):
+        with self.assertRaisesRegex(SourcePolicyDenied, "malformed directive"):
+            _robots_can_fetch("User-agent: *\\nDisallow\\n", USER_AGENT, URL)
+
+    def test_robots_longest_match_disallow_overrides_allow_root(self):
+        text = "User-agent: *\\nAllow: /\\nDisallow: /specs/\\n"
+        self.assertFalse(_robots_can_fetch(text, USER_AGENT, URL))
+
+    def test_robots_longest_match_allow_can_override_parent_disallow(self):
+        text = "User-agent: *\\nDisallow: /specs/\\nAllow: /specs/public/\\n"
+        self.assertTrue(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/public/model.html"))
+
+    def test_robots_supports_wildcard_and_terminal_anchor(self):
+        text = "User-agent: *\\nDisallow: /*.pdf$\\n"
+        self.assertFalse(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/model.pdf"))
+        self.assertTrue(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/model.pdf?download=1"))
 
     def test_invalid_utf8_robots_denies(self):
         fetcher = Mock(return_value=SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\n\xff"))
