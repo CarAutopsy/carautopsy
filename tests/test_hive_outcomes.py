@@ -97,6 +97,7 @@ class OutcomeClassificationTests(unittest.TestCase):
         self.assertEqual(migrated["outcome"]["code"], outcomes.VEHICLE_QUALITY_REJECTION)
         self.assertEqual(migrated["outcome"]["counters"]["attempts"], 1)
         self.assertEqual(migrated["audits"][0]["verdict"], "FAIL")
+        self.assertEqual(migrated["outcome"]["provider_statuses"][0]["status"], "FAIL")
         self.assertNotIn("drivetrain value", str(migrated))
 
     def test_ambiguous_legacy_audit_failure_is_not_migrated(self):
@@ -127,6 +128,10 @@ class OutcomeClassificationTests(unittest.TestCase):
         self.assertEqual(
             outcomes.classify_audit_results([{"verdict": "FAIL: cockpit dimensions use wrong units"}, {"verdict": "PASS"}]),
             outcomes.VEHICLE_QUALITY_REJECTION,
+        )
+        self.assertEqual(
+            outcomes.classify_audit_results([{"verdict": "FAIL: CoC document is missing"}, {"verdict": "PASS"}]),
+            outcomes.PROVENANCE_REJECTION,
         )
 
     def test_incomplete_counters_and_non_string_codes_fail_closed(self):
