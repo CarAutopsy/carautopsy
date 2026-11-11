@@ -224,7 +224,7 @@ def reconcile_with_pr(root):
     working = {}
     for rel in (FAILED, QUEUE):
         path = root / rel
-        working[rel] = path.read_bytes() if path.exists() else b"[]\\n"
+        working[rel] = path.read_bytes() if path.exists() else b"[]\n"
 
     if state_context == "standalone":
         if working == files:
@@ -311,11 +311,11 @@ def save_state(root, message, proposal_head=None):
            "GIT_AUTHOR_NAME": "hive-bot", "GIT_AUTHOR_EMAIL": "hive-bot@users.noreply.github.com",
            "GIT_COMMITTER_NAME": "hive-bot", "GIT_COMMITTER_EMAIL": "hive-bot@users.noreply.github.com"}
     commit_message = (
-        f"{message}\\n\\n{TRAILER}: {digest}\\n"
+        f"{message}\n\n{TRAILER}: {digest}\n"
         f"{STATE_CONTEXT_TRAILER}: {'proposal' if proposal_head else 'standalone'}"
     )
     if proposal_head:
-        commit_message += f"\\n{PROPOSAL_HEAD_TRAILER}: {proposal_head}"
+        commit_message += f"\n{PROPOSAL_HEAD_TRAILER}: {proposal_head}"
     args = ["commit-tree", root_tree, "-m", commit_message]
     if tip:
         args += ["-p", tip]
