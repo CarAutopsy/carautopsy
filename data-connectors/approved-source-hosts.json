@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "approved_hosts": [],
+  "policy": "Exact hostnames only. Empty means retrieval is disabled. Additions require owner review and confirmation that automated access is permitted by source terms and robots.txt.",
+  "owner_approval_required": true
+}
