@@ -278,6 +278,25 @@ class StateBranchTests(unittest.TestCase):
         self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
         self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
 
+    def test_first_proposal_without_state_baseline_can_adopt_after_successful_mirror(self):
+        self.sh("git", "checkout", "-b", "first-proposal", cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=1)])
+        self.sh("git", "add", "tasks", cwd=self.a)
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
+                "commit", "-m", "first proposal", "-m",
+                "Hive-State-Base: none", cwd=self.a)
+        proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
+        self.sh("git", "push", "origin", "first-proposal", cwd=self.a)
+        # First mirror has no state-branch parent, so it records the proposal as
+        # its parent. Later standalone retry commits descend from that mirror.
+        hive_state.save_state(self.a, "first proposal mirror", proposal_head=proposal_head)
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        hive_state.save_state(self.a, "standalone retry after proposal")
+        self.sh("git", "fetch", "origin", "first-proposal", cwd=self.b)
+        self.sh("git", "checkout", "-b", "reopened-first-proposal", "FETCH_HEAD", cwd=self.b)
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
+
     def test_stale_standalone_descendant_cannot_replace_newer_proposal_ledger(self):
         self.write(self.a, [task("b")], [entry("a", attempts=0)])
         hive_state.save_state(self.a, "baseline state")
