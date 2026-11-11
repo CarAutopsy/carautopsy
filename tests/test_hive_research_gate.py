@@ -54,6 +54,7 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
         env.update({
             "PYTHONPATH": os.pathsep.join((str(root), str(ROOT / "scripts"))),
             "PATH": os.environ.get("PATH", ""),
+            "PYTHONDONTWRITEBYTECODE": "1",
         })
         env.pop("DEEPSEEK_API_KEY", None)
         env.pop("DEEPSEEK_API_CARAUTOPSY_KEY", None)
