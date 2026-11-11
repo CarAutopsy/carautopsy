@@ -59,17 +59,23 @@ def call_provider(prompt, key, url, model, temperature=0.1):
 
 
 def call_llm(prompt, key, url, model):
-    """Call one model and treat provider errors as unavailable."""
+    """Return content plus a safe failure class; never expose provider error bodies."""
     if not key:
-        return None
+        return None, "provider_transport_failure"
     try:
         content, used_model = call_provider(prompt, key, url, model)
         if content and used_model != model:
             print(f"   [Gemini fallback model: {used_model}]")
-        return content
+        return content, None
+    except (ValueError, KeyError, TypeError, IndexError) as exc:
+        print(f"   [provider response format failed: {type(exc).__name__}]")
+        return None, "response_format_failure"
+    except requests.exceptions.RequestException as exc:
+        print(f"   [provider request failed: {type(exc).__name__}]")
+        return None, "provider_transport_failure"
     except Exception as exc:
         print(f"   [provider request failed: {type(exc).__name__}]")
-        return None
+        return None, "provider_transport_failure"
 
 # Provider fallback routing
 QWEN_KEY = os.getenv("QWEN_API_KEY")
@@ -86,27 +92,33 @@ PROVIDERS = [
 ]
 
 def call_any(prompt, exclude_vendors=None):
-    """Return the first successful response from a non-excluded vendor."""
+    """Return content or a deterministic provider/format failure class."""
     excluded = set(exclude_vendors or [])
+    failures = []
     for name, vendor, key, url, model in PROVIDERS:
         if not key or vendor in excluded:
             continue
-        out = call_llm(prompt, key, url, model)
+        out, failure = call_llm(prompt, key, url, model)
         if out:
             print(f"   [provider: {name}]")
-            return out, name, vendor
-    return None, None, None
+            return out, name, vendor, None
+        failures.append(failure)
+    failure_code = "response_format_failure" if "response_format_failure" in failures else "provider_transport_failure"
+    return None, None, None, failure_code
 
 def call_vendor(prompt, vendor):
-    """Call a specific independent vendor for an audit response."""
+    """Call one independent vendor and preserve its safe failure class."""
     for name, provider_vendor, key, url, model in PROVIDERS:
-        if provider_vendor != vendor or not key:
+        if provider_vendor != vendor:
             continue
-        out = call_llm(prompt, key, url, model)
+        if not key:
+            return None, None, "provider_transport_failure"
+        out, failure = call_llm(prompt, key, url, model)
         if out:
             print(f"   [audit provider: {name}]")
-            return out, name
-    return None, None
+            return out, name, None
+        return None, None, failure
+    return None, None, "provider_transport_failure"
 
 def provider_smoke_test():
     """Exercise one endpoint per independent vendor without touching catalog or queue."""
@@ -249,7 +261,7 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
         # Count the variant before provider calls so failures cannot be retried
         # again during this same batch; it remains queued for a later run.
         attempted_variant_ids.add(vid)
-        raw, res_name, res_vendor = call_any(rp)
+        raw, res_name, res_vendor, research_failure_code = call_any(rp)
         veh = None
         if raw:
             try:
@@ -258,7 +270,7 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
             except Exception as e:
                 print(f"Researcher bad JSON: {e}"); veh = None
         
-        research_code = classify_research_response(raw, veh)
+        research_code = classify_research_response(raw, veh, failure_code=research_failure_code)
         if research_code is not None:
             research_failures_this_run += 1
             previous = next((item for item in reversed(failed)
@@ -312,8 +324,10 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
         audit_vendors = [vendor for vendor in ("deepseek", "google", "qwen") if vendor != res_vendor]
         audit_results = []
         for audit_vendor in audit_vendors:
-            audit_raw, audit_name = call_vendor(ap, audit_vendor)
-            audit_verdict = concise_audit_verdict(audit_raw) if audit_raw else "OFFLINE"
+            audit_raw, audit_name, audit_failure_code = call_vendor(ap, audit_vendor)
+            audit_verdict = concise_audit_verdict(audit_raw) if audit_raw else (
+                "INVALID_AUDIT_RESPONSE" if audit_failure_code == "response_format_failure" else "OFFLINE"
+            )
             audit_results.append({"provider": audit_name or audit_vendor, "vendor": audit_vendor, "verdict": audit_verdict})
             print(f"Auditor {audit_name or audit_vendor} says: {audit_verdict}")
 
