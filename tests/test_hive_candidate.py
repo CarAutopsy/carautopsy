@@ -136,6 +136,23 @@ class HiveCandidateGateTests(unittest.TestCase):
         with self.assertRaisesRegex(CandidateRejected, "does not match"):
             validate_candidate(candidate, self.task, self.evidence)
 
+    def test_evidence_metadata_fields_are_bounded(self):
+        for key, length in (("source_id", 129), ("url", 2049), ("retrieved_at", 65)):
+            with self.subTest(key=key):
+                evidence = [dict(self.evidence[0], **{key: "x" * length})]
+                with self.assertRaisesRegex(CandidateRejected, "exceeds"):
+                    validate_evidence_bundle(evidence)
+
+    def test_serialized_evidence_bundle_has_a_combined_limit(self):
+        evidence = [{
+            "source_id": str(index),
+            "url": "https://oem.example/" + ("x" * 2048),
+            "retrieved_at": "2026-11-11T12:00:00Z",
+            "text": "x" * 15_000,
+        } for index in range(4)]
+        with self.assertRaisesRegex(CandidateRejected, "serialized evidence bundle"):
+            validate_evidence_bundle(evidence)
+
     def test_provenance_sources_must_not_be_empty(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["provenance"]["sources"] = []
@@ -143,10 +160,25 @@ class HiveCandidateGateTests(unittest.TestCase):
             validate_candidate(candidate, self.task, self.evidence)
 
     def test_json_parser_rejects_non_finite_numbers(self):
-        for raw in ('{"value": NaN}', '{"value": Infinity}', '{"value": -Infinity}'):
+        for raw in ('{"value": NaN}', '{"value": Infinity}', '{"value": -Infinity}', '{"value": 1e999}'):
             with self.subTest(raw=raw):
                 with self.assertRaises(CandidateRejected):
                     parse_candidate_json(raw)
+
+    def test_json_parser_rejects_excessive_nesting_and_response_size(self):
+        with self.assertRaisesRegex(CandidateRejected, "nesting"):
+            parse_candidate_json('{"value":' * 66 + "0" + "}" * 66)
+        with self.assertRaisesRegex(CandidateRejected, "size limit"):
+            parse_candidate_json('{"value":"' + ("x" * 1_000_001) + '"}')
+
+    def test_candidate_is_rejected_before_deep_copy_when_nested_too_deep(self):
+        candidate = copy.deepcopy(self.candidate)
+        node = candidate
+        for _ in range(66):
+            node["nested"] = {}
+            node = node["nested"]
+        with self.assertRaises(CandidateRejected):
+            validate_candidate(candidate, self.task, self.evidence)
 
     def test_json_parser_requires_one_object(self):
         for raw in ("[]", "null", '"text"', "{bad json}"):
