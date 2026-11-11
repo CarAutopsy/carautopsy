@@ -98,7 +98,7 @@ class HiveSourceExtractionTests(unittest.TestCase):
         setrlimit.assert_any_call(resource.RLIMIT_CPU, (5, 6))
 
     def test_pdf_uses_isolated_worker_with_minimal_environment(self):
-        payload = {"text": "[page:1]\npage one\n\n[page:2]\npage two", "locators": ["page:1", "page:2"]}
+        payload = {"text": "[page:1]\npage one\n\n[page:2]\npage two", "locators": ["page:1", "page:2"], "locator_texts": {"page:1": "page one", "page:2": "page two"}}
         completed = subprocess.CompletedProcess(
             args=["python"], returncode=0,
             stdout=json.dumps(payload).encode(), stderr=b"",
