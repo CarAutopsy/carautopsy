@@ -90,6 +90,19 @@ class HiveCandidateGateTests(unittest.TestCase):
                 with self.assertRaisesRegex(CandidateRejected, expected):
                     validate_candidate(candidate, self.task, evidence)
 
+    def test_quote_must_appear_within_the_declared_pdf_page(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "page:1",
+            "quote": "Peak power is 110000 W.",
+        }]
+        evidence = [dict(self.evidence[0], text="[page:1]\nDimensions follow.\n[page:2]\nPeak power is 110000 W.")]
+        with self.assertRaisesRegex(CandidateRejected, "stated locator"):
+            validate_candidate(candidate, self.task, evidence)
+
     def test_claim_binding_must_reference_declared_source_and_real_claim_path(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {"power_w": 110000}
