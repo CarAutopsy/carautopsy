@@ -156,7 +156,7 @@ def _robots_can_fetch(text: str, user_agent: str, url: str) -> bool:
         if not pattern:
             continue
         terminal = pattern.endswith("$")
-        expression = re.escape(pattern[:-1] if terminal else pattern).replace(r"\\*", ".*")
+        expression = re.escape(pattern[:-1] if terminal else pattern).replace(r"\*", ".*")
         expression = "^" + expression + ("$" if terminal else "")
         if re.search(expression, path_query):
             specificity = len(pattern.rstrip("$").replace("*", ""))
