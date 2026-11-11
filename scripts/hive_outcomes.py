@@ -21,7 +21,7 @@ COUNTER_BY_OUTCOME = {
     PROVENANCE_REJECTION: ("provenance_attempts", 2),
     VEHICLE_QUALITY_REJECTION: ("attempts", 3),
 }
-PROVENANCE_MARKERS = ("provenance", "source url", "source-url", "citation", "coc", "certificate of conformity", "retrieval", "official url")
+PROVENANCE_MARKERS = ("provenance", "source url", "source-url", "citation", "coc", "certificate of conformity", "retrieval", "official url", "official source", "source document", "not cited", "unverifiable url", "fabricated url")
 
 
 def classify_research_response(raw, parsed, failure_code=None):
@@ -155,7 +155,9 @@ def migrate_legacy_entry(entry):
         return entry, False
     if isinstance(entry.get("outcome"), dict):
         return entry, False
-    if entry.get("verdict") != "INDEPENDENT_AUDIT_FAILED" or type(entry.get("attempts")) is not int or entry.get("attempts") != 1:
+    if (entry.get("verdict") != "INDEPENDENT_AUDIT_FAILED"
+            or type(entry.get("attempts")) is not int or entry.get("attempts") != 1
+            or type(entry.get("research_attempts")) is not int or entry.get("research_attempts") != 0):
         return entry, False
     audits = entry.get("audits")
     if not isinstance(audits, list) or len(audits) < 2:
