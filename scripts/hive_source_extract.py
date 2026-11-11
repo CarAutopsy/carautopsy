@@ -116,8 +116,9 @@ def extract_source_text(
                     total += len(page_text)
                     if total > max_chars:
                         raise ExtractionRejected("extracted text exceeds the configured character limit")
-                    chunks.append(page_text.strip())
-                    locators.append(f"page:{index}")
+                    locator = f"page:{index}"
+                    chunks.append(f"[{locator}]\\n{page_text.strip()}")
+                    locators.append(locator)
                 result = _bound_text("\n\n".join(chunks), "PDF extraction")
                 if clock() - started > parse_timeout_seconds:
                     raise ExtractionRejected("PDF parsing exceeded the time limit")
