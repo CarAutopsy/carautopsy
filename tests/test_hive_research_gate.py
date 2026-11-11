@@ -143,8 +143,8 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
         gate = source.index("require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)")
         for operation in (
-            "raw, res_name, res_vendor = call_any(rp)",
-            "audit_raw, audit_name = call_vendor(ap, audit_vendor)",
+            "raw, res_name, res_vendor, research_failure_code = call_any(rp)",
+            "audit_raw, audit_name, audit_failure_code = call_vendor(ap, audit_vendor)",
             "open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None",
             "load_state(ROOT)",
             "curate_one(attempted_variant_ids if RESEARCH_ONLY else None)",
