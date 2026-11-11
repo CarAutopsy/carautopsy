@@ -67,6 +67,15 @@ class HivePromptBuilderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_researcher_prompt(task, self.schema, self.evidence)
 
+    def test_oversized_evidence_metadata_is_rejected_by_both_prompt_builders(self):
+        for key, length in (("source_id", 129), ("url", 2049), ("retrieved_at", 65)):
+            with self.subTest(key=key):
+                oversized = [dict(self.evidence[0], **{key: "x" * length})]
+                with self.assertRaises(ValueError):
+                    build_researcher_prompt(self.task, self.schema, oversized)
+                with self.assertRaises(ValueError):
+                    build_auditor_prompt(self.candidate, self.schema, oversized)
+
     def test_missing_evidence_is_rejected_before_prompt_construction(self):
         with self.assertRaises(ValueError):
             build_auditor_prompt(self.candidate, self.schema, [])
