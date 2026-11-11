@@ -4,7 +4,7 @@ import subprocess
 import unittest
 from unittest.mock import patch
 
-from scripts.hive_pdf_worker import _extract_pdf_body
+from scripts.hive_pdf_worker import _apply_resource_limits, _extract_pdf_body
 from scripts.hive_source_extract import (
     ExtractionRejected,
     MAX_PAGE_CHARS,
@@ -83,6 +83,13 @@ class HiveSourceExtractionTests(unittest.TestCase):
         self.assertNotIn("DEEPSEEK_API_KEY", kwargs["env"])
         self.assertNotIn("GEMINI_API_KEY", kwargs["env"])
         self.assertTrue(kwargs["start_new_session"])
+
+    def test_pdf_worker_sets_hard_address_space_and_cpu_limits(self):
+        import resource
+        with patch("resource.setrlimit") as setrlimit:
+            _apply_resource_limits()
+        setrlimit.assert_any_call(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
+        setrlimit.assert_any_call(resource.RLIMIT_CPU, (5, 6))
 
     def test_pdf_worker_timeout_is_fail_closed(self):
         with patch(
