@@ -6,10 +6,16 @@ from datetime import date
 from pathlib import Path
 from typing import Callable
 
-from hive_source_extract import extract_source_text
-from hive_source_policy import SourcePolicyDenied, check_source_access, load_policy
-from hive_source_retrieval import fetch_source
-from hive_candidate import validate_evidence_bundle
+try:  # Support both script execution and package imports in unit tests.
+    from .hive_source_extract import extract_source_text
+    from .hive_source_policy import SourcePolicyDenied, check_source_access, load_policy
+    from .hive_source_retrieval import fetch_source
+    from .hive_candidate import validate_evidence_bundle
+except ImportError:  # pragma: no cover - exercised by the script entry point.
+    from hive_source_extract import extract_source_text
+    from hive_source_policy import SourcePolicyDenied, check_source_access, load_policy
+    from hive_source_retrieval import fetch_source
+    from hive_candidate import validate_evidence_bundle
 
 
 class EvidenceRetrievalRejected(ValueError):
