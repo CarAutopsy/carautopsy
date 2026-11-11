@@ -433,7 +433,7 @@ if RESEARCH_ONLY:
              "--base", "main", "--head", branch])
         print("Research proposal pushed; awaiting human review.")
     # Mirror the ledger so hive/state never lags the PR branch.
-    save_state(ROOT, f"chore(hive-state): {msg}")
+    save_state(ROOT, f"chore(hive-state): {msg}", proposal_head=subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip())
     if audit_failures_this_run or research_failures_this_run:
         print(
             f"Research cycle completed and saved for human review: "
