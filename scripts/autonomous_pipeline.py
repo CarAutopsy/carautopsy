@@ -6,6 +6,7 @@ from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
+from hive_state import load_state, reconcile_with_pr, save_state
 
 ROOT = Path.cwd()
 
@@ -348,6 +349,12 @@ if open_research_pr:
     run(["git", "fetch", "origin", open_research_pr["headRefName"]])
     run(["git", "checkout", "-B", open_research_pr["headRefName"],
          f"origin/{open_research_pr['headRefName']}"])
+    # The PR branch carries the ledger while a proposal is open. Align it with
+    # hive/state first: adopt a hand-edited state, or resync a mirror that lagged.
+    reconcile_with_pr(ROOT)
+elif RESEARCH_ONLY:
+    # No pending proposal: resume from the ledger saved on the hive/state branch.
+    load_state(ROOT)
 
 batch_messages = []
 attempted_variant_ids = set()
@@ -378,6 +385,16 @@ if RESEARCH_ONLY:
         print("Research-only run made no changes.")
         if audit_failures_this_run or research_failures_this_run:
             sys.exit(1)
+        sys.exit(0)
+    catalog_dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", "catalog/variants"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    if not open_research_pr and not catalog_dirty:
+        # Nothing for a reviewer: keep the retry counters on hive/state
+        # instead of opening a proposal PR that holds only ledger changes.
+        saved = save_state(ROOT, f"chore(hive-state): {msg}")
+        print("No catalog candidates and no pending proposal; ledger " + ("saved to hive/state." if saved else "unchanged."))
         sys.exit(0)
     run(["git", "config", "user.name", "hive-bot"])
     run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
@@ -415,6 +432,8 @@ if RESEARCH_ONLY:
              "--body", "Automated vehicle research proposal. Two independent AI vendors must explicitly approve each record. All AI-generated data remains low-confidence and requires human review before acceptance.",
              "--base", "main", "--head", branch])
         print("Research proposal pushed; awaiting human review.")
+    # Mirror the ledger so hive/state never lags the PR branch.
+    save_state(ROOT, f"chore(hive-state): {msg}")
     if audit_failures_this_run or research_failures_this_run:
         print(
             f"Research cycle completed and saved for human review: "
