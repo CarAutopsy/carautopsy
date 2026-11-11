@@ -51,6 +51,76 @@ class HiveCandidateGateTests(unittest.TestCase):
         self.assertNotIn("hive", result["extensions"])
         self.assertEqual(result["extensions"]["other"], "keep")
 
+    def test_every_non_null_technical_claim_requires_an_exact_evidence_span(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Peak power is 110000 W.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\nPeak power is 110000 W.")]
+        result = validate_candidate(candidate, self.task, evidence)
+        self.assertEqual(result["performance"]["power_w"], 110000)
+
+    def test_non_null_technical_claim_without_binding_is_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_claim_binding_requires_exact_quote_and_locator(self):
+        for field, value, expected in (
+            ("quote", "Peak power is 110 kW.", "exact source-text span"),
+            ("locator", "page:99", "locator page:99"),
+        ):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(self.candidate)
+                candidate["performance"] = {"power_w": 110000}
+                binding = {
+                    "claim_path": "performance.power_w",
+                    "source_id": "oem-1",
+                    "locator": "document",
+                    "quote": "Official technical specification.",
+                }
+                binding[field] = value
+                candidate["provenance"]["claim_evidence"] = [binding]
+                evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.")]
+                with self.assertRaisesRegex(CandidateRejected, expected):
+                    validate_candidate(candidate, self.task, evidence)
+
+    def test_claim_binding_must_reference_declared_source_and_real_claim_path(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.unknown_field",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Official technical specification.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.")]
+        with self.assertRaisesRegex(CandidateRejected, "unknown claim path"):
+            validate_candidate(candidate, self.task, evidence)
+
+        candidate["provenance"]["claim_evidence"][0]["claim_path"] = "performance.power_w"
+        candidate["provenance"]["claim_evidence"][0]["source_id"] = "other-source"
+        with self.assertRaisesRegex(CandidateRejected, "unknown or undeclared source"):
+            validate_candidate(candidate, self.task, evidence)
+
+    def test_each_claim_path_needs_its_own_binding(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000, "torque_nm": 250}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Official technical specification.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.")]
+        with self.assertRaisesRegex(CandidateRejected, "performance.torque_nm"):
+            validate_candidate(candidate, self.task, evidence)
+
     def test_non_object_candidate_is_rejected(self):
         with self.assertRaisesRegex(CandidateRejected, "JSON object"):
             validate_candidate([], self.task, self.evidence)
