@@ -295,8 +295,9 @@ class HiveCandidateGateTests(unittest.TestCase):
             "source_id": str(index),
             "url": "https://oem.example/" + ("x" * 2028),
             "retrieved_at": "2026-11-11T12:00:00Z",
-            "text": "x" * 12_000,
-        } for index in range(5)]
+            "text": "x" * 6_000,
+            "locator_texts": {"document": "y" * 20_000},
+        } for index in range(10)]
         with self.assertRaisesRegex(CandidateRejected, "serialized evidence bundle"):
             validate_evidence_bundle(evidence)
 
