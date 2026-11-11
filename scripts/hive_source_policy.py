@@ -53,6 +53,12 @@ def _host_policy(config: dict, host: str, today: date) -> dict:
     terms_url = item.get("terms_url")
     if not isinstance(terms_url, str) or not terms_url.startswith("https://"):
         raise SourcePolicyDenied("owner-reviewed source terms URL is missing or invalid")
+    reviewer = item.get("terms_reviewed_by")
+    review_ref = item.get("terms_review_ref")
+    if not isinstance(reviewer, str) or not reviewer.strip():
+        raise SourcePolicyDenied("source terms reviewer identity is missing")
+    if not isinstance(review_ref, str) or not review_ref.startswith("https://"):
+        raise SourcePolicyDenied("source terms review reference is missing or invalid")
     reviewed = item.get("terms_reviewed_at")
     try:
         reviewed_date = date.fromisoformat(reviewed)
