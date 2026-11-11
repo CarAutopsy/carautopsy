@@ -171,6 +171,13 @@ class StateBranchTests(unittest.TestCase):
         self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
         self.assertEqual(self.read(self.b, "queue.json"), [task("b")])
 
+    def test_reconcile_adopts_newer_retry_progress_for_same_proposal_head(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        hive_state.save_state(self.a, "new retry progress")
+        self.write(self.b, [task("a"), task("b")], [entry("a", attempts=1)])
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
+
     def test_reconcile_adopts_a_hand_edited_state_instead_of_overwriting_it(self):
         self.write(self.a, [task("b")], [entry("a", attempts=3)])
         hive_state.save_state(self.a, "state 1")
