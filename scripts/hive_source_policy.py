@@ -51,14 +51,20 @@ def _host_policy(config: dict, host: str, today: date) -> dict:
     if not isinstance(approved_urls, list) or not approved_urls or any(not isinstance(value, str) for value in approved_urls):
         raise SourcePolicyDenied("owner-reviewed exact source URL list is missing")
     terms_url = item.get("terms_url")
-    if not isinstance(terms_url, str) or not terms_url.startswith("https://"):
-        raise SourcePolicyDenied("owner-reviewed source terms URL is missing or invalid")
-    reviewer = item.get("terms_reviewed_by")
     review_ref = item.get("terms_review_ref")
-    if not isinstance(reviewer, str) or not reviewer.strip():
+    for label, value in (("source terms URL", terms_url), ("source terms review reference", review_ref)):
+        if not isinstance(value, str) or len(value) > 2048 or any(ord(char) < 32 for char in value):
+            raise SourcePolicyDenied(f"{label} is missing or invalid")
+        try:
+            parsed_link = urlsplit(value)
+            port = parsed_link.port
+        except ValueError as exc:
+            raise SourcePolicyDenied(f"{label} is malformed") from exc
+        if parsed_link.scheme != "https" or not parsed_link.hostname or parsed_link.username is not None or parsed_link.password is not None or port not in (None, 443):
+            raise SourcePolicyDenied(f"{label} must be a valid HTTPS URL without credentials or a non-standard port")
+    reviewer = item.get("terms_reviewed_by")
+    if not isinstance(reviewer, str) or not reviewer.strip() or len(reviewer) > 128:
         raise SourcePolicyDenied("source terms reviewer identity is missing")
-    if not isinstance(review_ref, str) or not review_ref.startswith("https://"):
-        raise SourcePolicyDenied("source terms review reference is missing or invalid")
     reviewed = item.get("terms_reviewed_at")
     try:
         reviewed_date = date.fromisoformat(reviewed)
