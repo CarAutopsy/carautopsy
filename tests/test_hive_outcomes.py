@@ -42,19 +42,35 @@ class OutcomeClassificationTests(unittest.TestCase):
             self.assertEqual(retry, expected < 2)
 
     def test_each_failure_counter_is_bounded(self):
-        previous = None
-        for expected in (1, 2, 3):
-            previous, retry = outcomes.record_outcome({"variant_id": "a"}, previous, outcomes.PROVIDER_TRANSPORT_FAILURE, stage="research")
-            self.assertEqual(previous["outcome"]["counters"]["provider_attempts"], expected)
-            self.assertEqual(retry, expected < 3)
+        cases = [
+            (outcomes.PROVIDER_TRANSPORT_FAILURE, "provider_attempts", 3),
+            (outcomes.RESPONSE_FORMAT_FAILURE, "format_attempts", 3),
+            (outcomes.VEHICLE_QUALITY_REJECTION, "attempts", 3),
+            (outcomes.PROVENANCE_REJECTION, "provenance_attempts", 2),
+        ]
+        for code, field, ceiling in cases:
+            with self.subTest(code=code):
+                previous = None
+                for expected in range(1, ceiling + 1):
+                    previous, retry = outcomes.record_outcome({"variant_id": "a"}, previous, code, stage="test")
+                    self.assertEqual(previous["outcome"]["counters"][field], expected)
+                    self.assertEqual(retry, expected < ceiling)
 
-    def test_restart_reload_preserves_class_and_counters(self):
-        entry, _ = outcomes.record_outcome({"variant_id": "a"}, None, outcomes.RESPONSE_FORMAT_FAILURE, stage="research", attempt_id="stable-attempt")
+    def test_restart_reload_preserves_each_outcome_class_and_counter(self):
         import json
-        restored = json.loads(json.dumps(entry))
-        next_entry, _ = outcomes.record_outcome({"variant_id": "a"}, restored, outcomes.RESPONSE_FORMAT_FAILURE, stage="research")
-        self.assertEqual(next_entry["outcome"]["counters"]["format_attempts"], 2)
-        self.assertEqual(next_entry["outcome"]["code"], outcomes.RESPONSE_FORMAT_FAILURE)
+        cases = [
+            (outcomes.PROVIDER_TRANSPORT_FAILURE, "provider_attempts"),
+            (outcomes.RESPONSE_FORMAT_FAILURE, "format_attempts"),
+            (outcomes.PROVENANCE_REJECTION, "provenance_attempts"),
+            (outcomes.VEHICLE_QUALITY_REJECTION, "attempts"),
+        ]
+        for code, field in cases:
+            with self.subTest(code=code):
+                entry, _ = outcomes.record_outcome({"variant_id": "a"}, None, code, stage="restart")
+                restored = json.loads(json.dumps(entry))
+                next_entry, _ = outcomes.record_outcome({"variant_id": "a"}, restored, code, stage="restart")
+                self.assertEqual(next_entry["outcome"]["counters"][field], 2)
+                self.assertEqual(next_entry["outcome"]["code"], code)
 
     def test_legacy_and_unknown_outcomes_fail_closed_to_manual_review(self):
         legacy = {"task": {"variant_id": "old"}, "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": 1}
@@ -64,6 +80,33 @@ class OutcomeClassificationTests(unittest.TestCase):
         self.assertTrue(outcomes.requires_manual_review(legacy))
         unknown = {"outcome": {"schema_version": 1, "code": "future_unknown", "counters": {}}}
         self.assertTrue(outcomes.requires_manual_review(unknown))
+
+    def test_recognized_legacy_audit_failure_migrates_without_raw_verdict_text(self):
+        legacy = {
+            "task": {"variant_id": "legacy", "make": "M", "model": "X"},
+            "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": 1,
+            "at": "2026-11-10T00:00:00Z",
+            "audits": [
+                {"provider": "deepseek", "vendor": "deepseek", "verdict": "FAIL: drivetrain value is inconsistent"},
+                {"provider": "gemini", "vendor": "google", "verdict": "PASS"},
+            ],
+        }
+        migrated, recognized = outcomes.migrate_legacy_entry(legacy)
+        self.assertTrue(recognized)
+        self.assertEqual(migrated["outcome"]["code"], outcomes.VEHICLE_QUALITY_REJECTION)
+        self.assertEqual(migrated["outcome"]["counters"]["attempts"], 1)
+        self.assertEqual(migrated["audits"][0]["verdict"], "FAIL")
+        self.assertNotIn("drivetrain value", str(migrated))
+
+    def test_ambiguous_legacy_audit_failure_is_not_migrated(self):
+        legacy = {
+            "task": {"variant_id": "legacy"}, "verdict": "INDEPENDENT_AUDIT_FAILED",
+            "audits": [{"verdict": "FAIL: unclear"}],
+        }
+        migrated, recognized = outcomes.migrate_legacy_entry(legacy)
+        self.assertFalse(recognized)
+        self.assertEqual(migrated, legacy)
+        self.assertTrue(outcomes.requires_manual_review(migrated))
 
     def test_success_requires_no_failure_record_and_explicitly_clears(self):
         self.assertEqual(outcomes.classify_audit_results([{"verdict": "PASS"}, {"verdict": "PASS"}]), outcomes.AUDIT_SUCCESS)
