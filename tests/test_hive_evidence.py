@@ -17,6 +17,8 @@ CONFIG = {
         "automated_access_allowed": True,
         "terms_url": "https://oem.example/terms",
         "terms_reviewed_at": "2026-11-01",
+        "terms_reviewed_by": "repository-owner",
+        "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/37",
         "approved_urls": [URL],
     }],
 }
