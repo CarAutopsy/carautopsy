@@ -91,7 +91,7 @@ def _prior_counters(previous):
         expected_retryable = result[field] < ceiling and all(
             result[name] < limit for name, limit in {
                 "provider_attempts": 3, "format_attempts": 3,
-                "provenance_attempts": 2, "attempts": 3,
+                "provenance_attempts": 2, "attempts": 3, "research_attempts": 3,
             }.items()
         )
         if outcome["retryable"] != expected_retryable:
