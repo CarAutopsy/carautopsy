@@ -61,18 +61,18 @@ class SourcePolicyTests(unittest.TestCase):
 
     def test_malformed_disallow_without_colon_denies(self):
         with self.assertRaisesRegex(SourcePolicyDenied, "malformed directive"):
-            _robots_can_fetch("User-agent: *\\nDisallow\\n", USER_AGENT, URL)
+            _robots_can_fetch("User-agent: *\nDisallow\n", USER_AGENT, URL)
 
     def test_robots_longest_match_disallow_overrides_allow_root(self):
-        text = "User-agent: *\\nAllow: /\\nDisallow: /specs/\\n"
+        text = "User-agent: *\nAllow: /\nDisallow: /specs/\n"
         self.assertFalse(_robots_can_fetch(text, USER_AGENT, URL))
 
     def test_robots_longest_match_allow_can_override_parent_disallow(self):
-        text = "User-agent: *\\nDisallow: /specs/\\nAllow: /specs/public/\\n"
+        text = "User-agent: *\nDisallow: /specs/\nAllow: /specs/public/\n"
         self.assertTrue(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/public/model.html"))
 
     def test_robots_supports_wildcard_and_terminal_anchor(self):
-        text = "User-agent: *\\nDisallow: /*.pdf$\\n"
+        text = "User-agent: *\nDisallow: /*.pdf$\n"
         self.assertFalse(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/model.pdf"))
         self.assertTrue(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/model.pdf?download=1"))
 
