@@ -160,6 +160,14 @@ def migrate_legacy_entry(entry):
     audits = entry.get("audits")
     if not isinstance(audits, list) or len(audits) < 2:
         return entry, False
+    recognized_verdicts = []
+    for item in audits:
+        if not isinstance(item, dict) or not isinstance(item.get("verdict"), str):
+            return entry, False
+        verdict = item["verdict"].strip()
+        if verdict.upper() not in {"PASS", "OFFLINE", "INVALID_AUDIT_RESPONSE"} and not verdict.upper().startswith("FAIL:"):
+            return entry, False
+        recognized_verdicts.append(verdict)
     code = classify_audit_results(audits)
     if code not in COUNTER_BY_OUTCOME:
         return entry, False
