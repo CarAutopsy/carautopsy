@@ -8,7 +8,7 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
-from typing import Iterable
+from pathlib import Path
 
 MAX_INPUT_BYTES = 2_000_000
 MAX_PDF_PAGES = 20
