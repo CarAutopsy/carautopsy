@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from hive_outcomes import exhausted_outcome, requires_manual_review
 
 STATE_BRANCH = "hive/state"
 STATE_REF = "refs/remotes/origin/hive/state"
@@ -58,6 +59,10 @@ def exhausted_ids(failed):
     for item in failed:
         vid = (item.get("task") or {}).get("variant_id")
         if not vid:
+            continue
+        # Unknown/legacy outcome records are quarantined until human reconciliation.
+        if requires_manual_review(item) or exhausted_outcome(item):
+            ids.add(vid)
             continue
         audit_limit = int(item.get("max_attempts") or DEFAULT_MAX_ATTEMPTS)
         research_limit = int(item.get("max_research_attempts") or DEFAULT_MAX_ATTEMPTS)
