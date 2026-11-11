@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import re
 import uuid
 
 OUTCOME_SCHEMA_VERSION = 1
@@ -46,7 +47,11 @@ def classify_audit_results(audits):
         return RESPONSE_FORMAT_FAILURE
     failures = [value for value in verdicts if value.upper().startswith("FAIL:")]
     if failures:
-        if any(any(marker in value.lower() for marker in PROVENANCE_MARKERS) for value in failures):
+        if any(
+            any(marker in value.lower() for marker in PROVENANCE_MARKERS)
+            or re.search(r"\\bcoc\\b", value.lower())
+            for value in failures
+        ):
             return PROVENANCE_REJECTION
         return VEHICLE_QUALITY_REJECTION
     if all(value.upper() == "PASS" for value in verdicts):
@@ -130,7 +135,7 @@ def record_outcome(task, previous, code, *, stage, provider_statuses=None, now=N
     timestamp = now or datetime.now(timezone.utc).isoformat()
     entry = {"task": task}
     if isinstance(previous, dict):
-        for key in ("audits", "candidate", "verdict", "at"):
+        for key in ("audits", "candidate", "verdict", "at", "defect_categories"):
             if key in previous:
                 entry[key] = previous[key]
     entry["verdict"] = code.upper()
