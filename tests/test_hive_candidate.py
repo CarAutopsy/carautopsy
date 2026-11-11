@@ -148,8 +148,8 @@ class HiveCandidateGateTests(unittest.TestCase):
             "source_id": str(index),
             "url": "https://oem.example/" + ("x" * 2048),
             "retrieved_at": "2026-11-11T12:00:00Z",
-            "text": "x" * 15_000,
-        } for index in range(4)]
+            "text": "x" * 12_000,
+        } for index in range(5)]
         with self.assertRaisesRegex(CandidateRejected, "serialized evidence bundle"):
             validate_evidence_bundle(evidence)
 
