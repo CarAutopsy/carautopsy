@@ -1,7 +1,10 @@
 """Bounded extraction tests; all documents are synthetic and local."""
+import json
+import subprocess
 import unittest
 from unittest.mock import patch
 
+from scripts.hive_pdf_worker import _extract_pdf_body
 from scripts.hive_source_extract import (
     ExtractionRejected,
     MAX_PAGE_CHARS,
@@ -64,40 +67,66 @@ class HiveSourceExtractionTests(unittest.TestCase):
         with self.assertRaises(ExtractionRejected):
             extract_source_text(b"   ", "text/plain")
 
-    def test_pdf_extracts_bounded_pages_with_page_locators(self):
-        fake = FakePdf([FakePage("page one"), FakePage("page two")])
-        with patch("pdfplumber.open", return_value=fake):
+    def test_pdf_uses_isolated_worker_with_minimal_environment(self):
+        payload = {"text": "[page:1]\npage one\n\n[page:2]\npage two", "locators": ["page:1", "page:2"]}
+        completed = subprocess.CompletedProcess(
+            args=["python"], returncode=0,
+            stdout=json.dumps(payload).encode(), stderr=b"",
+        )
+        with patch("scripts.hive_source_extract.subprocess.run", return_value=completed) as run:
             result = extract_source_text(b"%PDF-fake", "application/pdf")
         self.assertEqual(result.locators, ("page:1", "page:2"))
         self.assertIn("page two", result.text)
+        kwargs = run.call_args.kwargs
+        self.assertLessEqual(kwargs["timeout"], 6.5)
+        self.assertNotIn("QWEN_API_KEY", kwargs["env"])
+        self.assertNotIn("DEEPSEEK_API_KEY", kwargs["env"])
+        self.assertNotIn("GEMINI_API_KEY", kwargs["env"])
+        self.assertTrue(kwargs["start_new_session"])
+
+    def test_pdf_worker_timeout_is_fail_closed(self):
+        with patch(
+            "scripts.hive_source_extract.subprocess.run",
+            side_effect=subprocess.TimeoutExpired("pdf-worker", 6.5),
+        ):
+            with self.assertRaisesRegex(ExtractionRejected, "isolated worker time limit"):
+                extract_source_text(b"%PDF-fake", "application/pdf")
+
+    def test_pdf_worker_nonzero_exit_is_fail_closed(self):
+        completed = subprocess.CompletedProcess(
+            args=["python"], returncode=2, stdout=b"", stderr=b"ValueError",
+        )
+        with patch("scripts.hive_source_extract.subprocess.run", return_value=completed):
+            with self.assertRaisesRegex(ExtractionRejected, "worker rejected"):
+                extract_source_text(b"%PDF-fake", "application/pdf")
 
     def test_caller_cannot_raise_pdf_page_limit(self):
         with self.assertRaisesRegex(ExtractionRejected, "page limit is outside"):
             extract_source_text(b"%PDF-fake", "application/pdf", max_pages=21)
 
-    def test_pdf_page_count_limit(self):
+    def test_pdf_page_count_limit_in_worker_parser(self):
         fake = FakePdf([FakePage("x"), FakePage("y")])
         with patch("pdfplumber.open", return_value=fake):
-            with self.assertRaisesRegex(ExtractionRejected, "page limit"):
-                extract_source_text(b"%PDF-fake", "application/pdf", max_pages=1)
+            with self.assertRaisesRegex(ValueError, "page_limit"):
+                _extract_pdf_body(b"%PDF-fake", max_pages=1, max_chars=20_000, timeout_seconds=5)
 
-    def test_pdf_page_character_limit(self):
+    def test_pdf_page_character_limit_in_worker_parser(self):
         fake = FakePdf([FakePage("x" * (MAX_PAGE_CHARS + 1))])
         with patch("pdfplumber.open", return_value=fake):
-            with self.assertRaisesRegex(ExtractionRejected, "page character"):
-                extract_source_text(b"%PDF-fake", "application/pdf")
+            with self.assertRaisesRegex(ValueError, "page_character_limit"):
+                _extract_pdf_body(b"%PDF-fake", max_pages=20, max_chars=20_000, timeout_seconds=5)
 
-    def test_pdf_parse_time_limit(self):
+    def test_pdf_parse_time_limit_in_worker_parser(self):
         times = iter([0.0, 6.0])
         fake = FakePdf([FakePage("slow page")])
         with patch("pdfplumber.open", return_value=fake):
-            with self.assertRaisesRegex(ExtractionRejected, "time limit"):
-                extract_source_text(b"%PDF-fake", "application/pdf", clock=lambda: next(times))
+            with self.assertRaisesRegex(TimeoutError, "parse_timeout"):
+                _extract_pdf_body(b"%PDF-fake", max_pages=20, max_chars=20_000, timeout_seconds=5, clock=lambda: next(times))
 
-    def test_malformed_pdf_is_rejected(self):
+    def test_malformed_pdf_is_rejected_by_worker_parser(self):
         with patch("pdfplumber.open", side_effect=ValueError("bad pdf")):
-            with self.assertRaisesRegex(ExtractionRejected, "malformed"):
-                extract_source_text(b"not a pdf", "application/pdf")
+            with self.assertRaisesRegex(ValueError, "bad pdf"):
+                _extract_pdf_body(b"not a pdf", max_pages=20, max_chars=20_000, timeout_seconds=5)
 
 
 if __name__ == "__main__":
