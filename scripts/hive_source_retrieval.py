@@ -19,7 +19,6 @@ MAX_URL_CHARS = 2_048
 MAX_RESPONSE_BYTES = 2_000_000
 DEFAULT_TIMEOUT_SECONDS = 8.0
 ALLOWED_CONTENT_TYPES = {"text/html", "text/plain", "application/pdf"}
-MAX_REDIRECTS = 0
 
 
 @dataclass(frozen=True)
@@ -182,7 +181,7 @@ def fetch_source(
         try:
             connection.request("GET", path, headers={
                 "Host": host,
-                "User-Agent": "CarAutopsy-Research-Bot/1.0 (contact: ermiya.karan@gmx.ch)",
+                "User-Agent": "CarAutopsy-Research-Bot/1.0 (+https://github.com/CarAutopsy/carautopsy)",
                 "Accept": "text/html, text/plain, application/pdf",
                 "Accept-Encoding": "identity",
                 "Connection": "close",
