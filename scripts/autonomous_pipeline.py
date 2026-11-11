@@ -329,6 +329,7 @@ def run(cmd):
 def get_open_research_pr():
     """Return the sole open Hive PR, if any; fail closed on ambiguous state."""
     def fetch_page(limit):
+        """Fetch a bounded page of open PR metadata from the GitHub CLI."""
         raw = subprocess.run(
             ["gh", "pr", "list", "--state", "open", "--base", "main",
              "--limit", str(limit), "--json", "number,headRefName,headRepository"],
