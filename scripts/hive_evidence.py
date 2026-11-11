@@ -24,6 +24,7 @@ class EvidenceRetrievalRejected(ValueError):
 
 def retrieve_approved_evidence(
     *,
+    variant_id: str,
     config_path: Path | None = None,
     config: dict | None = None,
     fetcher: Callable = fetch_source,
@@ -39,33 +40,39 @@ def retrieve_approved_evidence(
         config = load_policy(config_path) if config_path is not None else load_policy()
     if not isinstance(config, dict):
         raise EvidenceRetrievalRejected("source policy configuration is invalid")
+    if not isinstance(variant_id, str) or not variant_id.strip():
+        raise EvidenceRetrievalRejected("reserved variant ID is required")
     hosts = config.get("approved_hosts")
     policies = config.get("source_policies")
     if not isinstance(hosts, list) or not hosts or not isinstance(policies, list) or not policies:
         raise EvidenceRetrievalRejected("no owner-approved source URLs are configured")
 
-    seeded_urls = []
+    seeded_sources = []
     for entry in policies:
         if not isinstance(entry, dict):
             raise EvidenceRetrievalRejected("source policy entry is malformed")
-        urls = entry.get("approved_urls")
-        if not isinstance(urls, list) or not urls:
+        approved_sources = entry.get("approved_urls")
+        if not isinstance(approved_sources, list) or not approved_sources:
             raise EvidenceRetrievalRejected("source policy entry has no owner-approved URLs")
-        seeded_urls.extend(urls)
+        for source in approved_sources:
+            if not isinstance(source, dict) or not isinstance(source.get("url"), str):
+                raise EvidenceRetrievalRejected("approved source entry is malformed")
+            variant_ids = source.get("variant_ids")
+            if not isinstance(variant_ids, list) or not variant_ids:
+                raise EvidenceRetrievalRejected("approved source entry has no variant scope")
+            if variant_id in variant_ids:
+                seeded_sources.append((entry, source["url"]))
+    if not seeded_sources:
+        raise EvidenceRetrievalRejected("no exact source URLs are approved for this variant")
+    seeded_urls = [url for _, url in seeded_sources]
     if len(seeded_urls) > 10:
         raise EvidenceRetrievalRejected("owner-approved source list exceeds the ten-source limit")
-    if any(not isinstance(url, str) for url in seeded_urls) or len(set(seeded_urls)) != len(seeded_urls):
-        raise EvidenceRetrievalRejected("duplicate or invalid owner-approved source URL")
+    if len(set(seeded_urls)) != len(seeded_urls):
+        raise EvidenceRetrievalRejected("duplicate owner-approved source URL")
 
     evidence = []
     total_chars = 0
-    for entry in policies:
-        if not isinstance(entry, dict):
-            raise EvidenceRetrievalRejected("source policy entry is malformed")
-        urls = entry.get("approved_urls")
-        if not isinstance(urls, list) or not urls:
-            raise EvidenceRetrievalRejected("source policy entry has no owner-approved URLs")
-        for url in urls:
+    for entry, url in seeded_sources:
             try:
                 # Check owner terms and fetch/parse robots.txt before requesting the
                 # source document. The second request uses the same pinned transport;
