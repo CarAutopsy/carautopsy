@@ -85,7 +85,7 @@ class OutcomeClassificationTests(unittest.TestCase):
     def test_recognized_legacy_audit_failure_migrates_without_raw_verdict_text(self):
         legacy = {
             "task": {"variant_id": "legacy", "make": "M", "model": "X"},
-            "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": 1,
+            "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": 1, "research_attempts": 0,
             "at": "2026-11-10T00:00:00Z",
             "audits": [
                 {"provider": "deepseek", "vendor": "deepseek", "verdict": "FAIL: drivetrain value is inconsistent"},
