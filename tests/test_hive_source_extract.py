@@ -71,6 +71,10 @@ class HiveSourceExtractionTests(unittest.TestCase):
         self.assertEqual(result.locators, ("page:1", "page:2"))
         self.assertIn("page two", result.text)
 
+    def test_caller_cannot_raise_pdf_page_limit(self):
+        with self.assertRaisesRegex(ExtractionRejected, "page limit is outside"):
+            extract_source_text(b"%PDF-fake", "application/pdf", max_pages=21)
+
     def test_pdf_page_count_limit(self):
         fake = FakePdf([FakePage("x"), FakePage("y")])
         with patch("pdfplumber.open", return_value=fake):
