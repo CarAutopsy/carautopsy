@@ -155,7 +155,7 @@ def migrate_legacy_entry(entry):
         return entry, False
     if isinstance(entry.get("outcome"), dict):
         return entry, False
-    if entry.get("verdict") != "INDEPENDENT_AUDIT_FAILED" or entry.get("attempts") != 1:
+    if entry.get("verdict") != "INDEPENDENT_AUDIT_FAILED" or type(entry.get("attempts")) is not int or entry.get("attempts") != 1:
         return entry, False
     audits = entry.get("audits")
     if not isinstance(audits, list) or len(audits) < 2:
