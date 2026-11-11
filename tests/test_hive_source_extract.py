@@ -111,6 +111,19 @@ class HiveSourceExtractionTests(unittest.TestCase):
         with self.assertRaisesRegex(ExtractionRejected, "page limit is outside"):
             extract_source_text(b"%PDF-fake", "application/pdf", max_pages=21)
 
+    def test_pdf_worker_returns_authoritative_page_spans(self):
+        fake = FakePdf([FakePage("page one [page:2] marker"), FakePage("page two")])
+        with patch("pdfplumber.open", return_value=fake):
+            result = _extract_pdf_body(b"%PDF-fake", max_pages=20, max_chars=20_000, timeout_seconds=5)
+        self.assertEqual(result["locator_texts"]["page:1"], "page one [page:2] marker")
+        self.assertEqual(result["locator_texts"]["page:2"], "page two")
+
+    def test_pdf_final_formatted_text_counts_page_marker_overhead(self):
+        fake = FakePdf([FakePage("x" * 19_992)])
+        with patch("pdfplumber.open", return_value=fake):
+            with self.assertRaisesRegex(ValueError, "document_character_limit"):
+                _extract_pdf_body(b"%PDF-fake", max_pages=20, max_chars=20_000, timeout_seconds=5)
+
     def test_pdf_page_count_limit_in_worker_parser(self):
         fake = FakePdf([FakePage("x"), FakePage("y")])
         with patch("pdfplumber.open", return_value=fake):
