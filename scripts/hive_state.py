@@ -37,15 +37,18 @@ class StateNotReconciled(RuntimeError):
 
 
 def _git(root, args, input_bytes=None, env=None, check=True):
+    """Run Git in the repository and return the captured process result."""
     return subprocess.run(["git", *args], cwd=root, input=input_bytes,
                           capture_output=True, check=check, env=env)
 
 
 def _key(root):
+    """Return a stable absolute-path key for process-local reconciliation state."""
     return str(Path(root).resolve())
 
 
 def _ack(root, tip):
+    """Mark a fetched state tip as incorporated into this process's working ledger."""
     _ACKNOWLEDGED[_key(root)] = tip
 
 
@@ -82,6 +85,7 @@ def merge_state(main_queue, state_queue, state_failed):
 
 
 def ledger_digest(failed_bytes, queue_bytes):
+    """Hash the exact failed-ledger and queue bytes stored by a state commit."""
     digest = hashlib.sha256()
     digest.update(failed_bytes)
     digest.update(b"\0")
@@ -90,6 +94,7 @@ def ledger_digest(failed_bytes, queue_bytes):
 
 
 def remote_has_state(root):
+    """Check whether origin currently advertises the dedicated Hive state branch."""
     result = _git(root, ["ls-remote", "--exit-code", "--heads", "origin", STATE_BRANCH], check=False)
     if result.returncode == 0:
         return True
@@ -107,11 +112,13 @@ def fetch_state(root):
 
 
 def _tip(root):
+    """Return the locally fetched Hive state commit, or None if it is absent."""
     result = _git(root, ["rev-parse", "--verify", "-q", STATE_REF], check=False)
     return result.stdout.decode().strip() if result.returncode == 0 else None
 
 
 def _tip_files(root, tip):
+    """Read the two ledger blobs from a specific Hive state commit."""
     files = {}
     for rel in (FAILED, QUEUE):
         result = _git(root, ["show", f"{tip}:{rel}"], check=False)
@@ -119,15 +126,24 @@ def _tip_files(root, tip):
     return files
 
 
-def _declared_digest(root, tip):
-    body = _git(root, ["log", "-1", "--format=%B", tip]).stdout.decode()
-    for line in body.splitlines():
-        if line.startswith(TRAILER + ":"):
-            return line.split(":", 1)[1].strip()
+def _declared_trailer(root, commit, key):
+    """Read a named value only from Git's parsed final commit trailer block."""
+    body = _git(root, ["log", "-1", "--format=%B", commit]).stdout
+    parsed = _git(root, ["interpret-trailers", "--parse"], input_bytes=body).stdout.decode()
+    prefix = key + ":"
+    for line in parsed.splitlines():
+        if line.startswith(prefix):
+            return line[len(prefix):].strip()
     return None
 
 
+def _declared_digest(root, tip):
+    """Return the ledger digest declared in the final trailer block."""
+    return _declared_trailer(root, tip, TRAILER)
+
+
 def tip_is_bot_written(root, tip):
+    """Verify that a state commit contains both ledger files and its matching digest."""
     files = _tip_files(root, tip)
     declared = _declared_digest(root, tip)
     if declared is None or any(content is None for content in files.values()):
@@ -136,30 +152,19 @@ def tip_is_bot_written(root, tip):
 
 
 def _declared_proposal_head(root, tip):
-    body = _git(root, ["log", "-1", "--format=%B", tip]).stdout.decode()
-    for line in body.splitlines():
-        if line.startswith(PROPOSAL_HEAD_TRAILER + ":"):
-            value = line.split(":", 1)[1].strip()
-            return value or None
-    return None
+    """Return the proposal HEAD recorded by a state commit, if present."""
+    return _declared_trailer(root, tip, PROPOSAL_HEAD_TRAILER) or None
 
 
 def _declared_state_context(root, tip):
-    body = _git(root, ["log", "-1", "--format=%B", tip]).stdout.decode()
-    for line in body.splitlines():
-        if line.startswith(STATE_CONTEXT_TRAILER + ":"):
-            value = line.split(":", 1)[1].strip()
-            return value or None
-    return None
+    """Return the standalone/proposal context recorded in the final trailer block."""
+    return _declared_trailer(root, tip, STATE_CONTEXT_TRAILER) or None
 
 
 def _declared_proposal_state_base(root, proposal_head):
-    body = _git(root, ["log", "-1", "--format=%B", proposal_head]).stdout.decode()
-    for line in body.splitlines():
-        if line.startswith(PROPOSAL_STATE_BASE_TRAILER + ":"):
-            value = line.split(":", 1)[1].strip()
-            return None if value == "none" else (value or None)
-    return None
+    """Return the exact state tip consumed by a proposal, or None if unrecorded."""
+    value = _declared_trailer(root, proposal_head, PROPOSAL_STATE_BASE_TRAILER)
+    return None if value in (None, "", "none") else value
 
 
 def proposal_state_base(root):
@@ -174,6 +179,7 @@ def proposal_state_base(root):
 
 
 def _write_state_files(root, files):
+    """Replace the working queue and failed ledger with the supplied exact bytes."""
     if any(content is None for content in files.values()):
         raise RuntimeError("Hive state tip is missing a required ledger file")
     for rel, content in files.items():
@@ -183,6 +189,7 @@ def _write_state_files(root, files):
 
 
 def _is_ancestor(root, older, newer):
+    """Return whether older is an ancestor of newer, raising on Git errors."""
     result = _git(root, ["merge-base", "--is-ancestor", older, newer], check=False)
     if result.returncode == 0:
         return True
@@ -192,6 +199,7 @@ def _is_ancestor(root, older, newer):
 
 
 def _overlay(root):
+    """Merge the fetched state ledger onto main, preserving state queue ordering."""
     root = Path(root)
     state_queue = json.loads(_git(root, ["show", f"{STATE_REF}:{QUEUE}"]).stdout)
     state_failed = json.loads(_git(root, ["show", f"{STATE_REF}:{FAILED}"]).stdout)
@@ -262,10 +270,12 @@ def reconcile_with_pr(root):
             _ack(root, tip)
             print("Proposal ledger is ahead of the standalone state baseline; preserving proposal progress.")
             return "proposal-ahead"
-        if _is_ancestor(root, state_base, tip):
+        if _is_ancestor(root, state_base, tip) and _is_ancestor(root, current_head, tip):
+            # The standalone writer must have consumed this proposal (or a later
+            # proposal commit), not merely a stale state baseline.
             _write_state_files(root, files)
             _ack(root, tip)
-            print("Adopted standalone Hive progress committed after the proposal baseline.")
+            print("Adopted standalone Hive progress descended from the current proposal.")
             return "adopted"
         raise StateNotReconciled(
             "standalone Hive state is not descended from the proposal's recorded baseline; "
