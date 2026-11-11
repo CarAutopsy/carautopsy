@@ -290,6 +290,10 @@ def save_state(root, message):
     args = ["commit-tree", root_tree, "-m", commit_message]
     if tip:
         args += ["-p", tip]
+    if proposal_head and (not tip or not _is_ancestor(root, proposal_head, tip)):
+        # Keep the referenced proposal commit reachable from hive/state so a
+        # later run can compare ancestry even if it fetched only this branch.
+        args += ["-p", proposal_head]
     commit = _git(root, args, env=env).stdout.decode().strip()
     _git(root, ["push", "origin", f"{commit}:refs/heads/{STATE_BRANCH}"])
     _git(root, ["update-ref", STATE_REF, commit])
