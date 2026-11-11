@@ -79,7 +79,7 @@ def merge_state(main_queue, state_queue, state_failed):
     reset its entry in the state branch's failed.json.
     """
     blocked = exhausted_ids(state_failed)
-    queue = list(state_queue)
+    queue = [task for task in state_queue if task.get("variant_id") not in blocked]
     seen = {task.get("variant_id") for task in queue}
     for task in main_queue:
         vid = task.get("variant_id")
