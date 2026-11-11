@@ -47,6 +47,9 @@ def _host_policy(config: dict, host: str, today: date) -> dict:
         raise SourcePolicyDenied("source hostname is not owner-approved")
     if item.get("automated_access_allowed") is not True:
         raise SourcePolicyDenied("owner-reviewed source terms do not permit automated access")
+    approved_urls = item.get("approved_urls")
+    if not isinstance(approved_urls, list) or not approved_urls or any(not isinstance(value, str) for value in approved_urls):
+        raise SourcePolicyDenied("owner-reviewed exact source URL list is missing")
     terms_url = item.get("terms_url")
     if not isinstance(terms_url, str) or not terms_url.startswith("https://"):
         raise SourcePolicyDenied("owner-reviewed source terms URL is missing or invalid")
@@ -82,7 +85,9 @@ def check_source_access(
     if parsed.scheme != "https" or not host or parsed.username is not None or parsed.password is not None:
         raise SourcePolicyDenied("source URL must be HTTPS with a hostname and no credentials")
     current_day = today or datetime.now(timezone.utc).date()
-    _host_policy(config, host, current_day)
+    policy_entry = _host_policy(config, host, current_day)
+    if url not in policy_entry["approved_urls"]:
+        raise SourcePolicyDenied("source URL is not in the owner-reviewed exact URL list")
 
     robots_url = urlunsplit(("https", host, "/robots.txt", "", ""))
     # This callback is intentionally limited to fetching robots.txt itself. It does
