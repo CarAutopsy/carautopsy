@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -167,6 +168,17 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
     return paths
 
 
+def _locator_text(source_text: str, locator: str) -> str | None:
+    """Return only the text belonging to one explicit document/page marker."""
+    markers = list(re.finditer(r"(?m)^\\[([^]\\r\\n]+)\\]\\s*$", source_text))
+    for index, match in enumerate(markers):
+        if match.group(1) != locator:
+            continue
+        end = markers[index + 1].start() if index + 1 < len(markers) else len(source_text)
+        return source_text[match.end():end].strip()
+    return None
+
+
 def _validate_claim_evidence(
     candidate: dict[str, Any],
     evidence: list[dict[str, str]],
@@ -205,10 +217,11 @@ def _validate_claim_evidence(
         if not isinstance(quote, str) or not quote.strip() or len(quote) > MAX_CLAIM_QUOTE_CHARS:
             raise CandidateRejected(f"claim evidence item {index} has an invalid quote")
         source_text = evidence_by_id[source_id]["text"]
-        if f"[{locator}]" not in source_text:
+        located_text = _locator_text(source_text, locator)
+        if located_text is None:
             raise CandidateRejected(f"claim evidence locator {locator} is not present in source text")
-        if quote not in source_text:
-            raise CandidateRejected(f"claim evidence quote is not an exact source-text span")
+        if quote not in located_text:
+            raise CandidateRejected("claim evidence quote is not an exact span at the stated locator")
         identity = (claim_path, source_id, quote)
         if identity in seen:
             raise CandidateRejected("duplicate claim evidence binding")
