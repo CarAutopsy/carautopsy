@@ -59,9 +59,18 @@ def _prior_counters(previous):
     if previous is None:
         return {"provider_attempts": 0, "format_attempts": 0, "provenance_attempts": 0, "attempts": 0, "research_attempts": 0}
     outcome = previous.get("outcome")
-    if not isinstance(outcome, dict) or outcome.get("schema_version") != OUTCOME_SCHEMA_VERSION:
+    if not isinstance(outcome, dict) or type(outcome.get("schema_version")) is not int or outcome.get("schema_version") != OUTCOME_SCHEMA_VERSION:
         return None
-    if outcome.get("code") not in OUTCOME_CODES:
+    code = outcome.get("code")
+    if code not in OUTCOME_CODES or code == AUDIT_SUCCESS:
+        return None
+    if not isinstance(outcome.get("attempt_id"), str) or not outcome["attempt_id"] or len(outcome["attempt_id"]) > 80:
+        return None
+    if not isinstance(outcome.get("stage"), str) or not outcome["stage"] or len(outcome["stage"]) > 40:
+        return None
+    if type(outcome.get("retryable")) is not bool or not isinstance(outcome.get("at"), str) or not outcome["at"]:
+        return None
+    if not isinstance(outcome.get("provider_statuses"), list):
         return None
     counters = outcome.get("counters")
     if not isinstance(counters, dict):
@@ -73,6 +82,16 @@ def _prior_counters(previous):
         if type(value) is not int or value < 0:
             return None
         result[name] = value
+    ceilings = {"provider_attempts": 3, "format_attempts": 3, "provenance_attempts": 2, "attempts": 3, "research_attempts": 3}
+    if any(result[name] > limit for name, limit in ceilings.items()):
+        return None
+    code = outcome["code"]
+    if code in COUNTER_BY_OUTCOME:
+        field, ceiling = COUNTER_BY_OUTCOME[code]
+        if outcome["retryable"] != (result[field] < ceiling):
+            return None
+    elif outcome["retryable"]:
+        return None
     return result
 
 
@@ -140,10 +159,3 @@ def exhausted_outcome(entry):
         return False
     field, ceiling = COUNTER_BY_OUTCOME[code]
     return outcome["counters"][field] >= ceiling
-
-
-def safe_attempt_metadata(code, stage, providers):
-    """Create provider status metadata; never include prompts, output, or errors."""
-    if code not in OUTCOME_CODES:
-        raise ValueError("unknown outcome code")
-    return {"stage": str(stage)[:40], "providers": [str(p)[:40] for p in providers[:4]]}
