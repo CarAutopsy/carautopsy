@@ -51,6 +51,8 @@ class HivePromptBuilderTests(unittest.TestCase):
         self.assertIn(evidence_json, auditor)
         self.assertIn("Schema validity alone is not factual verification", auditor)
         self.assertIn("Return exactly one line: PASS or FAIL:", auditor)
+        self.assertIn("claim_evidence", researcher)
+        self.assertIn("exact span", auditor)
 
     def test_prompt_injection_is_kept_inside_serialized_data(self):
         malicious = [{
