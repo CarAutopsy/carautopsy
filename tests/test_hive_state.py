@@ -194,7 +194,12 @@ class StateBranchTests(unittest.TestCase):
         hive_state.save_state(self.a, "legacy precursor")
         tip = self.sh("git", "rev-parse", "hive/state", cwd=self.a).stdout.decode().strip()
         tree = self.sh("git", "rev-parse", f"{tip}^{{tree}}", cwd=self.a).stdout.decode().strip()
-        legacy = self.sh("git", "commit-tree", tree, "-m", "legacy mirror", "-p", tip, cwd=self.a).stdout.decode().strip()
+        digest = hive_state.ledger_digest(
+            self.sh("git", "show", f"{tip}:tasks/failed.json", cwd=self.a).stdout,
+            self.sh("git", "show", f"{tip}:tasks/queue.json", cwd=self.a).stdout,
+        )
+        legacy_message = f"legacy mirror\\n\\nHive-Ledger-SHA256: {digest}"
+        legacy = self.sh("git", "commit-tree", tree, "-m", legacy_message, "-p", tip, cwd=self.a).stdout.decode().strip()
         self.sh("git", "push", "origin", f"{legacy}:refs/heads/hive/state", cwd=self.a)
         self.sh("git", "fetch", "origin", "hive/state", cwd=self.b)
         self.write(self.b, [task("a")], [entry("a", attempts=2)])
