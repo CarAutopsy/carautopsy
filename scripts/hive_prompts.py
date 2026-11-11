@@ -11,6 +11,8 @@ def _serialize(label: str, value: Any) -> str:
     """Serialize structured data without losing Unicode or accepting NaN/Infinity."""
     try:
         encoded = json.dumps(value, ensure_ascii=False, allow_nan=False, indent=2)
+        # Prevent untrusted strings from closing the surrounding data markers.
+        encoded = encoded.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
     except (TypeError, ValueError) as exc:
         raise ValueError(f"{label} is not safely serializable JSON") from exc
     return f"<{label}_UNTRUSTED_JSON>\n{encoded}\n</{label}_UNTRUSTED_JSON>"
