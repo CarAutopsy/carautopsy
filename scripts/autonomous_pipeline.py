@@ -6,7 +6,7 @@ from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
-from hive_state import fetch_state, load_state, save_state
+from hive_state import load_state, reconcile_with_pr, save_state
 
 ROOT = Path.cwd()
 
@@ -349,9 +349,9 @@ if open_research_pr:
     run(["git", "fetch", "origin", open_research_pr["headRefName"]])
     run(["git", "checkout", "-B", open_research_pr["headRefName"],
          f"origin/{open_research_pr['headRefName']}"])
-    # The PR branch carries the ledger while a proposal is open; only learn the
-    # state branch tip so the mirror after the push is a fast-forward.
-    fetch_state(ROOT)
+    # The PR branch carries the ledger while a proposal is open. Align it with
+    # hive/state first: adopt a hand-edited state, or resync a mirror that lagged.
+    reconcile_with_pr(ROOT)
 elif RESEARCH_ONLY:
     # No pending proposal: resume from the ledger saved on the hive/state branch.
     load_state(ROOT)

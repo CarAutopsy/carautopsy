@@ -35,6 +35,13 @@ class MergeStateTests(unittest.TestCase):
         queue, _ = hive_state.merge_state([task("a"), task("b")], [task("b")], [entry("a", attempts=3)])
         self.assertEqual([t["variant_id"] for t in queue], ["b"])
 
+    def test_retrying_an_exhausted_vehicle_needs_a_main_queue_entry_and_a_reset(self):
+        exhausted = [entry("x", attempts=3)]
+        self.assertEqual(hive_state.merge_state([], [], exhausted)[0], [])
+        self.assertEqual(hive_state.merge_state([task("x")], [], exhausted)[0], [])
+        queue, _ = hive_state.merge_state([task("x")], [], [])
+        self.assertEqual([t["variant_id"] for t in queue], ["x"])
+
 
 class StateBranchTests(unittest.TestCase):
     def sh(self, *args, cwd=None):
@@ -48,18 +55,34 @@ class StateBranchTests(unittest.TestCase):
     def read(self, repo, name):
         return json.loads((repo / "tasks" / name).read_text())
 
+    def remote_failed(self):
+        shown = subprocess.run(["git", "show", "hive/state:tasks/failed.json"], cwd=self.origin,
+                               capture_output=True, text=True, check=True).stdout
+        return json.loads(shown)
+
+    def remote_count(self):
+        return subprocess.run(["git", "rev-list", "--count", "hive/state"], cwd=self.origin,
+                              capture_output=True, text=True, check=True).stdout.strip()
+
+    def human_edit(self, failed):
+        clone = self.tmp / "human"
+        self.sh("git", "clone", "--branch", "hive/state", str(self.origin), str(clone))
+        (clone / "tasks" / "failed.json").write_text(json.dumps(failed, indent=2) + "\n")
+        self.sh("git", "-c", "user.name=h", "-c", "user.email=h@h", "commit", "-am", "manual fix", cwd=clone)
+        self.sh("git", "push", "origin", "HEAD:refs/heads/hive/state", cwd=clone)
+
     def setUp(self):
-        tmp = Path(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, tmp, True)
-        self.origin = tmp / "origin.git"
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.origin = self.tmp / "origin.git"
         self.sh("git", "init", "--bare", str(self.origin))
-        self.a = tmp / "a"
+        self.a = self.tmp / "a"
         self.sh("git", "clone", str(self.origin), str(self.a))
         self.write(self.a, [task("a"), task("b")], [])
         self.sh("git", "add", ".", cwd=self.a)
         self.sh("git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-m", "seed", cwd=self.a)
         self.sh("git", "push", "origin", "HEAD:refs/heads/main", cwd=self.a)
-        self.b = tmp / "b"
+        self.b = self.tmp / "b"
         self.sh("git", "clone", "--branch", "main", str(self.origin), str(self.b))
 
     def test_load_without_branch_leaves_main_ledger(self):
@@ -82,11 +105,9 @@ class StateBranchTests(unittest.TestCase):
         files = subprocess.run(["git", "ls-tree", "-r", "--name-only", "hive/state"], cwd=self.origin,
                                capture_output=True, text=True, check=True).stdout.split()
         self.assertEqual(sorted(files), ["tasks/failed.json", "tasks/queue.json"])
-        count = subprocess.run(["git", "rev-list", "--count", "hive/state"], cwd=self.origin,
-                               capture_output=True, text=True, check=True).stdout.strip()
-        self.assertEqual(count, "2")
+        self.assertEqual(self.remote_count(), "2")
 
-    def test_writer_without_loaded_state_cannot_overwrite_it(self):
+    def test_writer_that_never_fetched_cannot_overwrite_state(self):
         self.write(self.a, [task("b")], [entry("a", attempts=1)])
         hive_state.save_state(self.a, "state 1")
         self.write(self.b, [task("a")], [])
@@ -97,16 +118,47 @@ class StateBranchTests(unittest.TestCase):
         self.assertFalse(hive_state.fetch_state(self.b))
         self.assertEqual(self.read(self.b, "queue.json"), [task("a"), task("b")])
 
-    def test_fetch_only_clone_mirrors_its_own_ledger_as_fast_forward(self):
+    def test_save_rejects_a_fetched_but_unreconciled_tip(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        hive_state.save_state(self.a, "newer state")
+        self.assertTrue(hive_state.fetch_state(self.b))
+        self.write(self.b, [task("a"), task("b")], [])
+        with self.assertRaises(hive_state.StateNotReconciled):
+            hive_state.save_state(self.b, "stale proposal snapshot")
+        self.assertEqual(self.remote_failed(), [entry("a", attempts=2)])
+        self.assertEqual(self.remote_count(), "1")
+
+    def test_reconcile_without_state_returns_none(self):
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "none")
+
+    def test_reconcile_in_sync_then_mirror_fast_forwards(self):
         self.write(self.a, [task("b")], [entry("a", attempts=1)])
         hive_state.save_state(self.a, "state 1")
-        self.assertTrue(hive_state.fetch_state(self.b))
-        self.assertEqual(self.read(self.b, "queue.json"), [task("a"), task("b")])
+        self.write(self.b, [task("b")], [entry("a", attempts=1)])
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "in-sync")
         self.write(self.b, [], [entry("a", attempts=2)])
-        self.assertTrue(hive_state.save_state(self.b, "mirror from pr branch"))
-        count = subprocess.run(["git", "rev-list", "--count", "hive/state"], cwd=self.origin,
-                               capture_output=True, text=True, check=True).stdout.strip()
-        self.assertEqual(count, "2")
+        self.assertTrue(hive_state.save_state(self.b, "mirror"))
+        self.assertEqual(self.remote_failed(), [entry("a", attempts=2)])
+        self.assertEqual(self.remote_count(), "2")
+
+    def test_reconcile_heals_a_bot_mirror_that_lagged_the_proposal_branch(self):
+        self.write(self.a, [task("b"), task("a")], [entry("a", attempts=1)])
+        hive_state.save_state(self.a, "state 1")
+        self.write(self.b, [task("a")], [entry("a", attempts=2)])
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "healed")
+        self.assertEqual(self.remote_failed(), [entry("a", attempts=2)])
+        self.assertEqual(self.remote_count(), "2")
+
+    def test_reconcile_adopts_a_hand_edited_state_instead_of_overwriting_it(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=3)])
+        hive_state.save_state(self.a, "state 1")
+        self.human_edit([])
+        self.write(self.b, [task("b")], [entry("a", attempts=3)])
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "failed.json"), [])
+        self.write(self.b, [], [])
+        self.assertTrue(hive_state.save_state(self.b, "mirror after adoption"))
+        self.assertEqual(self.remote_failed(), [])
 
 
 if __name__ == "__main__":
