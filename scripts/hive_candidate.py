@@ -164,7 +164,7 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
     def walk(value: Any, path: str) -> None:
         if isinstance(value, dict):
             for key, child in value.items():
-                if (path == "offers" or re.fullmatch(r"offers\\[\\d+\\]", path)) and key in NON_CLAIM_OFFER_FIELDS:
+                if (path == "offers" or re.fullmatch(r"offers\[\d+\]", path)) and key in NON_CLAIM_OFFER_FIELDS:
                     continue
                 if path == "identity" and key in NON_CLAIM_IDENTITY_FIELDS:
                     continue
