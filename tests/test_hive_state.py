@@ -61,8 +61,11 @@ class StateBranchTests(unittest.TestCase):
         return json.loads(shown)
 
     def remote_count(self):
-        return subprocess.run(["git", "rev-list", "--count", "hive/state"], cwd=self.origin,
-                              capture_output=True, text=True, check=True).stdout.strip()
+        commits = subprocess.run(
+            ["git", "log", "--first-parent", "--format=%H", "--grep=Hive-Ledger-SHA256", "hive/state"],
+            cwd=self.origin, capture_output=True, text=True, check=True,
+        ).stdout.splitlines()
+        return str(len(commits))
 
     def human_edit(self, failed):
         clone = self.tmp / "human"
@@ -141,13 +144,39 @@ class StateBranchTests(unittest.TestCase):
         self.assertEqual(self.remote_failed(), [entry("a", attempts=2)])
         self.assertEqual(self.remote_count(), "2")
 
-    def test_reconcile_heals_a_bot_mirror_that_lagged_the_proposal_branch(self):
+    def test_reconcile_heals_only_when_state_proposal_head_is_behind(self):
         self.write(self.a, [task("b"), task("a")], [entry("a", attempts=1)])
         hive_state.save_state(self.a, "state 1")
         self.write(self.b, [task("a")], [entry("a", attempts=2)])
+        self.sh("git", "add", "tasks", cwd=self.b)
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p", "commit", "-m", "proposal advanced", cwd=self.b)
         self.assertEqual(hive_state.reconcile_with_pr(self.b), "healed")
         self.assertEqual(self.remote_failed(), [entry("a", attempts=2)])
         self.assertEqual(self.remote_count(), "2")
+
+    def test_reconcile_adopts_state_from_a_newer_proposal_head(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        self.sh("git", "add", "tasks", cwd=self.a)
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p", "commit", "-m", "newer proposal", cwd=self.a)
+        hive_state.save_state(self.a, "newer proposal state")
+        self.write(self.b, [task("a"), task("b")], [entry("a", attempts=1)])
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "queue.json"), [task("b")])
+        self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
+
+    def test_reconcile_does_not_restore_tasks_removed_from_state(self):
+        self.write(self.a, [task("b")], [])
+        hive_state.save_state(self.a, "state with deliberate removal")
+        self.write(self.b, [task("a"), task("b")], [])
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "queue.json"), [task("b")])
+
+    def test_reconcile_adopts_newer_retry_progress_for_same_proposal_head(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        hive_state.save_state(self.a, "new retry progress")
+        self.write(self.b, [task("a"), task("b")], [entry("a", attempts=1)])
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
 
     def test_reconcile_adopts_a_hand_edited_state_instead_of_overwriting_it(self):
         self.write(self.a, [task("b")], [entry("a", attempts=3)])
