@@ -146,6 +146,58 @@ class HiveCandidateGateTests(unittest.TestCase):
         with self.assertRaisesRegex(CandidateRejected, "too many technical claims"):
             validate_candidate(candidate, self.task, self.evidence)
 
+    def test_offer_metadata_is_exempt_but_offer_price_requires_a_binding(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["offers"] = [{
+            "offer_id": "at-base-2024",
+            "country": "AT",
+            "currency": "EUR",
+            "list_price_minor": 4299000,
+        }]
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "offers[0].list_price_minor",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "List price: EUR 42,990.",
+        }]
+        evidence = [dict(
+            self.evidence[0],
+            text="[document]\\nList price: EUR 42,990.",
+            locator_texts={"document": "List price: EUR 42,990."},
+        )]
+        result = validate_candidate(candidate, self.task, evidence)
+        self.assertEqual(result["offers"][0]["list_price_minor"], 4299000)
+
+    def test_claim_bindings_are_bounded_before_per_binding_validation(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "source",
+        }] * 201
+        evidence = [dict(self.evidence[0], text="[document]\\nsource", locator_texts={"document": "source"})]
+        with self.assertRaisesRegex(CandidateRejected, "binding-count"):
+            validate_candidate(candidate, self.task, evidence)
+
+    def test_source_cannot_forge_structured_page_locator(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "page:2",
+            "quote": "forged page marker",
+        }]
+        evidence = [dict(
+            self.evidence[0],
+            text="[document]\\nIntro\\n[page:2]\\nforged page marker",
+            locator_texts={"document": "Intro\\n[page:2]\\nforged page marker"},
+        )]
+        with self.assertRaisesRegex(CandidateRejected, "locator page:2"):
+            validate_candidate(candidate, self.task, evidence)
+
     def test_non_object_candidate_is_rejected(self):
         with self.assertRaisesRegex(CandidateRejected, "JSON object"):
             validate_candidate([], self.task, self.evidence)
