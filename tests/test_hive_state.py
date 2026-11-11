@@ -205,14 +205,39 @@ class StateBranchTests(unittest.TestCase):
         with self.assertRaises(hive_state.StateNotReconciled):
             hive_state.reconcile_with_pr(self.b)
 
-    def test_standalone_state_wins_when_older_proposal_is_reopened(self):
+    def test_failed_proposal_mirror_push_preserves_proposal_progress(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=0)])
+        hive_state.save_state(self.a, "baseline state")
+        baseline = hive_state._tip(self.a)
         self.sh("git", "checkout", "-b", "proposal", cwd=self.a)
         self.write(self.a, [task("b")], [entry("a", attempts=1)])
         self.sh("git", "add", "tasks", cwd=self.a)
-        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p", "commit", "-m", "proposal update", cwd=self.a)
-        old_proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
+                "commit", "-m", "proposal update", "-m",
+                f"Hive-State-Base: {baseline}", cwd=self.a)
+        proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
         self.sh("git", "push", "origin", "proposal", cwd=self.a)
-        self.sh("git", "checkout", "--detach", old_proposal_head + "^", cwd=self.a)
+        # Simulate the mirror push failing: hive/state remains at the consumed baseline.
+        self.sh("git", "fetch", "origin", "proposal", cwd=self.b)
+        self.sh("git", "checkout", "-b", "reopened-proposal", "FETCH_HEAD", cwd=self.b)
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "proposal-ahead")
+        self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=1)])
+        self.assertEqual(hive_state._tip(self.b), baseline)
+
+    def test_standalone_state_wins_only_when_descended_from_proposal_baseline(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=0)])
+        hive_state.save_state(self.a, "baseline state")
+        baseline = hive_state._tip(self.a)
+        self.sh("git", "checkout", "-b", "proposal", cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=1)])
+        self.sh("git", "add", "tasks", cwd=self.a)
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
+                "commit", "-m", "proposal update", "-m",
+                f"Hive-State-Base: {baseline}", cwd=self.a)
+        proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
+        self.sh("git", "push", "origin", "proposal", cwd=self.a)
+        # New retry progress after the proposal consumed its baseline is safe to adopt.
+        self.sh("git", "checkout", "--detach", proposal_head + "^", cwd=self.a)
         self.write(self.a, [task("b")], [entry("a", attempts=2)])
         hive_state.save_state(self.a, "standalone retry progress")
         self.sh("git", "fetch", "origin", "proposal", cwd=self.b)
