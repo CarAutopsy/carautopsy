@@ -199,7 +199,7 @@ class StateBranchTests(unittest.TestCase):
             self.sh("git", "show", f"{tip}:tasks/queue.json", cwd=self.a).stdout,
         )
         legacy_message = f"legacy mirror\n\nHive-Ledger-SHA256: {digest}"
-        legacy = self.sh("git", "commit-tree", tree, "-m", legacy_message, "-p", tip, cwd=self.a).stdout.decode().strip()
+        legacy = self.sh("git", "-c", "user.name=legacy", "-c", "user.email=legacy@local", "commit-tree", tree, "-m", legacy_message, "-p", tip, cwd=self.a).stdout.decode().strip()
         self.sh("git", "push", "origin", f"{legacy}:refs/heads/hive/state", cwd=self.a)
         self.write(self.b, [task("a")], [entry("a", attempts=2)])
         with self.assertRaises(hive_state.StateNotReconciled):
