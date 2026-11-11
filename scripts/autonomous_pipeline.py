@@ -5,6 +5,7 @@ import yaml, requests
 from provider_retry import generate_content_with_fallback
 from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
+from hive_state import load_state, save_state
 
 ROOT = Path.cwd()
 
@@ -342,6 +343,10 @@ if RESEARCH_ONLY and has_open_research_pr():
     print("An open Hive research PR already exists; skipping this run.")
     sys.exit(0)
 
+if RESEARCH_ONLY:
+    # Resume from the ledger saved on the hive/state branch, if any.
+    load_state(ROOT)
+
 batch_messages = []
 attempted_variant_ids = set()
 for _ in range(RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1):
@@ -361,14 +366,15 @@ for batch_msg in batch_messages:
     print(f"Curation: {batch_msg}")
 
 if RESEARCH_ONLY:
-    # Inspect only paths staged below; unrelated files must not cause empty commits.
-    dirty = subprocess.run(
-        ["git", "status", "--porcelain", "--",
-         "catalog/variants", "tasks/queue.json", "tasks/failed.json"],
+    # Only catalog candidates open a review PR. Ledger-only batches persist to
+    # the hive/state branch so retry ceilings survive without gating later runs.
+    catalog_dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", "catalog/variants"],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
-    if not dirty:
-        print("Research-only run made no changes.")
+    if not catalog_dirty:
+        saved = save_state(ROOT, f"chore(hive-state): {msg}")
+        print("No catalog changes; ledger " + ("saved to hive/state." if saved else "unchanged."))
         if audit_failures_this_run or research_failures_this_run:
             sys.exit(1)
         sys.exit(0)
@@ -377,23 +383,12 @@ if RESEARCH_ONLY:
     branch = "hive/research-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     run(["git", "checkout", "-b", branch])
     run(["git", "add", "catalog/variants", "tasks/queue.json", "tasks/failed.json"])
-    substantive = subprocess.run(
-        ["git", "diff", "--cached", "--quiet", "--",
-         "catalog/variants", "tasks/failed.json"],
-        check=False,
-    )
-    if substantive.returncode == 0:
-        print("Queue-only research change; skipping PR to avoid reordering-only proposals.")
-        if audit_failures_this_run or research_failures_this_run:
-            sys.exit(1)
-        sys.exit(0)
-    if substantive.returncode != 1:
-        raise RuntimeError("Could not determine whether research produced substantive changes.")
     run(["git", "commit", "-m", f"chore(hive): {msg}"])
     run(["git", "push", "-u", "origin", branch])
     run(["gh", "pr", "create", "--title", f"Hive research: {msg}",
          "--body", "Automated vehicle research proposal. Two independent AI vendors must explicitly approve each record. All AI-generated data remains low-confidence and requires human review before acceptance.",
          "--base", "main", "--head", branch])
+    save_state(ROOT, f"chore(hive-state): {msg}")
     print("Research proposal pushed; awaiting human review.")
     if audit_failures_this_run or research_failures_this_run:
         sys.exit(1)
