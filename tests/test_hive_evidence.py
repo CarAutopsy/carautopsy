@@ -77,16 +77,25 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
             retrieve_approved_evidence(variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher, today=date(2026, 11, 11))
         self.assertEqual(calls, [ROBOTS_URL])
 
+    def test_unmatched_variant_has_no_source_requests(self):
+        fetcher = Mock()
+        with self.assertRaisesRegex(EvidenceRetrievalRejected, "no exact source URLs"):
+            retrieve_approved_evidence(variant_id="other.variant", config=CONFIG, fetcher=fetcher)
+        fetcher.assert_not_called()
+
     def test_retrieval_failure_stops_without_partial_bundle(self):
         fetcher = Mock(return_value=SimpleNamespace(outcome="rejected", body=None))
         with self.assertRaises(EvidenceRetrievalRejected):
-            retrieve_approved_evidence(config=CONFIG, fetcher=fetcher, today=date(2026, 11, 11))
+            retrieve_approved_evidence(variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher, today=date(2026, 11, 11))
 
     def test_extraction_failure_stops_without_partial_bundle(self):
-        fetcher = Mock(return_value=SimpleNamespace(
-            outcome="retrieved_unverified", body=b"data",
-            content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
-        ))
+        def fetcher(url, **kwargs):
+            if url == ROBOTS_URL:
+                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\\nAllow: /\\n")
+            return SimpleNamespace(
+                outcome="retrieved_unverified", body=b"data",
+                content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
+            )
         with self.assertRaises(EvidenceRetrievalRejected):
             retrieve_approved_evidence(variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher, extractor=Mock(side_effect=ValueError("bad")), today=date(2026, 11, 11))
 
