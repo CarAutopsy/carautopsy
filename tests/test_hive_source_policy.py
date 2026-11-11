@@ -23,7 +23,7 @@ def config(**overrides):
         "terms_reviewed_at": "2026-11-01",
         "terms_reviewed_by": "repository-owner",
         "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/37",
-        "approved_urls": [URL],
+        "approved_urls": [{"url": URL, "variant_ids": ["synthetic.model-x"]}],
     }
     value = {"version": 1, "approved_hosts": [HOST], "source_policies": [entry]}
     value.update(overrides)
@@ -112,6 +112,12 @@ class SourcePolicyTests(unittest.TestCase):
     def test_unlisted_url_on_approved_host_is_denied(self):
         with self.assertRaisesRegex(SourcePolicyDenied, "exact URL list"):
             check_source_access("https://oem.example/other-model.html", config=config(), fetcher=Mock(), today=date(2026, 11, 11))
+
+    def test_approved_source_requires_variant_scope(self):
+        policy = config()
+        policy["source_policies"][0]["approved_urls"][0]["variant_ids"] = []
+        with self.assertRaisesRegex(SourcePolicyDenied, "variant IDs"):
+            check_source_access(URL, config=policy, fetcher=Mock(), today=date(2026, 11, 11))
 
     def test_candidate_host_cannot_expand_allowlist(self):
         with self.assertRaises(SourcePolicyDenied):
