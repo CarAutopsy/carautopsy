@@ -192,7 +192,7 @@ class StateBranchTests(unittest.TestCase):
     def test_legacy_bot_state_with_different_ledger_fails_closed(self):
         self.write(self.a, [task("b")], [entry("a", attempts=1)])
         hive_state.save_state(self.a, "legacy precursor")
-        tip = self.sh("git", "rev-parse", "hive/state", cwd=self.a).stdout.decode().strip()
+        tip = hive_state._tip(self.a)
         tree = self.sh("git", "rev-parse", f"{tip}^{{tree}}", cwd=self.a).stdout.decode().strip()
         digest = hive_state.ledger_digest(
             self.sh("git", "show", f"{tip}:tasks/failed.json", cwd=self.a).stdout,
