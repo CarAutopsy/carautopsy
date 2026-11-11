@@ -91,6 +91,10 @@ class SourcePolicyTests(unittest.TestCase):
                 with self.assertRaises(SourcePolicyDenied):
                     check_source_access(URL, config=value, fetcher=Mock(), today=date(2026, 11, 11))
 
+    def test_unlisted_url_on_approved_host_is_denied(self):
+        with self.assertRaisesRegex(SourcePolicyDenied, "exact URL list"):
+            check_source_access("https://oem.example/other-model.html", config=config(), fetcher=Mock(), today=date(2026, 11, 11))
+
     def test_candidate_host_cannot_expand_allowlist(self):
         with self.assertRaises(SourcePolicyDenied):
             check_source_access("https://attacker.example/spec", config=config(), fetcher=Mock(), today=date(2026, 11, 11))
