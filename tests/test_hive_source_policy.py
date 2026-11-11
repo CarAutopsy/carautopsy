@@ -82,6 +82,14 @@ class SourcePolicyTests(unittest.TestCase):
                 with self.assertRaises(SourcePolicyDenied):
                     check_source_access(URL, config=value, fetcher=Mock(), today=date(2026, 11, 11))
 
+    def test_terms_and_review_references_require_safe_https_urls(self):
+        for key, value in (("terms_url", "http://oem.example/terms"), ("terms_review_ref", "https://user@oem.example/review")):
+            policy = config()
+            policy["source_policies"][0][key] = value
+            with self.subTest(key=key):
+                with self.assertRaises(SourcePolicyDenied):
+                    check_source_access(URL, config=policy, fetcher=Mock(), today=date(2026, 11, 11))
+
     def test_terms_review_must_be_recent_and_valid(self):
         for reviewed in ("2025-01-01", "2026-12-01", "not-a-date"):
             with self.subTest(reviewed=reviewed):
