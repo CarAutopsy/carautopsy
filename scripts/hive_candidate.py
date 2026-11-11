@@ -119,12 +119,27 @@ def validate_evidence_bundle(evidence: Any) -> list[dict[str, str]]:
         if len(excerpt) > MAX_EXCERPT_CHARS:
             raise CandidateRejected(f"evidence excerpt exceeds {MAX_EXCERPT_CHARS} characters")
         total_chars += len(excerpt)
-        normalized.append({
+        normalized_item = {
             "source_id": source_id,
             "url": url,
             "retrieved_at": retrieved_at,
             "text": excerpt.strip(),
-        })
+        }
+        locator_texts = item.get("locator_texts")
+        if locator_texts is not None:
+            if (
+                not isinstance(locator_texts, dict)
+                or not locator_texts
+                or len(locator_texts) > 20
+                or any(
+                    not isinstance(locator, str) or not re.fullmatch(r"(?:document|page:[1-9][0-9]*)", locator)
+                    or not isinstance(span, str) or not span.strip() or len(span) > MAX_EXCERPT_CHARS
+                    for locator, span in locator_texts.items()
+                )
+            ):
+                raise CandidateRejected(f"evidence item {index} has invalid structured locator text")
+            normalized_item["locator_texts"] = dict(locator_texts)
+        normalized.append(normalized_item)
     if total_chars > MAX_TOTAL_EXCERPT_CHARS:
         raise CandidateRejected(
             f"combined evidence excerpts exceed {MAX_TOTAL_EXCERPT_CHARS} characters"
@@ -149,7 +164,7 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
     def walk(value: Any, path: str) -> None:
         if isinstance(value, dict):
             for key, child in value.items():
-                if path == "offers" and key in NON_CLAIM_OFFER_FIELDS:
+                if (path == "offers" or re.fullmatch(r"offers\\[\\d+\\]", path)) and key in NON_CLAIM_OFFER_FIELDS:
                     continue
                 if path == "identity" and key in NON_CLAIM_IDENTITY_FIELDS:
                     continue
@@ -168,17 +183,6 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
     return paths
 
 
-def _locator_text(source_text: str, locator: str) -> str | None:
-    """Return only the text belonging to one explicit document/page marker."""
-    markers = list(re.finditer(r"(?m)^\[([A-Za-z0-9:_-]+)\]\s*$", source_text))
-    for index, match in enumerate(markers):
-        if match.group(1) != locator:
-            continue
-        end = markers[index + 1].start() if index + 1 < len(markers) else len(source_text)
-        return source_text[match.end():end].strip()
-    return None
-
-
 def _validate_claim_evidence(
     candidate: dict[str, Any],
     evidence: list[dict[str, str]],
@@ -194,7 +198,10 @@ def _validate_claim_evidence(
         return
     if not isinstance(bindings, list) or not bindings:
         raise CandidateRejected("every non-null technical claim requires claim_evidence")
+    if len(bindings) > MAX_CLAIM_BINDINGS:
+        raise CandidateRejected("claim evidence exceeds the binding-count limit")
     evidence_by_id = {item["source_id"]: item for item in evidence}
+    locator_text_cache = {source_id: item.get("locator_texts", {}) for source_id, item in evidence_by_id.items()}
     declared_ids = {
         item.get("source_id") for item in (provenance.get("sources") or [])
         if isinstance(item, dict)
@@ -216,8 +223,7 @@ def _validate_claim_evidence(
             raise CandidateRejected(f"claim evidence item {index} has an invalid locator")
         if not isinstance(quote, str) or not quote.strip() or len(quote) > MAX_CLAIM_QUOTE_CHARS:
             raise CandidateRejected(f"claim evidence item {index} has an invalid quote")
-        source_text = evidence_by_id[source_id]["text"]
-        located_text = _locator_text(source_text, locator)
+        located_text = locator_text_cache[source_id].get(locator)
         if located_text is None:
             raise CandidateRejected(f"claim evidence locator {locator} is not present in source text")
         if quote not in located_text:
