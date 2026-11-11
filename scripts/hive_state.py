@@ -260,19 +260,18 @@ def reconcile_with_pr(root):
             _ack(root, tip)
             return "in-sync"
         state_base = _declared_proposal_state_base(root, current_head)
-        if not state_base:
-            raise StateNotReconciled(
-                "proposal has no verifiable Hive-State-Base; refusing to adopt standalone state"
-            )
-        if tip == state_base or _is_ancestor(root, tip, state_base):
+        if state_base and (tip == state_base or _is_ancestor(root, tip, state_base)):
             # The proposal already consumed this state snapshot. A failed mirror
             # push must not let that older snapshot erase the proposal ledger.
             _ack(root, tip)
             print("Proposal ledger is ahead of the standalone state baseline; preserving proposal progress.")
             return "proposal-ahead"
-        if _is_ancestor(root, state_base, tip) and _is_ancestor(root, current_head, tip):
-            # The standalone writer must have consumed this proposal (or a later
-            # proposal commit), not merely a stale state baseline.
+        # A successful proposal mirror makes the proposal commit an ancestor of
+        # hive/state. This also proves consumption when the first baseline was
+        # absent and the proposal recorded Hive-State-Base: none.
+        descended_from_base = bool(state_base) and _is_ancestor(root, state_base, tip)
+        consumed_current_proposal = _is_ancestor(root, current_head, tip)
+        if consumed_current_proposal and (not state_base or descended_from_base):
             _write_state_files(root, files)
             _ack(root, tip)
             print("Adopted standalone Hive progress descended from the current proposal.")
