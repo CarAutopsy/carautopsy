@@ -39,7 +39,7 @@ Use canonical schema keys only. In particular:
 - registration.first_registration_date is vehicle-specific, not a model launch date.
 - provenance.sources must contain objects with source_id and the exact matching URL
   from the supplied evidence bundle.
-- provenance.claim_evidence must bind every non-null technical/price/registration claim
+- provenance.claim_evidence must bind every non-null technical/price/registration/non-reserved identity claim
   to a source_id, locator, and exact verbatim quote from that source excerpt.
 - confidence is always low and reviewed_by is null; pipeline metadata is not yours.
 
@@ -64,7 +64,7 @@ def build_auditor_prompt(
 
 Assess only the supplied candidate against the supplied repository schema and the
 same source excerpts supplied to the researcher. A URL by itself is not evidence.
-Check whether every non-null technical/price/registration claim has a claim_evidence
+Check whether every non-null technical/price/registration/non-reserved identity claim has a claim_evidence
 entry whose quote is an exact span at the stated locator in the named supplied source.
 Then assess whether the span actually supports the claim, whether the source matches
 the exact make/model/variant/year/market, and whether
