@@ -15,7 +15,8 @@ Status: retrieval primitive implemented; runtime integration and operational rea
 - Resolve every A/AAAA answer and reject the hostname if any answer is not globally routable.
 - Connect the TCP socket to the selected validated IP. TLS SNI and certificate hostname verification continue to use the original hostname.
 - No environment proxy, automatic redirect, or second DNS resolution is used by the pinned connection.
-- Reject all redirects in this first implementation.
+- Reject all redirects in this first implementation; no redirect target is ever requested.
+- Identify the crawler with a project-owned GitHub repository URL; do not embed a maintainer personal email in outbound headers.
 - Bound timeout to 30 seconds maximum and response bytes to 2 MB maximum; enforce both declared and streamed sizes.
 - Accept only HTML, plain text and PDF content types. The caller must extract text safely and must not treat binary PDF bytes as prompt text.
 - Reject known placeholder KBA numeric filenames and all-zero configurator identifiers.
