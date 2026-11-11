@@ -19,7 +19,7 @@ CONFIG = {
         "terms_reviewed_at": "2026-11-01",
         "terms_reviewed_by": "repository-owner",
         "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/37",
-        "approved_urls": [URL],
+        "approved_urls": [{"url": URL, "variant_ids": ["synthetic.model-x"]}],
     }],
 }
 
@@ -39,7 +39,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
             )
 
         evidence = retrieve_approved_evidence(
-            config=CONFIG, fetcher=fetcher,
+            variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher,
             extractor=lambda body, content_type, max_chars: SimpleNamespace(text=body.decode(), locators=("document",)),
             today=date(2026, 11, 11),
         )
@@ -53,13 +53,14 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
     def test_empty_allowlist_is_a_hard_stop(self):
         config = dict(CONFIG, approved_hosts=[], source_policies=[])
         with self.assertRaisesRegex(EvidenceRetrievalRejected, "no owner-approved"):
-            retrieve_approved_evidence(config=config, fetcher=Mock())
+            retrieve_approved_evidence(variant_id="synthetic.model-x", config=config, fetcher=Mock())
 
     def test_unapproved_host_or_url_never_reaches_fetcher(self):
         fetcher = Mock()
         with self.assertRaises(EvidenceRetrievalRejected):
             retrieve_approved_evidence(
-                config=dict(CONFIG, source_policies=[dict(CONFIG["source_policies"][0], approved_urls=["https://attacker.example/x"])]),
+                variant_id="synthetic.model-x",
+                config=dict(CONFIG, source_policies=[dict(CONFIG["source_policies"][0], approved_urls=[{"url": "https://attacker.example/x", "variant_ids": ["synthetic.model-x"]}])]),
                 fetcher=fetcher,
                 today=date(2026, 11, 11),
             )
@@ -73,7 +74,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
             return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nDisallow: /\n")
 
         with self.assertRaises(EvidenceRetrievalRejected):
-            retrieve_approved_evidence(config=CONFIG, fetcher=fetcher, today=date(2026, 11, 11))
+            retrieve_approved_evidence(variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher, today=date(2026, 11, 11))
         self.assertEqual(calls, [ROBOTS_URL])
 
     def test_retrieval_failure_stops_without_partial_bundle(self):
@@ -87,13 +88,13 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
             content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
         ))
         with self.assertRaises(EvidenceRetrievalRejected):
-            retrieve_approved_evidence(config=CONFIG, fetcher=fetcher, extractor=Mock(side_effect=ValueError("bad")), today=date(2026, 11, 11))
+            retrieve_approved_evidence(variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher, extractor=Mock(side_effect=ValueError("bad")), today=date(2026, 11, 11))
 
     def test_duplicate_seed_urls_are_rejected(self):
-        entry = dict(CONFIG["source_policies"][0], approved_urls=[URL, URL])
+        entry = dict(CONFIG["source_policies"][0], approved_urls=[{"url": URL, "variant_ids": ["synthetic.model-x"]}, {"url": URL, "variant_ids": ["synthetic.model-x"]}])
         fetcher = Mock()
         with self.assertRaisesRegex(EvidenceRetrievalRejected, "duplicate"):
-            retrieve_approved_evidence(config=dict(CONFIG, source_policies=[entry]), fetcher=fetcher)
+            retrieve_approved_evidence(variant_id="synthetic.model-x", config=dict(CONFIG, source_policies=[entry]), fetcher=fetcher)
         fetcher.assert_not_called()
 
 
