@@ -37,7 +37,9 @@ def _extract_pdf_body(body: bytes, max_pages: int, max_chars: int, timeout_secon
             if total > max_chars:
                 raise ValueError("document_character_limit")
             locator = f"page:{index}"
-            chunks.append(f"[{locator}]\n{page_text.strip()}")
+            clean_page = page_text.strip()
+            locator_texts[locator] = clean_page
+            chunks.append(f"[{locator}]\n{clean_page}")
             locators.append(locator)
         text = "\n\n".join(chunks).strip()
         if not text:
