@@ -16,16 +16,37 @@ def task(vid):
 
 
 def entry(vid, attempts=0, research_attempts=0):
-    """Build a synthetic retry-ledger entry with configurable attempt counts."""
-    return {"task": task(vid), "attempts": attempts, "max_attempts": 3,
-            "research_attempts": research_attempts, "max_research_attempts": 3}
+    """Build a synthetic versioned retry-ledger entry with configurable counters."""
+    return {
+        "task": task(vid), "attempts": attempts, "max_attempts": 3,
+        "research_attempts": research_attempts, "max_research_attempts": 3,
+        "outcome": {
+            "schema_version": 1, "code": "vehicle_quality_rejection",
+            "attempt_id": "test-attempt", "stage": "audit",
+            "retryable": attempts < 3, "at": "2026-11-11T00:00:00Z",
+            "provider_statuses": [],
+            "counters": {
+                "provider_attempts": 0, "format_attempts": 0,
+                "provenance_attempts": 0, "attempts": attempts,
+                "research_attempts": research_attempts,
+            },
+        },
+    }
 
 
 class MergeStateTests(unittest.TestCase):
     def test_exhausted_ids_cover_audit_research_and_legacy_entries(self):
         failed = [entry("a", attempts=3), entry("b", research_attempts=3), entry("c", attempts=2),
                   {"task": task("legacy"), "verdict": "INDEPENDENT_AUDIT_FAILED"}]
-        self.assertEqual(hive_state.exhausted_ids(failed), {"a", "b"})
+        self.assertEqual(hive_state.exhausted_ids(failed), {"a", "b", "legacy"})
+
+
+    def test_versioned_retryable_outcomes_are_not_exhausted_but_legacy_is_quarantined(self):
+        from hive_outcomes import PROVIDER_TRANSPORT_FAILURE, record_outcome
+        versioned, retry = record_outcome(task("provider"), None, PROVIDER_TRANSPORT_FAILURE, stage="research")
+        self.assertTrue(retry)
+        legacy = {"task": task("legacy"), "verdict": "INDEPENDENT_AUDIT_FAILED"}
+        self.assertEqual(hive_state.exhausted_ids([versioned, legacy]), {"legacy"})
 
     def test_state_order_wins_and_main_only_entries_are_appended(self):
         queue, failed = hive_state.merge_state(
@@ -36,6 +57,13 @@ class MergeStateTests(unittest.TestCase):
     def test_exhausted_vehicles_are_not_requeued_from_main(self):
         queue, _ = hive_state.merge_state([task("a"), task("b")], [task("b")], [entry("a", attempts=3)])
         self.assertEqual([t["variant_id"] for t in queue], ["b"])
+
+    def test_ambiguous_legacy_task_is_removed_from_restored_state_queue(self):
+        legacy = {"task": task("legacy"), "verdict": "INDEPENDENT_AUDIT_FAILED"}
+        queue, _ = hive_state.merge_state(
+            [task("legacy"), task("new")], [task("legacy"), task("live")], [legacy]
+        )
+        self.assertEqual([item["variant_id"] for item in queue], ["live", "new"])
 
     def test_retrying_an_exhausted_vehicle_needs_a_main_queue_entry_and_a_reset(self):
         exhausted = [entry("x", attempts=3)]

@@ -8,6 +8,7 @@ from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
 from hive_research_gate import ResearchPaused, require_verified_retrieval
+from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
 ROOT = Path.cwd()
 
@@ -58,17 +59,23 @@ def call_provider(prompt, key, url, model, temperature=0.1):
 
 
 def call_llm(prompt, key, url, model):
-    """Call one model and treat provider errors as unavailable."""
+    """Return content plus a safe failure class; never expose provider error bodies."""
     if not key:
-        return None
+        return None, "provider_transport_failure"
     try:
         content, used_model = call_provider(prompt, key, url, model)
         if content and used_model != model:
             print(f"   [Gemini fallback model: {used_model}]")
-        return content
+        return content, None
+    except (ValueError, KeyError, TypeError, IndexError) as exc:
+        print(f"   [provider response format failed: {type(exc).__name__}]")
+        return None, "response_format_failure"
+    except requests.exceptions.RequestException as exc:
+        print(f"   [provider request failed: {type(exc).__name__}]")
+        return None, "provider_transport_failure"
     except Exception as exc:
         print(f"   [provider request failed: {type(exc).__name__}]")
-        return None
+        return None, "provider_transport_failure"
 
 # Provider fallback routing
 QWEN_KEY = os.getenv("QWEN_API_KEY")
@@ -85,27 +92,40 @@ PROVIDERS = [
 ]
 
 def call_any(prompt, exclude_vendors=None):
-    """Return the first successful response from a non-excluded vendor."""
+    """Return content or a deterministic provider/format failure class."""
     excluded = set(exclude_vendors or [])
+    failures = []
     for name, vendor, key, url, model in PROVIDERS:
         if not key or vendor in excluded:
             continue
-        out = call_llm(prompt, key, url, model)
+        out, failure = call_llm(prompt, key, url, model)
         if out:
             print(f"   [provider: {name}]")
-            return out, name, vendor
-    return None, None, None
+            return out, name, vendor, None
+        failures.append(failure)
+    failure_code = "response_format_failure" if "response_format_failure" in failures else "provider_transport_failure"
+    return None, None, None, failure_code
 
 def call_vendor(prompt, vendor):
-    """Call a specific independent vendor for an audit response."""
+    """Try every configured endpoint for one vendor before classifying its failure."""
+    failures = []
+    matched = False
     for name, provider_vendor, key, url, model in PROVIDERS:
-        if provider_vendor != vendor or not key:
+        if provider_vendor != vendor:
             continue
-        out = call_llm(prompt, key, url, model)
+        matched = True
+        if not key:
+            failures.append("provider_transport_failure")
+            continue
+        out, failure = call_llm(prompt, key, url, model)
         if out:
             print(f"   [audit provider: {name}]")
-            return out, name
-    return None, None
+            return out, name, None
+        failures.append(failure)
+    if not matched:
+        return None, None, "provider_transport_failure"
+    failure_code = "response_format_failure" if "response_format_failure" in failures else "provider_transport_failure"
+    return None, None, failure_code
 
 def provider_smoke_test():
     """Exercise one endpoint per independent vendor without touching catalog or queue."""
@@ -214,14 +234,30 @@ def curate_one(attempted_variant_ids=None):
              if (item.get("task") or {}).get("variant_id") == vid),
             None,
         )
-        prior_audits = (prior_entry or {}).get("audits") or []
-        prior_failure = "; ".join(
-            f"{audit.get('provider', audit.get('vendor', 'auditor'))}: "
-            f"{str(audit.get('verdict', 'no verdict')).splitlines()[0][:MAX_VERDICT_CHARS]}"
-            for audit in prior_audits
-            if isinstance(audit, dict)
-        ) or ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
-        prior_failure = prior_failure[:600]
+        prior_entry, migrated_legacy = migrate_legacy_entry(prior_entry)
+        if migrated_legacy:
+            failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
+            failed.append(prior_entry)
+            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+        if prior_entry and not requires_manual_review(prior_entry) and exhausted_outcome(prior_entry):
+            tasks = [item for item in tasks if item.get("variant_id") != vid]
+            qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+            return True, f"retry ceiling already exhausted for {vid}; retained for human review"
+        if prior_entry and requires_manual_review(prior_entry):
+            entry, _ = record_outcome(task, prior_entry, MANUAL_REVIEW_REQUIRED, stage="legacy_reconciliation")
+            failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
+            failed.append(entry)
+            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+            tasks = [item for item in tasks if item.get("variant_id") != vid]
+            qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+            return True, f"legacy retry state for {vid} quarantined for human review"
+        prior_categories = (prior_entry or {}).get("defect_categories") or []
+        prior_failure = ", ".join(
+            category for category in prior_categories
+            if category in {"provenance_evidence", "unit_mismatch", "schema_compliance", "numeric_consistency", "technical_specification", "unspecified_quality_defect"}
+        )
+        if not prior_failure:
+            prior_failure = ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
         rp = f"""You are the CarAutopsy Researcher agent.
 Find OFFICIAL specifications for: {make} {model}.
 Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
@@ -235,7 +271,7 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
         # Count the variant before provider calls so failures cannot be retried
         # again during this same batch; it remains queued for a later run.
         attempted_variant_ids.add(vid)
-        raw, res_name, res_vendor = call_any(rp)
+        raw, res_name, res_vendor, research_failure_code = call_any(rp)
         veh = None
         if raw:
             try:
@@ -244,27 +280,35 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
             except Exception as e:
                 print(f"Researcher bad JSON: {e}"); veh = None
         
-        if veh is None:
+        research_code = classify_research_response(raw, veh, failure_code=research_failure_code)
+        if research_code is not None:
             research_failures_this_run += 1
             previous = next((item for item in reversed(failed)
-                             if (item.get("task") or {}).get("variant_id") == vid), {})
-            research_attempts = int(previous.get("research_attempts", 0)) + 1
-            audit_attempts = int(previous.get("attempts", 0))
+                             if (item.get("task") or {}).get("variant_id") == vid), None)
+            entry, retryable = record_outcome(
+                task, previous, research_code, stage="research",
+                provider_statuses=[{"provider": res_name or "provider-pool",
+                                    "status": "OFFLINE" if research_code == "provider_transport_failure" else "INVALID"}],
+            )
+            counters = entry["outcome"]["counters"]
+            entry.update({
+                "attempts": counters["attempts"], "max_attempts": MAX_AUDIT_ATTEMPTS,
+                "research_attempts": counters["research_attempts"],
+                "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
+                "provider_attempts": counters["provider_attempts"],
+                "format_attempts": counters["format_attempts"],
+                "provenance_attempts": counters["provenance_attempts"],
+            })
             failed = [item for item in failed
                       if (item.get("task") or {}).get("variant_id") != vid]
-            failed.append({"task": task, "verdict": "RESEARCH_FAILED",
-                           "research_attempts": research_attempts,
-                           "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
-                           "attempts": audit_attempts,
-                           **{key: previous[key] for key in ("audits", "candidate") if key in previous},
-                           "at": datetime.now(timezone.utc).isoformat()})
+            failed.append(entry)
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
-            if research_attempts < MAX_RESEARCH_ATTEMPTS:
+            if retryable:
                 tasks = tasks[1:] + [task]
-                outcome = f"research failed for {vid}; retry {research_attempts}/{MAX_RESEARCH_ATTEMPTS} queued"
+                outcome = f"{research_code} for {vid}; retry queued"
             else:
-                tasks = tasks[1:]
-                outcome = f"research failed for {vid}; retry limit reached; retained for human review"
+                tasks = [item for item in tasks if item.get("variant_id") != vid]
+                outcome = f"{research_code} retry ceiling reached; retained for human review"
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"{outcome} (skipped {skipped} existing)"
         
@@ -290,34 +334,66 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
         audit_vendors = [vendor for vendor in ("deepseek", "google", "qwen") if vendor != res_vendor]
         audit_results = []
         for audit_vendor in audit_vendors:
-            audit_raw, audit_name = call_vendor(ap, audit_vendor)
-            audit_verdict = concise_audit_verdict(audit_raw) if audit_raw else "OFFLINE"
+            audit_raw, audit_name, audit_failure_code = call_vendor(ap, audit_vendor)
+            audit_verdict = concise_audit_verdict(audit_raw) if audit_raw else (
+                "INVALID_AUDIT_RESPONSE" if audit_failure_code == "response_format_failure" else "OFFLINE"
+            )
             audit_results.append({"provider": audit_name or audit_vendor, "vendor": audit_vendor, "verdict": audit_verdict})
             print(f"Auditor {audit_name or audit_vendor} says: {audit_verdict}")
 
-        veh["extensions"]["hive"]["audits"] = audit_results
-        # Fail closed: every available independent vendor must explicitly PASS.
-        passed = len(audit_results) >= 2 and all(item["verdict"].upper().startswith("PASS") for item in audit_results)
-        if not passed:
-            audit_failures_this_run += 1
+        audit_code = classify_audit_results(audit_results)
+        safe_audits = []
+        for item in audit_results:
+            verdict = str(item.get("verdict", "")).strip()
+            status = "PASS" if verdict.upper() == "PASS" else (
+                "OFFLINE" if verdict.upper() == "OFFLINE" else (
+                    "INVALID" if verdict.upper() == "INVALID_AUDIT_RESPONSE" else "FAIL"
+                )
+            )
+            safe_audits.append({
+                "provider": str(item.get("provider", "auditor"))[:40],
+                "vendor": str(item.get("vendor", "unknown"))[:40],
+                "verdict": status,
+            })
+        veh["extensions"]["hive"]["audits"] = safe_audits
+        # Only deterministic outcome codes and safe provider statuses enter the ledger.
+        if audit_code != AUDIT_SUCCESS:
+            if audit_code == "vehicle_quality_rejection":
+                audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
-            previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), {})
-            attempts = int(previous.get("attempts", 0)) + 1
-            research_attempts = int(previous.get("research_attempts", 0))
+            previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), None)
+            entry, retryable = record_outcome(
+                task, previous, audit_code, stage="audit",
+                provider_statuses=[
+                    {"provider": item["provider"], "status": item["verdict"]}
+                    for item in safe_audits
+                ],
+                defect_categories=[
+                    classify_defect_category(item.get("verdict", ""))
+                    for item in audit_results
+                    if str(item.get("verdict", "")).upper().startswith("FAIL:")
+                ],
+            )
+            counters = entry["outcome"]["counters"]
+            entry.update({
+                "attempts": counters["attempts"], "max_attempts": MAX_AUDIT_ATTEMPTS,
+                "research_attempts": counters["research_attempts"],
+                "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
+                "provider_attempts": counters["provider_attempts"],
+                "format_attempts": counters["format_attempts"],
+                "provenance_attempts": counters["provenance_attempts"],
+                "audits": safe_audits, "candidate": veh,
+            })
             failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
-            failed.append({"task": task, "verdict": "INDEPENDENT_AUDIT_FAILED", "attempts": attempts,
-                           "max_attempts": MAX_AUDIT_ATTEMPTS, "research_attempts": research_attempts,
-                           "max_research_attempts": MAX_RESEARCH_ATTEMPTS,
-                           "audits": audit_results, "candidate": veh,
-                           "at": datetime.now(timezone.utc).isoformat()})
+            failed.append(entry)
             fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
-            if attempts < MAX_AUDIT_ATTEMPTS:
+            if retryable:
                 tasks = tasks[1:] + [task]
-                outcome = f"audit failed for {vid}; retry {attempts}/{MAX_AUDIT_ATTEMPTS} queued"
+                outcome = f"{audit_code} for {vid}; retry queued"
             else:
-                tasks = tasks[1:]
-                outcome = f"audit failed for {vid}; retry limit reached; retained for human review"
+                tasks = [item for item in tasks if item.get("variant_id") != vid]
+                outcome = f"{audit_code} retry ceiling reached; retained for human review"
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"{outcome} (skipped {skipped} existing)"
         

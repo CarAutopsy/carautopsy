@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from hive_outcomes import exhausted_outcome, migrate_legacy_entry, requires_manual_review
 
 STATE_BRANCH = "hive/state"
 STATE_REF = "refs/remotes/origin/hive/state"
@@ -59,6 +60,16 @@ def exhausted_ids(failed):
         vid = (item.get("task") or {}).get("variant_id")
         if not vid:
             continue
+        # Unknown/legacy outcome records are quarantined until human reconciliation.
+        if requires_manual_review(item):
+            migrated, recognized = migrate_legacy_entry(item)
+            if not recognized:
+                ids.add(vid)
+                continue
+            item = migrated
+        if exhausted_outcome(item):
+            ids.add(vid)
+            continue
         audit_limit = int(item.get("max_attempts") or DEFAULT_MAX_ATTEMPTS)
         research_limit = int(item.get("max_research_attempts") or DEFAULT_MAX_ATTEMPTS)
         if (int(item.get("attempts") or 0) >= audit_limit
@@ -74,7 +85,7 @@ def merge_state(main_queue, state_queue, state_failed):
     reset its entry in the state branch's failed.json.
     """
     blocked = exhausted_ids(state_failed)
-    queue = list(state_queue)
+    queue = [task for task in state_queue if task.get("variant_id") not in blocked]
     seen = {task.get("variant_id") for task in queue}
     for task in main_queue:
         vid = task.get("variant_id")
