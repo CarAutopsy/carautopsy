@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
-from urllib.robotparser import RobotFileParser
 
 DEFAULT_POLICY_PATH = Path(__file__).resolve().parents[1] / "data-connectors" / "approved-source-hosts.json"
 MAX_POLICY_AGE_DAYS = 180
@@ -86,6 +86,87 @@ def _host_policy(config: dict, host: str, today: date) -> dict:
     return item
 
 
+def _robots_can_fetch(text: str, user_agent: str, url: str) -> bool:
+    """Evaluate RFC 9309-style longest-match rules; malformed directives deny."""
+    groups: list[tuple[list[str], list[tuple[str, str]]]] = []
+    agents: list[str] = []
+    rules: list[tuple[str, str]] = []
+    saw_rule = False
+
+    def finish_group() -> None:
+        nonlocal agents, rules, saw_rule
+        if agents:
+            groups.append((agents, rules))
+        agents, rules, saw_rule = [], [], False
+
+    for raw_line in text.splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if ":" not in line:
+            raise SourcePolicyDenied("robots.txt contains a malformed directive")
+        key, value = (part.strip() for part in line.split(":", 1))
+        key = key.lower()
+        if key == "user-agent":
+            if not value or any(ch.isspace() for ch in value):
+                raise SourcePolicyDenied("robots.txt contains an invalid user-agent")
+            if saw_rule:
+                finish_group()
+            agents.append(value.lower())
+        elif key in ("allow", "disallow"):
+            if not agents:
+                raise SourcePolicyDenied("robots.txt rule appears before a user-agent group")
+            if value and not value.startswith("/") and not value.startswith("*"):
+                raise SourcePolicyDenied("robots.txt contains an invalid path rule")
+            rules.append((key, value))
+            saw_rule = True
+        elif key in ("sitemap", "crawl-delay", "request-rate", "host"):
+            # These directives do not grant or deny a path. Validate their presence,
+            # but do not use non-standard extensions to relax access decisions.
+            if not value:
+                raise SourcePolicyDenied("robots.txt contains an empty extension directive")
+        else:
+            # Unknown directives are ambiguous for this conservative crawler.
+            raise SourcePolicyDenied("robots.txt contains an unsupported directive")
+    finish_group()
+    if not groups:
+        raise SourcePolicyDenied("robots.txt is missing a valid user-agent group")
+
+    agent = user_agent.lower()
+    matching_specificity = -1
+    selected_rules: list[tuple[str, str]] = []
+    wildcard_rules: list[tuple[str, str]] = []
+    for group_agents, group_rules in groups:
+        for token in group_agents:
+            if token == "*":
+                wildcard_rules.extend(group_rules)
+            elif token in agent and len(token) > matching_specificity:
+                matching_specificity = len(token)
+                selected_rules = list(group_rules)
+            elif token in agent and len(token) == matching_specificity:
+                selected_rules.extend(group_rules)
+    rules_to_apply = selected_rules if matching_specificity >= 0 else wildcard_rules
+
+    parsed = urlsplit(url)
+    path_query = parsed.path or "/"
+    if parsed.query:
+        path_query += "?" + parsed.query
+    matches: list[tuple[int, str]] = []
+    for directive, pattern in rules_to_apply:
+        if not pattern:
+            continue
+        terminal = pattern.endswith("$")
+        expression = re.escape(pattern[:-1] if terminal else pattern).replace(r"\\*", ".*")
+        expression = "^" + expression + ("$" if terminal else "")
+        if re.search(expression, path_query):
+            specificity = len(pattern.rstrip("$").replace("*", ""))
+            matches.append((specificity, directive))
+    if not matches:
+        return True
+    longest = max(length for length, _ in matches)
+    return any(directive == "allow" for length, directive in matches if length == longest)
+
+
 def check_source_access(
     url: str,
     *,
@@ -127,14 +208,10 @@ def check_source_access(
         raise SourcePolicyDenied("robots.txt is not valid UTF-8") from exc
     if len(text) > 256_000:
         raise SourcePolicyDenied("robots.txt exceeds the policy size limit")
-    lines = text.splitlines()
-    if not any(line.lstrip().lower().startswith("user-agent:") for line in lines):
-        raise SourcePolicyDenied("robots.txt is missing a valid user-agent directive")
-    parser = RobotFileParser()
-    parser.set_url(robots_url)
     try:
-        parser.parse(lines)
-        permitted = parser.can_fetch(user_agent, url)
+        permitted = _robots_can_fetch(text, user_agent, url)
+    except SourcePolicyDenied:
+        raise
     except Exception as exc:
         raise SourcePolicyDenied("robots.txt policy could not be parsed") from exc
     if permitted is not True:
