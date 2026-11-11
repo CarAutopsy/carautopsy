@@ -199,7 +199,7 @@ class StateBranchTests(unittest.TestCase):
         self.assertEqual(self.read(self.b, "queue.json"), [task("b")])
 
     def test_reconcile_rejects_standalone_retry_without_proposal_ancestry(self):
-        self.write(self.a, [task("b")], [entry("a", attempts=1)])
+        self.write(self.a, [task("b")], [entry("a", attempts=0)])
         hive_state.save_state(self.a, "proposal baseline")
         baseline = hive_state._tip(self.a)
         self.sh("git", "checkout", "-b", "proposal-retry", cwd=self.a)
