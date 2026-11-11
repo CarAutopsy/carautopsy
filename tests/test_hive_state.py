@@ -11,10 +11,12 @@ import hive_state
 
 
 def task(vid):
+    """Build a minimal synthetic vehicle task for state-ledger tests."""
     return {"variant_id": vid, "make": "M", "model": vid}
 
 
 def entry(vid, attempts=0, research_attempts=0):
+    """Build a synthetic retry-ledger entry with configurable attempt counts."""
     return {"task": task(vid), "attempts": attempts, "max_attempts": 3,
             "research_attempts": research_attempts, "max_research_attempts": 3}
 
@@ -45,22 +47,27 @@ class MergeStateTests(unittest.TestCase):
 
 class StateBranchTests(unittest.TestCase):
     def sh(self, *args, cwd=None):
+        """Run a checked Git command in the selected test repository."""
         return subprocess.run(args, cwd=cwd, check=True, capture_output=True)
 
     def write(self, repo, queue, failed):
+        """Write queue and failed-ledger fixtures into a temporary clone."""
         (repo / "tasks").mkdir(exist_ok=True)
         (repo / "tasks" / "queue.json").write_text(json.dumps(queue, indent=2) + "\n")
         (repo / "tasks" / "failed.json").write_text(json.dumps(failed, indent=2) + "\n")
 
     def read(self, repo, name):
+        """Read one JSON ledger fixture from a temporary clone."""
         return json.loads((repo / "tasks" / name).read_text())
 
     def remote_failed(self):
+        """Read the failed ledger currently stored in the bare origin state branch."""
         shown = subprocess.run(["git", "show", "hive/state:tasks/failed.json"], cwd=self.origin,
                                capture_output=True, text=True, check=True).stdout
         return json.loads(shown)
 
     def remote_count(self):
+        """Count first-parent state commits that carry the ledger digest trailer."""
         commits = subprocess.run(
             ["git", "log", "--first-parent", "--format=%H", "--grep=Hive-Ledger-SHA256", "hive/state"],
             cwd=self.origin, capture_output=True, text=True, check=True,
@@ -68,6 +75,7 @@ class StateBranchTests(unittest.TestCase):
         return str(len(commits))
 
     def human_edit(self, failed):
+        """Simulate a manual state-branch edit made from a separate clone."""
         clone = self.tmp / "human"
         self.sh("git", "clone", "--branch", "hive/state", str(self.origin), str(clone))
         (clone / "tasks" / "failed.json").write_text(json.dumps(failed, indent=2) + "\n")
@@ -87,6 +95,14 @@ class StateBranchTests(unittest.TestCase):
         self.sh("git", "push", "origin", "HEAD:refs/heads/main", cwd=self.a)
         self.b = self.tmp / "b"
         self.sh("git", "clone", "--branch", "main", str(self.origin), str(self.b))
+
+    def test_trailer_parser_uses_only_the_final_trailer_block(self):
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p",
+                "commit", "--allow-empty", "-m",
+                "body text\\n\\nHive-State-Context: proposal", "-m",
+                "Hive-State-Context: standalone", cwd=self.a)
+        tip = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
+        self.assertEqual(hive_state._declared_state_context(self.a, tip), "standalone")
 
     def test_load_without_branch_leaves_main_ledger(self):
         self.assertFalse(hive_state.load_state(self.b))
