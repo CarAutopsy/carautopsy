@@ -212,7 +212,7 @@ class StateBranchTests(unittest.TestCase):
         self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p", "commit", "-m", "proposal update", cwd=self.a)
         old_proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
         self.sh("git", "push", "origin", "proposal", cwd=self.a)
-        self.sh("git", "checkout", "main", cwd=self.a)
+        self.sh("git", "checkout", "--detach", old_proposal_head + "^", cwd=self.a)
         self.write(self.a, [task("b")], [entry("a", attempts=2)])
         hive_state.save_state(self.a, "standalone retry progress")
         self.sh("git", "fetch", "origin", "proposal", cwd=self.b)
