@@ -1,0 +1,149 @@
+"""Versioned, allowlisted Hive retry outcomes and bounded counter accounting."""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import uuid
+
+OUTCOME_SCHEMA_VERSION = 1
+PROVIDER_TRANSPORT_FAILURE = "provider_transport_failure"
+RESPONSE_FORMAT_FAILURE = "response_format_failure"
+PROVENANCE_REJECTION = "provenance_rejection"
+VEHICLE_QUALITY_REJECTION = "vehicle_quality_rejection"
+AUDIT_SUCCESS = "audit_success"
+MANUAL_REVIEW_REQUIRED = "manual_review_required"
+OUTCOME_CODES = frozenset({
+    PROVIDER_TRANSPORT_FAILURE, RESPONSE_FORMAT_FAILURE, PROVENANCE_REJECTION,
+    VEHICLE_QUALITY_REJECTION, AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED,
+})
+COUNTER_BY_OUTCOME = {
+    PROVIDER_TRANSPORT_FAILURE: ("provider_attempts", 3),
+    RESPONSE_FORMAT_FAILURE: ("format_attempts", 3),
+    PROVENANCE_REJECTION: ("provenance_attempts", 2),
+    VEHICLE_QUALITY_REJECTION: ("attempts", 3),
+}
+PROVENANCE_MARKERS = ("provenance", "source url", "source-url", "citation", "coc", "certificate of conformity", "retrieval", "official url")
+
+
+def classify_research_response(raw, parsed):
+    """Classify a researcher result without retaining its response body."""
+    if not isinstance(raw, str) or not raw.strip():
+        return PROVIDER_TRANSPORT_FAILURE
+    if not isinstance(parsed, dict) or not isinstance(parsed.get("identity"), dict):
+        return RESPONSE_FORMAT_FAILURE
+    return None
+
+
+def classify_audit_results(audits):
+    """Classify the independent audit quorum using explicit status strings only."""
+    if not isinstance(audits, list) or len(audits) < 2:
+        return PROVIDER_TRANSPORT_FAILURE
+    verdicts = [str(item.get("verdict", "")).strip() for item in audits if isinstance(item, dict)]
+    if len(verdicts) != len(audits):
+        return RESPONSE_FORMAT_FAILURE
+    if any(value.upper() == "OFFLINE" for value in verdicts):
+        return PROVIDER_TRANSPORT_FAILURE
+    if any(value.upper() == "INVALID_AUDIT_RESPONSE" or not value for value in verdicts):
+        return RESPONSE_FORMAT_FAILURE
+    failures = [value for value in verdicts if value.upper().startswith("FAIL:")]
+    if failures:
+        if any(any(marker in value.lower() for marker in PROVENANCE_MARKERS) for value in failures):
+            return PROVENANCE_REJECTION
+        return VEHICLE_QUALITY_REJECTION
+    if all(value.upper() == "PASS" for value in verdicts):
+        return AUDIT_SUCCESS
+    return RESPONSE_FORMAT_FAILURE
+
+
+def _prior_counters(previous):
+    """Return trusted counters only from a recognized versioned outcome record."""
+    if previous is None:
+        return {"provider_attempts": 0, "format_attempts": 0, "provenance_attempts": 0, "attempts": 0, "research_attempts": 0}
+    outcome = previous.get("outcome")
+    if not isinstance(outcome, dict) or outcome.get("schema_version") != OUTCOME_SCHEMA_VERSION:
+        return None
+    if outcome.get("code") not in OUTCOME_CODES:
+        return None
+    counters = outcome.get("counters")
+    if not isinstance(counters, dict):
+        return None
+    names = ("provider_attempts", "format_attempts", "provenance_attempts", "attempts", "research_attempts")
+    result = {}
+    for name in names:
+        value = counters.get(name, 0)
+        if type(value) is not int or value < 0:
+            return None
+        result[name] = value
+    return result
+
+
+def record_outcome(task, previous, code, *, stage, provider_statuses=None, now=None, attempt_id=None):
+    """Build a safe durable entry and indicate whether its class may be retried."""
+    if code not in OUTCOME_CODES or code == AUDIT_SUCCESS:
+        raise ValueError("failure recorder requires an allowlisted non-success outcome")
+    counters = _prior_counters(previous)
+    if counters is None:
+        code = MANUAL_REVIEW_REQUIRED
+        counters = {"provider_attempts": 0, "format_attempts": 0, "provenance_attempts": 0, "attempts": 0, "research_attempts": 0}
+        stage = "legacy_reconciliation"
+    retryable = False
+    if code in COUNTER_BY_OUTCOME:
+        field, ceiling = COUNTER_BY_OUTCOME[code]
+        counters[field] += 1
+        retryable = counters[field] < ceiling
+    safe_statuses = []
+    for item in provider_statuses or []:
+        if isinstance(item, dict):
+            provider = item.get("provider")
+            status = item.get("status")
+            if isinstance(provider, str) and len(provider) <= 40 and isinstance(status, str) and status in {"PASS", "OFFLINE", "INVALID", "FAIL"}:
+                safe_statuses.append({"provider": provider, "status": status})
+    timestamp = now or datetime.now(timezone.utc).isoformat()
+    entry = {"task": task}
+    if isinstance(previous, dict):
+        for key in ("audits", "candidate", "verdict", "at"):
+            if key in previous:
+                entry[key] = previous[key]
+    entry["verdict"] = code.upper()
+    entry["at"] = timestamp
+    entry["outcome"] = {
+        "schema_version": OUTCOME_SCHEMA_VERSION,
+        "code": code,
+        "attempt_id": attempt_id or str(uuid.uuid4()),
+        "stage": str(stage)[:40],
+        "retryable": retryable,
+        "at": timestamp,
+        "provider_statuses": safe_statuses,
+        "counters": counters,
+    }
+    return entry, retryable
+
+
+def requires_manual_review(entry):
+    """Legacy, malformed, or unknown outcome records are quarantined."""
+    if not isinstance(entry, dict):
+        return True
+    outcome = entry.get("outcome")
+    if not isinstance(outcome, dict) or outcome.get("schema_version") != OUTCOME_SCHEMA_VERSION:
+        return True
+    if outcome.get("code") not in OUTCOME_CODES:
+        return True
+    return _prior_counters(entry) is None or outcome.get("code") == MANUAL_REVIEW_REQUIRED
+
+
+def exhausted_outcome(entry):
+    """Whether a versioned outcome has exhausted its own retry ceiling."""
+    if requires_manual_review(entry):
+        return True
+    outcome = entry["outcome"]
+    code = outcome["code"]
+    if code not in COUNTER_BY_OUTCOME:
+        return False
+    field, ceiling = COUNTER_BY_OUTCOME[code]
+    return outcome["counters"][field] >= ceiling
+
+
+def safe_attempt_metadata(code, stage, providers):
+    """Create provider status metadata; never include prompts, output, or errors."""
+    if code not in OUTCOME_CODES:
+        raise ValueError("unknown outcome code")
+    return {"stage": str(stage)[:40], "providers": [str(p)[:40] for p in providers[:4]]}
