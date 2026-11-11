@@ -109,6 +109,72 @@ class OutcomeClassificationTests(unittest.TestCase):
         self.assertEqual(migrated, legacy)
         self.assertTrue(outcomes.requires_manual_review(migrated))
 
+    def test_research_failures_share_a_three_attempt_ceiling_across_classes(self):
+        previous = None
+        sequence = [outcomes.PROVIDER_TRANSPORT_FAILURE, outcomes.RESPONSE_FORMAT_FAILURE, outcomes.PROVIDER_TRANSPORT_FAILURE]
+        for index, code in enumerate(sequence, 1):
+            previous, retry = outcomes.record_outcome({"variant_id": "research"}, previous, code, stage="research")
+            self.assertEqual(previous["outcome"]["counters"]["research_attempts"], index)
+            self.assertEqual(retry, index < 3)
+        self.assertTrue(outcomes.exhausted_outcome(previous))
+        self.assertEqual(outcomes._prior_counters(previous)["research_attempts"], 3)
+        unchanged, retry = outcomes.record_outcome({"variant_id": "research"}, previous, outcomes.RESPONSE_FORMAT_FAILURE, stage="research")
+        self.assertFalse(retry)
+        self.assertEqual(unchanged["outcome"]["counters"]["research_attempts"], 3)
+        self.assertIsNotNone(outcomes._prior_counters(unchanged))
+
+    def test_provenance_coc_is_a_complete_token(self):
+        self.assertEqual(
+            outcomes.classify_audit_results([{"verdict": "FAIL: cockpit dimensions use wrong units"}, {"verdict": "PASS"}]),
+            outcomes.VEHICLE_QUALITY_REJECTION,
+        )
+
+    def test_incomplete_counters_and_non_string_codes_fail_closed(self):
+        base, _ = outcomes.record_outcome({"variant_id": "a"}, None, outcomes.PROVIDER_TRANSPORT_FAILURE, stage="research")
+        del base["outcome"]["counters"]["format_attempts"]
+        self.assertTrue(outcomes.requires_manual_review(base))
+        for code in ([], {}):
+            malformed = {"outcome": {"schema_version": 1, "code": code, "counters": {}}}
+            self.assertTrue(outcomes.requires_manual_review(malformed))
+
+    def test_unknown_present_outcome_is_not_migrated(self):
+        legacy = {
+            "task": {"variant_id": "legacy"}, "verdict": "INDEPENDENT_AUDIT_FAILED",
+            "attempts": 1, "research_attempts": 0,
+            "audits": [{"verdict": "FAIL: drivetrain mismatch"}, {"verdict": "PASS"}],
+            "outcome": "malformed",
+        }
+        migrated, recognized = outcomes.migrate_legacy_entry(legacy)
+        self.assertFalse(recognized)
+        self.assertEqual(migrated, legacy)
+
+    def test_retry_defect_categories_are_safe_and_persisted(self):
+        category = outcomes.classify_defect_category("FAIL: drivetrain value is inconsistent")
+        self.assertEqual(category, "numeric_consistency")
+        entry, _ = outcomes.record_outcome(
+            {"variant_id": "a"}, None, outcomes.VEHICLE_QUALITY_REJECTION,
+            stage="audit", defect_categories=[category],
+        )
+        self.assertEqual(entry["defect_categories"], ["numeric_consistency"])
+
+    def test_audit_provider_statuses_are_recorded(self):
+        entry, _ = outcomes.record_outcome(
+            {"variant_id": "a"}, None, outcomes.VEHICLE_QUALITY_REJECTION,
+            stage="audit", provider_statuses=[{"provider": "qwen", "status": "FAIL"}],
+        )
+        self.assertEqual(entry["outcome"]["provider_statuses"], [{"provider": "qwen", "status": "FAIL"}])
+
+    def test_quarantine_copy_sanitizes_raw_audit_text(self):
+        legacy = {
+            "task": {"variant_id": "old"}, "audits": [{"provider": "qwen", "verdict": "FAIL: secret raw reason"}],
+            "candidate": {"extensions": {"hive": {"audits": [{"verdict": "FAIL: secret raw reason"}]}}},
+        }
+        entry, retry = outcomes.record_outcome(legacy["task"], legacy, outcomes.MANUAL_REVIEW_REQUIRED, stage="legacy_reconciliation")
+        self.assertFalse(retry)
+        self.assertNotIn("secret raw reason", str(entry))
+        self.assertEqual(entry["audits"][0]["verdict"], "FAIL")
+        self.assertEqual(entry["candidate"]["extensions"]["hive"]["audits"][0]["verdict"], "FAIL")
+
     def test_success_requires_no_failure_record_and_explicitly_clears(self):
         self.assertEqual(outcomes.classify_audit_results([{"verdict": "PASS"}, {"verdict": "PASS"}]), outcomes.AUDIT_SUCCESS)
 
