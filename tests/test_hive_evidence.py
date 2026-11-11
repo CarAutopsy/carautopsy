@@ -46,7 +46,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
         self.assertEqual(calls, [ROBOTS_URL, URL])
         self.assertEqual(len(evidence), 1)
         self.assertEqual(evidence[0]["url"], URL)
-        self.assertTrue(evidence[0]["text"].startswith("[document]\\n"))
+        self.assertTrue(evidence[0]["text"].startswith("[document]\n"))
         self.assertIn("official source bytes", evidence[0]["text"])
         self.assertNotIn("body", evidence[0])
 
