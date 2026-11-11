@@ -146,7 +146,7 @@ class StateBranchTests(unittest.TestCase):
 
     def test_reconcile_heals_only_when_state_proposal_head_is_behind(self):
         self.write(self.a, [task("b"), task("a")], [entry("a", attempts=1)])
-        hive_state.save_state(self.a, "state 1")
+        hive_state.save_state(self.a, "state 1", proposal_head=self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip())
         self.write(self.b, [task("a")], [entry("a", attempts=2)])
         self.sh("git", "add", "tasks", cwd=self.b)
         self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p", "commit", "-m", "proposal advanced", cwd=self.b)
@@ -158,7 +158,7 @@ class StateBranchTests(unittest.TestCase):
         self.write(self.a, [task("b")], [entry("a", attempts=2)])
         self.sh("git", "add", "tasks", cwd=self.a)
         self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p", "commit", "-m", "newer proposal", cwd=self.a)
-        hive_state.save_state(self.a, "newer proposal state")
+        hive_state.save_state(self.a, "newer proposal state", proposal_head=self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip())
         self.write(self.b, [task("a"), task("b")], [entry("a", attempts=1)])
         self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
         self.assertEqual(self.read(self.b, "queue.json"), [task("b")])
@@ -188,6 +188,31 @@ class StateBranchTests(unittest.TestCase):
         self.write(self.b, [], [])
         self.assertTrue(hive_state.save_state(self.b, "mirror after adoption"))
         self.assertEqual(self.remote_failed(), [])
+
+    def test_legacy_bot_state_with_different_ledger_fails_closed(self):
+        self.write(self.a, [task("b")], [entry("a", attempts=1)])
+        hive_state.save_state(self.a, "legacy precursor")
+        tip = self.sh("git", "rev-parse", "hive/state", cwd=self.a).stdout.decode().strip()
+        tree = self.sh("git", "rev-parse", f"{tip}^{{tree}}", cwd=self.a).stdout.decode().strip()
+        legacy = self.sh("git", "commit-tree", tree, "-m", "legacy mirror", "-p", tip, cwd=self.a).stdout.decode().strip()
+        self.sh("git", "push", "origin", f"{legacy}:refs/heads/hive/state", cwd=self.a)
+        self.sh("git", "fetch", "origin", "hive/state", cwd=self.b)
+        self.write(self.b, [task("a")], [entry("a", attempts=2)])
+        with self.assertRaises(hive_state.StateNotReconciled):
+            hive_state.reconcile_with_pr(self.b)
+
+    def test_standalone_state_wins_when_older_proposal_is_reopened(self):
+        self.sh("git", "checkout", "-b", "proposal", cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=1)])
+        self.sh("git", "add", "tasks", cwd=self.a)
+        self.sh("git", "-c", "user.name=p", "-c", "user.email=p@p", "commit", "-m", "proposal update", cwd=self.a)
+        old_proposal_head = self.sh("git", "rev-parse", "HEAD", cwd=self.a).stdout.decode().strip()
+        self.sh("git", "checkout", "main", cwd=self.a)
+        self.write(self.a, [task("b")], [entry("a", attempts=2)])
+        hive_state.save_state(self.a, "standalone retry progress")
+        self.sh("git", "checkout", "-b", "reopened-proposal", old_proposal_head, cwd=self.b)
+        self.assertEqual(hive_state.reconcile_with_pr(self.b), "adopted")
+        self.assertEqual(self.read(self.b, "failed.json"), [entry("a", attempts=2)])
 
 
 if __name__ == "__main__":
