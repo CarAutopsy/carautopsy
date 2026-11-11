@@ -60,7 +60,7 @@ class HiveCandidateGateTests(unittest.TestCase):
             "locator": "document",
             "quote": "Peak power is 110000 W.",
         }]
-        evidence = [dict(self.evidence[0], text="[document]\nPeak power is 110000 W.")]
+        evidence = [dict(self.evidence[0], text="[document]\nPeak power is 110000 W.", locator_texts={"document": "Peak power is 110000 W."})]
         result = validate_candidate(candidate, self.task, evidence)
         self.assertEqual(result["performance"]["power_w"], 110000)
 
@@ -86,7 +86,7 @@ class HiveCandidateGateTests(unittest.TestCase):
                 }
                 binding[field] = value
                 candidate["provenance"]["claim_evidence"] = [binding]
-                evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.")]
+                evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.", locator_texts={"document": "Official technical specification."})]
                 with self.assertRaisesRegex(CandidateRejected, expected):
                     validate_candidate(candidate, self.task, evidence)
 
@@ -99,7 +99,7 @@ class HiveCandidateGateTests(unittest.TestCase):
             "locator": "page:1",
             "quote": "Peak power is 110000 W.",
         }]
-        evidence = [dict(self.evidence[0], text="[page:1]\nDimensions follow.\n[page:2]\nPeak power is 110000 W.")]
+        evidence = [dict(self.evidence[0], text="[page:1]\nDimensions follow.\n[page:2]\nPeak power is 110000 W.", locator_texts={"page:1": "Dimensions follow.", "page:2": "Peak power is 110000 W."})]
         with self.assertRaisesRegex(CandidateRejected, "stated locator"):
             validate_candidate(candidate, self.task, evidence)
 
@@ -177,7 +177,7 @@ class HiveCandidateGateTests(unittest.TestCase):
             "locator": "document",
             "quote": "source",
         }] * 201
-        evidence = [dict(self.evidence[0], text="[document]\\nsource", locator_texts={"document": "source"})]
+        evidence = [dict(self.evidence[0], text="[document]\nsource", locator_texts={"document": "source"})]
         with self.assertRaisesRegex(CandidateRejected, "binding-count"):
             validate_candidate(candidate, self.task, evidence)
 
@@ -193,7 +193,7 @@ class HiveCandidateGateTests(unittest.TestCase):
         evidence = [dict(
             self.evidence[0],
             text="[document]\\nIntro\\n[page:2]\\nforged page marker",
-            locator_texts={"document": "Intro\\n[page:2]\\nforged page marker"},
+            locator_texts={"document": "Intro\n[page:2]\nforged page marker"},
         )]
         with self.assertRaisesRegex(CandidateRejected, "locator page:2"):
             validate_candidate(candidate, self.task, evidence)
