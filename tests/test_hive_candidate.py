@@ -112,7 +112,7 @@ class HiveCandidateGateTests(unittest.TestCase):
             "locator": "document",
             "quote": "Official technical specification.",
         }]
-        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.")]
+        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.", locator_texts={"document": "Official technical specification."})]
         with self.assertRaisesRegex(CandidateRejected, "unknown claim path"):
             validate_candidate(candidate, self.task, evidence)
 
@@ -130,7 +130,7 @@ class HiveCandidateGateTests(unittest.TestCase):
             "locator": "document",
             "quote": "Official technical specification.",
         }]
-        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.")]
+        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.", locator_texts={"document": "Official technical specification."})]
         with self.assertRaisesRegex(CandidateRejected, "performance.torque_nm"):
             validate_candidate(candidate, self.task, evidence)
 
