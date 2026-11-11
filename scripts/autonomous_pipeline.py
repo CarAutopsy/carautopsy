@@ -339,6 +339,11 @@ def get_open_research_pr():
 # This carries queue/failed-ledger state forward between 15-minute runs and
 # accumulates candidate work in one human-review PR without creating duplicates.
 open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None
+if open_research_pr:
+    # Start from the pending proposal's queue/ledger snapshot, not stale main.
+    run(["git", "fetch", "origin", open_research_pr["headRefName"]])
+    run(["git", "checkout", "-B", open_research_pr["headRefName"],
+         f"origin/{open_research_pr['headRefName']}"])
 
 batch_messages = []
 attempted_variant_ids = set()
@@ -374,8 +379,6 @@ if RESEARCH_ONLY:
     run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
     if open_research_pr:
         branch = open_research_pr["headRefName"]
-        run(["git", "fetch", "origin", branch])
-        run(["git", "checkout", "-B", branch, f"origin/{branch}"])
     else:
         branch = "hive/research-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         run(["git", "checkout", "-b", branch])
