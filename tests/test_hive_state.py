@@ -61,8 +61,11 @@ class StateBranchTests(unittest.TestCase):
         return json.loads(shown)
 
     def remote_count(self):
-        return subprocess.run(["git", "log", "--first-parent", "--format=%H", "--grep=Hive-Ledger-SHA256", "hive/state"], cwd=self.origin,
-                              capture_output=True, text=True, check=True).stdout.strip()
+        commits = subprocess.run(
+            ["git", "log", "--first-parent", "--format=%H", "--grep=Hive-Ledger-SHA256", "hive/state"],
+            cwd=self.origin, capture_output=True, text=True, check=True,
+        ).stdout.splitlines()
+        return str(len(commits))
 
     def human_edit(self, failed):
         clone = self.tmp / "human"
