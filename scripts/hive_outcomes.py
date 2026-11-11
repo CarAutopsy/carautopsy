@@ -24,10 +24,10 @@ COUNTER_BY_OUTCOME = {
 PROVENANCE_MARKERS = ("provenance", "source url", "source-url", "citation", "coc", "certificate of conformity", "retrieval", "official url")
 
 
-def classify_research_response(raw, parsed):
+def classify_research_response(raw, parsed, failure_code=None):
     """Classify a researcher result without retaining its response body."""
     if not isinstance(raw, str) or not raw.strip():
-        return PROVIDER_TRANSPORT_FAILURE
+        return failure_code if failure_code in {PROVIDER_TRANSPORT_FAILURE, RESPONSE_FORMAT_FAILURE} else PROVIDER_TRANSPORT_FAILURE
     if not isinstance(parsed, dict) or not isinstance(parsed.get("identity"), dict):
         return RESPONSE_FORMAT_FAILURE
     return None
