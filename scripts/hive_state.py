@@ -255,39 +255,31 @@ def save_state(root, message):
         raise StateNotReconciled(
             "hive/state was fetched but its ledger was not loaded or reconciled; "
             "refusing to overwrite it with a possibly stale snapshot")
+
     contents = {}
     blobs = {}
     for rel in (FAILED, QUEUE):
         path = root / rel
         contents[rel] = path.read_bytes() if path.exists() else b"[]\n"
-        blobs[rel] = _git(root, ["hash-object", "-w", "--stdin"], input_bytes=contents[rel]).stdout.decode().strip()
-    if tip:
-        same = all(
-            _git(root, ["rev-parse", f"{tip}:{rel}"], check=False).stdout.decode().strip() == sha
-            for rel, sha in blobs.items()
-        )
-        if same:
-            return False
-    listing = (f"100644 blob {blobs[FAILED]}\tfailed.json\n"
-               f"100644 blob {blobs[QUEUE]}\tqueue.json\n").encode()
-    tasks_tree = _git(root, ["mktree"], input_bytes=listing).stdout.decode().strip()
-    root_tree = _git(root, ["mktree"], input_bytes=f"040000 tree {tasks_tree}\ttasks\n".encode()).stdout.decode().strip()
-    env = {**os.environ,
-           "GIT_AUTHOR_NAME": "hive-bot", "GIT_AUTHOR_EMAIL": "hive-bot@users.noreply.github.com",
-           "GIT_COMMITTER_NAME": "hive-bot", "GIT_COMMITTER_EMAIL": "hive-bot@users.noreply.github.com"}
+        blobs[rel] = _git(root, ["hash-object", "-w", "--stdin"],
+                          input_bytes=contents[rel]).stdout.decode().strip()
+
     digest = ledger_digest(contents[FAILED], contents[QUEUE])
     proposal_head = _git(root, ["rev-parse", "HEAD"]).stdout.decode().strip()
     if tip:
-        same = all(
+        same_ledger = all(
             _git(root, ["rev-parse", f"{tip}:{rel}"], check=False).stdout.decode().strip() == sha
             for rel, sha in blobs.items()
-        ) and _declared_proposal_head(root, tip) == proposal_head
-        if same:
+        )
+        same_proposal = _declared_proposal_head(root, tip) == proposal_head
+        if same_ledger and same_proposal:
             return False
+
     listing = (f"100644 blob {blobs[FAILED]}\tfailed.json\n"
                f"100644 blob {blobs[QUEUE]}\tqueue.json\n").encode()
     tasks_tree = _git(root, ["mktree"], input_bytes=listing).stdout.decode().strip()
-    root_tree = _git(root, ["mktree"], input_bytes=f"040000 tree {tasks_tree}\ttasks\n".encode()).stdout.decode().strip()
+    root_tree = _git(root, ["mktree"],
+                     input_bytes=f"040000 tree {tasks_tree}\ttasks\n".encode()).stdout.decode().strip()
     env = {**os.environ,
            "GIT_AUTHOR_NAME": "hive-bot", "GIT_AUTHOR_EMAIL": "hive-bot@users.noreply.github.com",
            "GIT_COMMITTER_NAME": "hive-bot", "GIT_COMMITTER_EMAIL": "hive-bot@users.noreply.github.com"}
