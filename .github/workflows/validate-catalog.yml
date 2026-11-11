@@ -14,5 +14,5 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Validate vehicle catalog
         run: python scripts/validate_catalog.py
-      - name: Compile provider modules
-        run: python -m py_compile scripts/autonomous_pipeline.py scripts/provider_retry.py scripts/hive_pr.py
+      - name: Compile pipeline, candidate, prompt and retrieval modules
+        run: python -m compileall -q scripts tests
