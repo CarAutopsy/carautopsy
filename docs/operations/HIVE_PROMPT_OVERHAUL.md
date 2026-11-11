@@ -6,7 +6,7 @@ Status: PROPOSED; implementation not complete. Owner requested 2026-11-11.
 Align research drafts with schemas/vehicle-variant.schema.json, validate deterministically before paid audits, and stop fabricated retrieval claims. This document does not authorize automatic merge or paid calls.
 
 ## Researcher contract
-Copy task variant_id, identity.make and identity.model exactly. Do not infer model year, market, trim or technical specifications from the task name. Specify canonical nested fields: performance.power_w, torque_nm, accel_0_100_s, top_speed_kmh, drive, combustion_engine_power_w and electric_motor_continuous_power_w; dimensions.own_weight_kg and max_permissible_mass_kg; emissions.co2_wltp_gpkm and co2_wltp_weighted_combined_gpkm; registration.first_registration_date; energy.consumption_wh_km.real_world and wltp_combined. Unknown scalars are null, not estimates or zero. offers is an array; provenance.sources contains objects, not URL strings.
+Copy task variant_id, identity.make and identity.model exactly. Do not infer model year, market, trim or technical specifications from the task name. Specify canonical nested fields: performance.power_w, torque_nm, accel_0_100_s, top_speed_kmh, drive, combustion_engine_power_w and electric_motor_continuous_power_w; dimensions.own_weight_kg and max_permissible_mass_kg; emissions.co2_wltp_gpkm and co2_wltp_weighted_combined_gpkm; registration.first_registration_date. Energy consumption fields are not part of the current schema contract and must not be emitted as canonical fields until schema support is added. Unknown scalars are null, not estimates or zero. offers is an array; provenance.sources contains objects, not URL strings.
 
 Peak and continuous power differ. Gross list_price_minor and purchase_price_excl_vat_eur differ; never infer the NoVA base from gross price. First registration is vehicle-specific, not a model launch date. Confidence stays low and reviewed_by stays null. Operational extensions.hive metadata belongs to the pipeline.
 
@@ -34,7 +34,7 @@ Retrieval is NOT implemented by this design. A future runtime patch must stop re
 Implement policy-approved retrieval with bounded requests, redirect/host validation, network safety, evidence timestamps and content capture; audit before enabling it. Split provider/format failures from vehicle-quality attempts with durable-state regression tests. Resolve state races independently. Retire legacy unsafe entry points separately.
 
 ## Known schema limits
-Sparse records and additional properties are currently allowed. Source objects need not contain a URL. Powertrain is not enumerated. The schema alone cannot validate source authenticity, evidence coverage, task identity or TCO readiness. Do not claim otherwise.
+Sparse records and additional properties are currently allowed. Source objects need not contain a URL. Powertrain is not enumerated. The `energy` object has no defined properties; energy-consumption values are currently unvalidated and are excluded from the canonical researcher contract. The schema alone cannot validate source authenticity, evidence coverage, task identity or TCO readiness. Do not claim otherwise.
 
 ## Audit boundary
 AI-authored proposal, not an independent audit. Bind review to the final head SHA. No merge until independent review and CI. No live provider or statutory verification is claimed.
