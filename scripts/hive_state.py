@@ -25,6 +25,7 @@ QUEUE = "tasks/queue.json"
 FAILED = "tasks/failed.json"
 DEFAULT_MAX_ATTEMPTS = 3
 TRAILER = "Hive-Ledger-SHA256"
+PROPOSAL_HEAD_TRAILER = "Hive-Proposal-Head"
 
 _ACKNOWLEDGED = {}
 
@@ -132,6 +133,33 @@ def tip_is_bot_written(root, tip):
     return ledger_digest(files[FAILED], files[QUEUE]) == declared
 
 
+def _declared_proposal_head(root, tip):
+    body = _git(root, ["log", "-1", "--format=%B", tip]).stdout.decode()
+    for line in body.splitlines():
+        if line.startswith(PROPOSAL_HEAD_TRAILER + ":"):
+            value = line.split(":", 1)[1].strip()
+            return value or None
+    return None
+
+
+def _write_state_files(root, files):
+    if any(content is None for content in files.values()):
+        raise RuntimeError("Hive state tip is missing a required ledger file")
+    for rel, content in files.items():
+        path = Path(root) / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
+
+def _is_ancestor(root, older, newer):
+    result = _git(root, ["merge-base", "--is-ancestor", older, newer], check=False)
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    raise RuntimeError("could not compare Hive proposal history")
+
+
 def _overlay(root):
     root = Path(root)
     state_queue = json.loads(_git(root, ["show", f"{STATE_REF}:{QUEUE}"]).stdout)
@@ -158,33 +186,60 @@ def load_state(root):
 
 
 def reconcile_with_pr(root):
-    """Align the proposal branch's working ledger with hive/state.
+    """Reconcile a proposal ledger against the proposal head recorded in hive/state.
 
-    Returns "none" (no state yet), "in-sync", "adopted" (a hand-edited state
-    wins and is merged into the working ledger) or "healed" (a bot-written
-    state that lagged the proposal branch, for example after a failed mirror,
-    is brought up to the proposal's ledger).
+    A state mirror records the proposal commit whose ledger it contains. If that
+    commit is behind the checked-out proposal, the proposal ledger may heal the
+    mirror. If it is equal to or ahead of the checkout, state wins. Divergent
+    histories fail closed rather than guessing which retry progress is newer.
+
+    State is authoritative for an open proposal's queue: do not merge missing
+    tasks back from the proposal branch, because their absence may be deliberate.
+    Returns "none", "in-sync", "adopted" or "healed".
     """
     root = Path(root)
     if not fetch_state(root):
         return "none"
     tip = _tip(root)
-    if not tip_is_bot_written(root, tip):
-        queued, entries = _overlay(root)
-        _ack(root, tip)
-        print(f"Hive state was edited by hand; adopted it: {queued} queued, {entries} ledger entries.")
-        return "adopted"
-    _ack(root, tip)
     files = _tip_files(root, tip)
+    if not tip_is_bot_written(root, tip):
+        _write_state_files(root, files)
+        _ack(root, tip)
+        print("Hive state was edited by hand; adopted its queue and failed ledger exactly.")
+        return "adopted"
+
+    recorded_head = _declared_proposal_head(root, tip)
+    current_head = _git(root, ["rev-parse", "HEAD"]).stdout.decode().strip()
+    if not recorded_head:
+        # Legacy mirrors predate proposal-head metadata. Adopt conservatively.
+        _write_state_files(root, files)
+        _ack(root, tip)
+        print("Adopted legacy Hive state without proposal-head metadata.")
+        return "adopted"
+
+    if recorded_head != current_head and _is_ancestor(root, recorded_head, current_head):
+        _ack(root, tip)
+        print("Hive state references an older proposal head; healing from the newer proposal ledger.")
+        save_state(root, "chore(hive-state): heal from newer proposal head")
+        return "healed"
+
+    if recorded_head != current_head and not _is_ancestor(root, current_head, recorded_head):
+        raise RuntimeError(
+            "Hive state and checked-out proposal have divergent histories; refusing to overwrite either ledger"
+        )
+
     working = {}
     for rel in (FAILED, QUEUE):
         path = root / rel
         working[rel] = path.read_bytes() if path.exists() else b"[]\n"
     if working == files:
+        _ack(root, tip)
         return "in-sync"
-    print("Hive state lagged the proposal branch; resyncing it.")
-    save_state(root, "chore(hive-state): resync from proposal branch")
-    return "healed"
+
+    _write_state_files(root, files)
+    _ack(root, tip)
+    print("Adopted the ledger associated with the same or newer proposal head.")
+    return "adopted"
 
 
 def save_state(root, message):
@@ -221,7 +276,26 @@ def save_state(root, message):
            "GIT_AUTHOR_NAME": "hive-bot", "GIT_AUTHOR_EMAIL": "hive-bot@users.noreply.github.com",
            "GIT_COMMITTER_NAME": "hive-bot", "GIT_COMMITTER_EMAIL": "hive-bot@users.noreply.github.com"}
     digest = ledger_digest(contents[FAILED], contents[QUEUE])
-    args = ["commit-tree", root_tree, "-m", f"{message}\n\n{TRAILER}: {digest}"]
+    proposal_head = _git(root, ["rev-parse", "HEAD"]).stdout.decode().strip()
+    if tip:
+        same = all(
+            _git(root, ["rev-parse", f"{tip}:{rel}"], check=False).stdout.decode().strip() == sha
+            for rel, sha in blobs.items()
+        ) and _declared_proposal_head(root, tip) == proposal_head
+        if same:
+            return False
+    listing = (f"100644 blob {blobs[FAILED]}\tfailed.json\n"
+               f"100644 blob {blobs[QUEUE]}\tqueue.json\n").encode()
+    tasks_tree = _git(root, ["mktree"], input_bytes=listing).stdout.decode().strip()
+    root_tree = _git(root, ["mktree"], input_bytes=f"040000 tree {tasks_tree}\ttasks\n".encode()).stdout.decode().strip()
+    env = {**os.environ,
+           "GIT_AUTHOR_NAME": "hive-bot", "GIT_AUTHOR_EMAIL": "hive-bot@users.noreply.github.com",
+           "GIT_COMMITTER_NAME": "hive-bot", "GIT_COMMITTER_EMAIL": "hive-bot@users.noreply.github.com"}
+    commit_message = (
+        f"{message}\n\n{TRAILER}: {digest}\n"
+        f"{PROPOSAL_HEAD_TRAILER}: {proposal_head}"
+    )
+    args = ["commit-tree", root_tree, "-m", commit_message]
     if tip:
         args += ["-p", tip]
     commit = _git(root, args, env=env).stdout.decode().strip()
