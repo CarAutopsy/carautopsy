@@ -25,7 +25,15 @@ class MergeStateTests(unittest.TestCase):
     def test_exhausted_ids_cover_audit_research_and_legacy_entries(self):
         failed = [entry("a", attempts=3), entry("b", research_attempts=3), entry("c", attempts=2),
                   {"task": task("legacy"), "verdict": "INDEPENDENT_AUDIT_FAILED"}]
-        self.assertEqual(hive_state.exhausted_ids(failed), {"a", "b"})
+        self.assertEqual(hive_state.exhausted_ids(failed), {"a", "b", "legacy"})
+
+
+    def test_versioned_retryable_outcomes_are_not_exhausted_but_legacy_is_quarantined(self):
+        from hive_outcomes import PROVIDER_TRANSPORT_FAILURE, record_outcome
+        versioned, retry = record_outcome(task("provider"), None, PROVIDER_TRANSPORT_FAILURE, stage="research")
+        self.assertTrue(retry)
+        legacy = {"task": task("legacy"), "verdict": "INDEPENDENT_AUDIT_FAILED"}
+        self.assertEqual(hive_state.exhausted_ids([versioned, legacy]), {"legacy"})
 
     def test_state_order_wins_and_main_only_entries_are_appended(self):
         queue, failed = hive_state.merge_state(
