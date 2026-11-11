@@ -52,16 +52,15 @@ def retrieve_approved_evidence(
                 raise EvidenceRetrievalRejected("duplicate owner-approved source URL")
             seen_urls.add(url)
 
-            def robots_policy(target: str) -> bool:
-                return check_source_access(
-                    target, config=config, fetcher=fetcher, today=today
-                )
-
             try:
+                # Check owner terms and fetch/parse robots.txt before requesting the
+                # source document. The second request uses the same pinned transport;
+                # its callback is a one-use authorization from the immediately prior check.
+                check_source_access(url, config=config, fetcher=fetcher, today=today)
                 result = fetcher(
                     url,
                     approved_hosts=hosts,
-                    robots_allowed=robots_policy,
+                    robots_allowed=lambda requested: requested == url,
                 )
             except Exception as exc:
                 raise EvidenceRetrievalRejected("source retrieval failed closed") from exc
