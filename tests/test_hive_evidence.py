@@ -40,7 +40,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
 
         evidence = retrieve_approved_evidence(
             variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher,
-            extractor=lambda body, content_type, max_chars: SimpleNamespace(text=body.decode(), locators=("document",)),
+            extractor=lambda body, content_type, max_chars: SimpleNamespace(text=body.decode(), locators=("document",), locator_texts={"document": body.decode()}),
             today=date(2026, 11, 11),
         )
         self.assertEqual(calls, [ROBOTS_URL, URL])
