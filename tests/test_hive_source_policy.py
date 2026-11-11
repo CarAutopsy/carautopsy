@@ -21,6 +21,7 @@ def config(**overrides):
         "automated_access_allowed": True,
         "terms_url": "https://oem.example/terms",
         "terms_reviewed_at": "2026-11-01",
+        "approved_urls": [URL],
     }
     value = {"version": 1, "approved_hosts": [HOST], "source_policies": [entry]}
     value.update(overrides)
