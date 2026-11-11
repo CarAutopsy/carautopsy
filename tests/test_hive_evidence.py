@@ -91,7 +91,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
     def test_extraction_failure_stops_without_partial_bundle(self):
         def fetcher(url, **kwargs):
             if url == ROBOTS_URL:
-                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\\nAllow: /\\n")
+                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
             return SimpleNamespace(
                 outcome="retrieved_unverified", body=b"data",
                 content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
