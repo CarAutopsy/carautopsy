@@ -34,7 +34,7 @@ class HiveCandidateGateTests(unittest.TestCase):
             "status": "draft",
             "identity": {"make": "Synthetic", "model": "Model X"},
             "provenance": {
-                "confidence": "official",
+                "confidence": "model-invented",
                 "reviewed_by": "model-supplied",
                 "sources": [{"source_id": "oem-1", "url": self.evidence[0]["url"]}],
             },
