@@ -170,7 +170,7 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
 
 def _locator_text(source_text: str, locator: str) -> str | None:
     """Return only the text belonging to one explicit document/page marker."""
-    markers = list(re.finditer(r"(?m)^\\[([^]\\r\\n]+)\\]\\s*$", source_text))
+    markers = list(re.finditer(r"(?m)^\[([A-Za-z0-9:_-]+)\]\s*$", source_text))
     for index, match in enumerate(markers):
         if match.group(1) != locator:
             continue
