@@ -59,6 +59,8 @@ def extract_source_text(
         raise ExtractionRejected("content type is missing")
     if max_input_bytes <= 0 or max_input_bytes > MAX_INPUT_BYTES or len(body) > max_input_bytes:
         raise ExtractionRejected("source body exceeds the byte limit")
+    if max_pages <= 0 or max_pages > MAX_PDF_PAGES:
+        raise ExtractionRejected("page limit is outside the permitted bound")
     if max_chars <= 0 or max_chars > MAX_EXTRACTED_CHARS:
         raise ExtractionRejected("character limit is outside the permitted bound")
     if parse_timeout_seconds <= 0 or parse_timeout_seconds > MAX_PARSE_SECONDS:
