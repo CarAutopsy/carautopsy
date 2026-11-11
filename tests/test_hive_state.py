@@ -45,6 +45,13 @@ class MergeStateTests(unittest.TestCase):
         queue, _ = hive_state.merge_state([task("a"), task("b")], [task("b")], [entry("a", attempts=3)])
         self.assertEqual([t["variant_id"] for t in queue], ["b"])
 
+    def test_ambiguous_legacy_task_is_removed_from_restored_state_queue(self):
+        legacy = {"task": task("legacy"), "verdict": "INDEPENDENT_AUDIT_FAILED"}
+        queue, _ = hive_state.merge_state(
+            [task("legacy"), task("new")], [task("legacy"), task("live")], [legacy]
+        )
+        self.assertEqual([item["variant_id"] for item in queue], ["live", "new"])
+
     def test_retrying_an_exhausted_vehicle_needs_a_main_queue_entry_and_a_reset(self):
         exhausted = [entry("x", attempts=3)]
         self.assertEqual(hive_state.merge_state([], [], exhausted)[0], [])
