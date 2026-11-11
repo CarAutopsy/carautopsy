@@ -91,7 +91,7 @@ def retrieve_approved_evidence(
                 raise EvidenceRetrievalRejected("source extraction failed closed") from exc
             text = extracted.text
             if tuple(getattr(extracted, "locators", ())) == ("document",):
-                text = "[document]\\n" + text
+                text = "[document]\n" + text
             if not isinstance(text, str) or not text.strip() or len(text) > 20_000:
                 raise EvidenceRetrievalRejected("extracted source text is empty or exceeds the excerpt limit")
             total_chars += len(text)
