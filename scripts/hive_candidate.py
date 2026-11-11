@@ -23,6 +23,7 @@ TECHNICAL_CLAIM_ROOTS = ("identity", "performance", "energy", "dimensions", "emi
 NON_CLAIM_OFFER_FIELDS = {"offer_id", "country", "currency"}
 NON_CLAIM_IDENTITY_FIELDS = {"make", "model"}
 MAX_CLAIM_QUOTE_CHARS = 2_000
+MAX_CLAIM_BINDINGS = 200
 
 
 class CandidateRejected(ValueError):
@@ -157,6 +158,8 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
                 walk(child, f"{path}[{index}]")
         elif value is not None and (not isinstance(value, str) or value.strip()):
             paths.add(path)
+            if len(paths) > MAX_CLAIM_BINDINGS:
+                raise CandidateRejected("candidate contains too many technical claims")
 
     for root in TECHNICAL_CLAIM_ROOTS:
         if root in candidate:
@@ -251,6 +254,7 @@ def validate_candidate(
     declared_sources = provenance.get("sources")
     if not isinstance(declared_sources, list) or not declared_sources:
         raise CandidateRejected("candidate must cite at least one supplied evidence source")
+    declared_ids = set()
     for index, source in enumerate(declared_sources):
         if not isinstance(source, dict):
             raise CandidateRejected(f"candidate provenance source {index} must be an object")
@@ -258,6 +262,9 @@ def validate_candidate(
         url = source.get("url")
         if not isinstance(source_id, str) or source_id not in evidence_by_id:
             raise CandidateRejected(f"candidate provenance source {index} is not in the evidence bundle")
+        if source_id in declared_ids:
+            raise CandidateRejected("candidate provenance contains a duplicate source_id")
+        declared_ids.add(source_id)
         if url != evidence_by_id[source_id]:
             raise CandidateRejected(f"candidate provenance URL does not match evidence source {source_id}")
 
