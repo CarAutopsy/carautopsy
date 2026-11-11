@@ -72,7 +72,7 @@ class HiveCandidateGateTests(unittest.TestCase):
 
     def test_claim_binding_requires_exact_quote_and_locator(self):
         for field, value, expected in (
-            ("quote", "Peak power is 110 kW.", "exact source-text span"),
+            ("quote", "Peak power is 110 kW.", "exact span at the stated locator"),
             ("locator", "page:99", "locator page:99"),
         ):
             with self.subTest(field=field):
