@@ -195,11 +195,15 @@ def _robots_can_fetch(text: str, user_agent: str, url: str) -> bool:
     if parsed.query:
         path_query += "?" + _normalize_robots_octets(parsed.query)
     matches: list[tuple[int, str]] = []
+    matching_work = 0
     for directive, raw_pattern in rules_to_apply:
         if not raw_pattern:
             continue
         terminal = raw_pattern.endswith("$")
         pattern = _normalize_robots_octets(raw_pattern[:-1] if terminal else raw_pattern)
+        matching_work += len(pattern) * len(path_query)
+        if matching_work > 2_000_000:
+            raise SourcePolicyDenied("robots.txt matching complexity exceeds the safe work budget")
         if _robots_glob_matches(pattern, path_query, terminal=terminal):
             specificity = len(pattern.replace("*", "").encode("utf-8"))
             matches.append((specificity, directive))
