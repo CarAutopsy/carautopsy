@@ -1,13 +1,14 @@
 """Zero-bypass runtime orchestration seam for Hive research tasks.
 
-This module is intentionally not connected to live retrieval, provider calls,
-or activation. It enforces the required order:
+The module is invoked only behind the explicit research-readiness gate. It
+accepts injected retrieval/provider callables for tests and production wiring,
+and enforces this order:
 
 reserved task -> owner manifest -> policy/robots -> bounded retrieval ->
-bounded extraction -> researcher prompt -> deterministic candidate gate.
+bounded extraction -> researcher prompt -> deterministic candidate gate ->
+two independent auditors receiving the same validated candidate/evidence.
 
-No auditor may be invoked until this seam returns a validated candidate and
-the exact same bounded evidence bundle.
+This module does not change the readiness flag or authorize activation.
 """
 from __future__ import annotations
 
