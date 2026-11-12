@@ -119,7 +119,7 @@ class PipelineTargetServerFailureTests(unittest.TestCase):
 
     def test_target_server_failure_after_robots_allow_precedes_mutation_and_provider_calls(self):
         for scenario in ("main-task", "state-task", "proposal-task"):
-            with self.subTest(denied_queue=scenario):
+            with self.subTest(queue_source=scenario):
                 with tempfile.TemporaryDirectory() as directory:
                     sandbox = Path(directory)
                     origin = sandbox / "origin.git"
@@ -234,7 +234,7 @@ class PipelineTargetServerFailureTests(unittest.TestCase):
                         "https://oem.example/specs/car.html|network_or_tls_failure",
                         "the target transport did not return the synthetic server failure",
                     )
-                    self.assertFalse(provider_marker.exists(), "a paid provider was called after robots denial")
+                    self.assertFalse(provider_marker.exists(), "a paid provider was called after target-server failure")
                     self.assertEqual(
                         self.sh("git", "branch", "--show-current", cwd=repo).stdout.strip(),
                         branch_before,
