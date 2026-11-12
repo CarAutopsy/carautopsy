@@ -260,5 +260,40 @@ class OrchestrationSeamTests(unittest.TestCase):
         auditor.assert_not_called()
 
 
+    def test_preflight_evidence_bundle_is_reused_without_second_fetch(self):
+        researcher = Mock(return_value=(json.dumps(CANDIDATE), "qwen-intl", "qwen", None))
+        fetch = Mock()
+        auditor = Mock(side_effect=[
+            ("PASS", "deepseek", None),
+            ("PASS", "gemini", None),
+        ])
+        result, audits = run_hive_research_and_audit(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            researcher=researcher,
+            auditor=auditor,
+            evidence_bundle=EVIDENCE,
+            fetcher=fetch,
+        )
+        fetch.assert_not_called()
+        self.assertEqual(result.evidence, EVIDENCE)
+        self.assertEqual([item["verdict"] for item in audits], ["PASS", "PASS"])
+
+    def test_invalid_preflight_evidence_stops_before_any_provider(self):
+        researcher = Mock()
+        auditor = Mock()
+        with self.assertRaises(OrchestrationRejected):
+            run_hive_research_and_audit(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                researcher=researcher,
+                auditor=auditor,
+                researcher_vendor="qwen",
+                evidence_bundle=[{"source_id": "incomplete"}],
+            )
+        researcher.assert_not_called()
+        auditor.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
