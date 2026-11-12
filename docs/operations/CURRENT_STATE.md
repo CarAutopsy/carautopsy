@@ -7,31 +7,35 @@
 
 ## Confirmed completed
 
-- PR #43 merged to `main`: prompt/schema contract documentation and schema tests. The owner explicitly waived the independent-audit prerequisite for that merge; the waiver did not satisfy issue #47.
+- PR #43 merged: prompt/schema contract documentation and schema tests. The owner explicitly waived the independent-audit prerequisite for that merge; the waiver did not satisfy issue #47.
 - PR #49 merged: schema-aligned prompt builders and deterministic candidate/evidence validation helpers.
 - PR #50 merged: DNS-pinned HTTPS retrieval primitive.
-- PR #52 merged to `main`: owner-controlled source policy checks, robots handling, bounded extraction workers, and claim-level quote/locator evidence bindings.
-- PR #53 merged into `feat/hive-source-policy-extraction`, not directly into `main`. Documentation PR #56 is open to bring its zero-bypass contract onto `main`.
-- Issue #45 (no-retrieval safety stop) is closed; its invariants remain mandatory.
+- PR #52 merged: owner-controlled exact-host/URL policy, robots handling, bounded HTML/plain-text/PDF extraction, and claim-level quote/locator evidence bindings.
+- PR #53's zero-bypass integration contract is on `main` through PR #56.
+- PR #57 merged: runtime research orchestration wires retrieval preflight, evidence collection, researcher prompt, deterministic candidate validation, and two independent auditors. The path is integrated but deliberately unreachable while the research readiness gate is closed.
+- PRs #58–#60 merged: subprocess proofs for retrieval preflight, robots denial, and target-server failure without durable mutation.
+- PRs #61–#63 merged: retry recovery, abrupt-interruption recovery, and cross-process state reconciliation proofs.
+- PRs #64–#68 closed/merged or superseded as recorded in the PR history; the final reconciliation follow-up exposes the public read-only `fetched_state_tip()` accessor while retaining the acknowledgment-enforcing `proposal_state_base()` API.
+- PR #69 merged: Qodo review configuration for PR events, pushes, draft feedback, and bot-authored commit push reviews.
+- Issue #44 (prompt builders and deterministic candidate gates) and issue #45 (no-retrieval safety stop) are closed.
 
 ## Active Hive status
 
-- Open issues: #37 (retrieval/provenance/runtime integration), #44 (candidate gate/prompt integration acceptance), #47 (independent third-party audit).
-- Draft PR #57 wires the orchestration path through retrieval, researcher prompt, deterministic candidate gate, and two independent auditors. It preflights and caches evidence before proposal checkout/state overlay.
-- PR #57 head `96a624ebcc422626fdc6d2600bdd86a3cc4d77b9`: 268 Python tests pass; catalog validation, module compilation, and Repository Audit pass. The audit reports one existing warning for missing `apps/web/package.json` and zero errors.
-- This is not activation-ready: full retry/restart/state-reconciliation failure-path proof and independent external review remain outstanding.
-- `data-connectors/approved-source-hosts.json` has an empty approved-host and source-policy list.
+- Open acceptance issues: #37 (source provenance/retrieval security and external security review) and #47 (independent third-party audit of the prompt-overhaul documentation/schema tests).
+- Runtime orchestration is integrated, but not production-enabled.
+- `data-connectors/approved-source-hosts.json` intentionally has empty `approved_hosts` and `source_policies` arrays.
 - `VERIFIED_RETRIEVAL_AVAILABLE = False`; `HIVE_RESEARCH_PAUSED` remains active.
-- Full TCO mode calculates from the existing catalog and leaves the Hive research queue untouched; provider smoke-test routing remains separate.\n- No live OEM retrieval, paid provider calls, or vehicle research dispatch is authorized.
-- The vehicle queue has 23 variants; failed candidate/audit records remain in `tasks/failed.json`. Do not automatically retry or promote them while paused.
+- Full TCO mode remains separate from Hive research; provider smoke-test routing remains separate.
+- No live OEM retrieval, paid research calls, or vehicle research dispatch is authorized.
+- The vehicle queue and failed-candidate ledger remain quarantined while research is paused. Do not automatically retry or promote failed records.
 
-## Immediate engineering sequence
+## Remaining acceptance work
 
-1. Review and merge the documentation roadmap PR #56.
-2. Review PR #57 with CodeRabbit/Copilot and resolve findings; keep it draft until its remaining integration tests are complete.
-3. Complete end-to-end tests for proposal/state divergence, retries, restarts, and zero mutation on retrieval/policy failures.
-4. Complete issue #47's independent audit and the external security review tracked under #37.
-5. Obtain explicit owner authorization before considering activation.
+1. Obtain the independent human/external audit required by issue #47 against its specified merged commit and record auditor identity, independence, disclosure, verdict, findings, and exact SHA.
+2. Obtain the independent external security review required by issue #37 against the integrated retrieval/orchestration implementation. Automated AI reviews do not substitute for either independent human audit.
+3. Have the owner review each proposed exact OEM/official hostname, exact URL, source relevance, and automated-access terms before any manifest entry is added.
+4. Resolve all audit findings and run exact-head CI/security validation.
+5. Only after all acceptance criteria are met, obtain explicit owner authorization before considering retrieval activation.
 
 See [ROADMAP.md](ROADMAP.md), [NEXT_ACTIONS.md](NEXT_ACTIONS.md), and [HIVE_PIPELINE_INTEGRATION.md](HIVE_PIPELINE_INTEGRATION.md).
 
