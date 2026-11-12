@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import http.client
 import ipaddress
+import re
 import socket
 import ssl
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Callable, Iterable
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 MAX_URL_CHARS = 2_048
 MAX_RESPONSE_BYTES = 2_000_000
@@ -33,10 +34,31 @@ class RetrievalResult:
     resolved_ip: str | None = None
 
     def safe_record(self) -> dict:
-        """Return metadata suitable for a ledger; never include response bytes."""
+        """Return ledger-safe metadata without response bytes or URL secrets."""
         value = asdict(self)
+        value["url"] = _safe_url_for_record(self.url)
         value.pop("body", None)
         return value
+
+
+def _safe_url_for_record(url: str) -> str:
+    """Remove userinfo, query values, and fragments before diagnostic persistence."""
+    try:
+        parsed = urlsplit(url)
+        host = parsed.hostname
+        if not host:
+            return "[invalid-url]"
+        try:
+            port = parsed.port
+        except ValueError:
+            return "[invalid-url]"
+        if ":" in host and not host.startswith("["):
+            host = f"[{host}]"
+        netloc = host + (f":{port}" if port is not None else "")
+        query = "[redacted]" if parsed.query else ""
+        return urlunsplit((parsed.scheme, netloc, parsed.path, query, ""))
+    except (TypeError, ValueError):
+        return "[invalid-url]"
 
 
 class RetrievalDenied(ValueError):
@@ -92,10 +114,25 @@ def _parse_source_url(url: str, approved_hosts: Iterable[str]):
     return host, path
 
 
+def _decode_placeholder_component(value: str) -> str:
+    """Decode once before splitting delimiters; reject malformed or nested escapes."""
+    if re.search(r"%(?![0-9a-fA-F]{2})", value):
+        raise RetrievalDenied("source URL contains malformed percent encoding")
+    try:
+        decoded = unquote(value, errors="strict")
+    except UnicodeDecodeError as exc:
+        raise RetrievalDenied("source URL contains invalid encoded text") from exc
+    if re.search(r"%[0-9a-fA-F]{2}", decoded):
+        raise RetrievalDenied("source URL contains nested percent encoding")
+    return decoded
+
+
 def _is_placeholder_identifier(url: str) -> bool:
-    """Reject known synthetic KBA filenames and all-zero identifier segments."""
+    """Reject synthetic identifiers after decoding encoded path/query delimiters."""
     parsed = urlsplit(url)
-    segments = [part for part in parsed.path.split("/") if part]
+    decoded_path = _decode_placeholder_component(parsed.path)
+    decoded_query = _decode_placeholder_component(parsed.query)
+    segments = [part for part in decoded_path.split("/") if part]
     for segment in segments:
         lower = segment.lower().split(".", 1)[0]
         if lower.startswith("kba-") and lower[4:].isdigit() and len(lower[4:]) >= 4:
@@ -103,7 +140,7 @@ def _is_placeholder_identifier(url: str) -> bool:
         compact = lower.replace("-", "").replace("_", "")
         if len(compact) >= 6 and set(compact) == {"0"}:
             return True
-    for value in parsed.query.split("&"):
+    for value in re.split(r"[&;]", decoded_query):
         key, _, item = value.partition("=")
         compact = item.replace("-", "").replace("_", "")
         if key.lower() in {"configurator_id", "configuratorid", "id"} and len(compact) >= 6 and set(compact) == {"0"}:
@@ -152,6 +189,7 @@ def fetch_source(
     max_bytes: int = MAX_RESPONSE_BYTES,
     resolver=socket.getaddrinfo,
     connection_factory=None,
+    clock=time.monotonic,
 ) -> RetrievalResult:
     """Fetch one approved HTTPS URL without redirects, proxies or DNS re-resolution.
 
@@ -174,10 +212,14 @@ def fetch_source(
             raise RetrievalDenied("timeout must be greater than 0 and at most 30 seconds")
         if max_bytes <= 0 or max_bytes > MAX_RESPONSE_BYTES:
             raise RetrievalDenied("response limit is outside the permitted bound")
+        deadline = clock() + timeout
         addresses = _resolve_public_addresses(host, resolver=resolver)
+        remaining = deadline - clock()
+        if remaining <= 0:
+            raise TimeoutError("retrieval deadline exceeded")
         pinned_ip = addresses[0]
         factory = connection_factory or _PinnedHTTPSConnection
-        connection = factory(host, pinned_ip, timeout)
+        connection = factory(host, pinned_ip, min(timeout, remaining))
         try:
             connection.request("GET", path, headers={
                 "Host": host,
@@ -186,6 +228,12 @@ def fetch_source(
                 "Accept-Encoding": "identity",
                 "Connection": "close",
             })
+            remaining = deadline - clock()
+            if remaining <= 0:
+                raise TimeoutError("retrieval deadline exceeded")
+            sock = getattr(connection, "sock", None)
+            if sock is not None:
+                sock.settimeout(remaining)
             response = connection.getresponse()
             status = response.status
             if 300 <= status < 400:
@@ -199,22 +247,35 @@ def fetch_source(
             if content_type not in ALLOWED_CONTENT_TYPES:
                 return RetrievalResult(url, "rejected", "unsupported_content_type", status_code=status, content_type=content_type or None, resolved_ip=pinned_ip)
             declared = response.getheader("Content-Length")
+            declared_length = None
             if declared is not None:
                 try:
-                    if int(declared) < 0 or int(declared) > max_bytes:
+                    declared_length = int(declared)
+                    if declared_length < 0 or declared_length > max_bytes:
                         return RetrievalResult(url, "rejected", "response_too_large", status_code=status, content_type=content_type, resolved_ip=pinned_ip)
                 except ValueError:
                     return RetrievalResult(url, "rejected", "invalid_content_length", status_code=status, content_type=content_type, resolved_ip=pinned_ip)
             chunks = []
             total = 0
             while True:
-                chunk = response.read(min(65_536, max_bytes + 1 - total))
+                remaining = deadline - clock()
+                if remaining <= 0:
+                    raise TimeoutError("retrieval deadline exceeded")
+                sock = getattr(connection, "sock", None)
+                if sock is not None:
+                    sock.settimeout(remaining)
+                read_chunk = getattr(response, "read1", None)
+                if not callable(read_chunk):
+                    raise RetrievalDenied("HTTP response does not support deadline-bounded reads")
+                chunk = read_chunk(min(65_536, max_bytes + 1 - total))
                 if not chunk:
                     break
                 total += len(chunk)
                 if total > max_bytes:
                     return RetrievalResult(url, "rejected", "response_too_large", status_code=status, content_type=content_type, resolved_ip=pinned_ip)
                 chunks.append(chunk)
+            if declared_length is not None and total != declared_length:
+                return RetrievalResult(url, "rejected", "incomplete_response_body", status_code=status, content_type=content_type, resolved_ip=pinned_ip)
             return RetrievalResult(
                 url, "retrieved_unverified", "http_response_retrieved_but_claim_support_not_verified",
                 datetime.now(timezone.utc).isoformat(), status, content_type, b"".join(chunks), pinned_ip,
@@ -231,8 +292,16 @@ def fetch_source(
 
 def validate_candidate_sources(urls: list[str], **fetch_options) -> list[dict]:
     """Return one safe metadata record per URL; no result implies claim verification."""
+    options = dict(fetch_options)
+    approved_hosts = options.get("approved_hosts")
+    if approved_hosts is not None and not isinstance(approved_hosts, (str, bytes)):
+        try:
+            options["approved_hosts"] = tuple(approved_hosts)
+        except TypeError:
+            # Preserve the retriever's normal fail-closed validation behavior.
+            pass
     results = []
     for url in urls:
-        result = fetch_source(url, **fetch_options)
+        result = fetch_source(url, **options)
         results.append(result.safe_record())
     return results
