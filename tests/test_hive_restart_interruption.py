@@ -194,9 +194,10 @@ def clean_env(sandbox):
 
 
 class HiveRestartInterruptionProofTests(unittest.TestCase):
-    def sh(self, *args, cwd, sandbox, env=None):
+    def sh(self, *args, cwd, env=None):
+        base = cwd.parent if cwd.name == "work" else cwd
         return subprocess.run(
-            args, cwd=cwd, env=env or clean_env(sandbox), check=True,
+            args, cwd=cwd, env=env or clean_env(base), check=True,
             capture_output=True, text=True,
         )
 
@@ -232,7 +233,7 @@ class HiveRestartInterruptionProofTests(unittest.TestCase):
             origin = sandbox / "origin.git"
             repo = sandbox / "work"
             repo.mkdir()
-            self.sh("git", "init", "--bare", str(origin), cwd=sandbox, sandbox=sandbox)
+            self.sh("git", "init", "--bare", str(origin), cwd=sandbox)
             self.sh("git", "init", "-b", "main", str(repo), cwd=sandbox)
             self.sh("git", "config", "user.name", "Hive Retry Test", cwd=repo, sandbox=sandbox)
             self.sh("git", "config", "user.email", "hive-retry@example.invalid", cwd=repo)
