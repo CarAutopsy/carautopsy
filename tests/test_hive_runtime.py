@@ -29,7 +29,9 @@ CONFIG = {
 TASK = {"variant_id": "synthetic.model-x", "make": "Synthetic", "model": "Model X"}
 EVIDENCE = [{"source_id": SOURCE_ID, "url": URL, "retrieved_at": "2026-11-12T00:00:00Z", "text": "[document]\nOfficial technical specification."}]
 VALID_CANDIDATE = {
+    "schema_version": "1.0.0",
     "variant_id": "synthetic.model-x",
+    "status": "draft",
     "identity": {"make": "Synthetic", "model": "Model X"},
     "performance": {"power_w": 110000},
     "provenance": {
