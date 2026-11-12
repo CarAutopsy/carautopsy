@@ -12,6 +12,7 @@ from unittest.mock import Mock
 
 from scripts.hive_orchestration import (
     OrchestrationRejected,
+    audit_validated_research_task,
     collect_reserved_batch,
     prepare_validated_research_task,
     run_hive_research_and_audit,
