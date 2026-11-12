@@ -27,6 +27,10 @@ All operational protocols, business plans, and writing guidelines live in the `d
 
 | Document | Version | Description |
 |:---|:---|:---|
+| [Engineering Roadmap](docs/operations/ROADMAP.md) | Current | Dependency-ordered engineering roadmap and Hive activation gates |
+| [Current Project State](docs/operations/CURRENT_STATE.md) | Current | Verified project status and operational constraints |
+| [Next Actions](docs/operations/NEXT_ACTIONS.md) | Current | Immediate implementation sequence |
+| [Hive Pipeline Integration](docs/operations/HIVE_PIPELINE_INTEGRATION.md) | Current | Zero-bypass runtime integration contract |
 | [Vehicle Catalog Protocol](docs/protocols/vehicle-catalog-protocol-v104.md) | v1.04 | Canonical spec storage, identity model, source policy |
 | [Article-Writing Protocol](docs/protocols/article-writing-protocol-v104.md) | v1.04 | Content voice, formatting, citation, image specs |
 | [Session Handover Protocol](docs/protocols/session-handover-protocol-v101.md) | v1.01 | Operational continuity between AI agents and sessions |
