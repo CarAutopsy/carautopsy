@@ -317,7 +317,7 @@ class HiveRestartInterruptionProofTests(unittest.TestCase):
 
             # Remove the local copy deliberately. The restart must restore the
             # failed outcome from hive/state after the abrupt process interruption.
-            (repo / "tasks" / "failed.json").write_text("[]\\n", encoding="utf-8")
+            (repo / "tasks" / "failed.json").write_text("[]\n", encoding="utf-8")
 
             # Restart process: reload durable state, retry the same reserved
             # identity, pass the real candidate gate and both auditors exactly once.
