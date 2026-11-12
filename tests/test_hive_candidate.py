@@ -337,3 +337,30 @@ class HiveCandidateGateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_real_world_fuel_consumption_extension_requires_evidence(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["extensions"]["fuel_consumption_l_100km"] = {"real_world": 7.2}
+        with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_real_world_fuel_consumption_extension_accepts_exact_binding(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["extensions"]["fuel_consumption_l_100km"] = {"real_world": 7.2}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "extensions.fuel_consumption_l_100km.real_world",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Real-world consumption: 7.2 L/100 km.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\\nReal-world consumption: 7.2 L/100 km.",
+                         locator_texts={"document": "Real-world consumption: 7.2 L/100 km."})]
+        result = validate_candidate(candidate, self.task, evidence)
+        self.assertEqual(result["extensions"]["fuel_consumption_l_100km"]["real_world"], 7.2)
+
+    def test_colliding_dotted_claim_paths_are_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"x.y": 1, "x": {"y": 2}}
+        with self.assertRaisesRegex(CandidateRejected, "ambiguous duplicate technical claim path"):
+            validate_candidate(candidate, self.task, self.evidence)
