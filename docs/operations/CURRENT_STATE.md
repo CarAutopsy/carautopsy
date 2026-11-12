@@ -1,36 +1,44 @@
 # Current Project State
 
-**Last updated:** 2026-11-09  
+**Last updated:** 2026-11-12  
 **Repository:** CarAutopsy/carautopsy  
-**Current mode:** Browser-only development
+**Default branch:** `main`  
+**Current mode:** GitHub + GitHub Actions development
 
-## Confirmed Completed
+## Confirmed completed
 
-- GitHub organization created.
-- Main repository created.
-- SSH push succeeded from previous machine.
-- Documentation and protocol folders were created.
-- Austria country-pack work was started.
-- TCO engine work was started.
-- AI data-agent framework was pushed.
-- Local npm development caused repeated Windows tar/file-lock errors.
+- PR #43 merged to `main`: prompt/schema contract documentation and schema tests. The owner explicitly waived the independent-audit prerequisite for that merge; the waiver did not satisfy issue #47.
+- PR #49 merged: schema-aligned prompt builders and deterministic candidate/evidence validation helpers.
+- PR #50 merged: DNS-pinned HTTPS retrieval primitive.
+- PR #52 merged to `main`: owner-controlled source policy checks, robots handling, bounded extraction workers, and claim-level quote/locator evidence bindings.
+- PR #53 merged into `feat/hive-source-policy-extraction`, not directly into `main`. Documentation PR #56 is open to bring its zero-bypass contract onto `main`.
+- Issue #45 (no-retrieval safety stop) is closed; its invariants remain mandatory.
 
-## Current Constraint
+## Active Hive status
 
-Owner is now on an office PC with only GitHub web browser access.
+- Open issues: #37 (retrieval/provenance/runtime integration), #44 (candidate gate/prompt integration acceptance), #47 (independent third-party audit).
+- Draft PR #57 wires the orchestration path through retrieval, researcher prompt, deterministic candidate gate, and two independent auditors. It preflights and caches evidence before proposal checkout/state overlay.
+- PR #57 head `96a624ebcc422626fdc6d2600bdd86a3cc4d77b9`: 268 Python tests pass; catalog validation, module compilation, and Repository Audit pass. The audit reports one existing warning for missing `apps/web/package.json` and zero errors.
+- This is not activation-ready: full retry/restart/state-reconciliation failure-path proof and independent external review remain outstanding.
+- `data-connectors/approved-source-hosts.json` has an empty approved-host and source-policy list.
+- `VERIFIED_RETRIEVAL_AVAILABLE = False`; `HIVE_RESEARCH_PAUSED` remains active.
+- Full TCO mode calculates from the existing catalog and leaves the Hive research queue untouched; provider smoke-test routing remains separate.\n- No live OEM retrieval, paid provider calls, or vehicle research dispatch is authorized.
+- The vehicle queue has 23 variants; failed candidate/audit records remain in `tasks/failed.json`. Do not automatically retry or promote them while paused.
 
-## Active Strategy
+## Immediate engineering sequence
 
-Use GitHub web + GitHub Actions for repository maintenance, documentation, validation, and later remote deployment.
+1. Review and merge the documentation roadmap PR #56.
+2. Review PR #57 with CodeRabbit/Copilot and resolve findings; keep it draft until its remaining integration tests are complete.
+3. Complete end-to-end tests for proposal/state divergence, retries, restarts, and zero mutation on retrieval/policy failures.
+4. Complete issue #47's independent audit and the external security review tracked under #37.
+5. Obtain explicit owner authorization before considering activation.
 
-## Known Risks
+See [ROADMAP.md](ROADMAP.md), [NEXT_ACTIONS.md](NEXT_ACTIONS.md), and [HIVE_PIPELINE_INTEGRATION.md](HIVE_PIPELINE_INTEGRATION.md).
 
-- Some earlier generated docs may be shortened placeholders and need replacement with canonical full protocol text.
-- Some earlier helper scripts may have been committed to the repo root and should later be moved to `scripts/dev/` or removed.
-- Website npm install should not be attempted on the office PC.
-- Statutory formulas must be verified against official current sources before paid reports are generated.
-- Seed vehicle data remains low-confidence until upgraded from official OEM/type-approval sources.
+## Operational constraints
 
-## Current Commit Reference
-
-`f5e4e3da6aecec3b8b2d0787d6659614e11d94d4`
+- Do not add hosts or exact URLs to the approved manifest without owner review.
+- Do not set `VERIFIED_RETRIEVAL_AVAILABLE = True` or remove the research pause as part of intermediate implementation PRs.
+- Do not use paid provider calls or live source requests in unit/CI tests.
+- Do not treat schema validity, quote presence, or HTTP 2xx as proof that a vehicle claim is true.
+- Preserve two independent vendor PASS verdicts and required human review.
