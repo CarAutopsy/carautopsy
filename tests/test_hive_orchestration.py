@@ -1,0 +1,183 @@
+"""Zero-bypass tests for the runtime orchestration seam.
+
+All transport, extraction, researcher, and auditor interactions are mocked.
+No live retrieval, provider call, queue mutation, ledger mutation, or catalog
+mutation occurs in these tests.
+"""
+import json
+import unittest
+from datetime import date
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+from scripts.hive_orchestration import OrchestrationRejected, prepare_validated_research_task
+
+
+SCHEMA = {"type": "object"}
+URL = "https://oem.example/specs/model.html"
+ROBOTS_URL = "https://oem.example/robots.txt"
+CONFIG = {
+    "version": 1,
+    "approved_hosts": ["oem.example"],
+    "source_policies": [{
+        "host": "oem.example",
+        "automated_access_allowed": True,
+        "terms_url": "https://oem.example/terms",
+        "terms_reviewed_at": "2026-11-01",
+        "terms_reviewed_by": "repository-owner",
+        "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/37",
+        "approved_urls": [{"url": URL, "variant_ids": ["synthetic.model-x"]}],
+    }],
+}
+TASK = {"variant_id": "synthetic.model-x", "make": "Synthetic", "model": "Model X"}
+EVIDENCE = [{"source_id": "oem-1", "url": URL, "retrieved_at": "2026-11-12T00:00:00Z", "text": "[document]\nOfficial technical specification."}]
+CANDIDATE = {
+    "identity": {"make": "Synthetic", "model": "Model X"},
+    "performance": {"power_w": 110000},
+    "provenance": {
+        "sources": [{"source_id": "oem-1", "url": URL}],
+        "claim_evidence": [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Official technical specification.",
+        }],
+    },
+}
+
+
+def fetcher(url, **kwargs):
+    if url == ROBOTS_URL:
+        return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
+    return SimpleNamespace(
+        outcome="retrieved_unverified",
+        body=b"official source bytes",
+        content_type="text/plain",
+        retrieved_at="2026-11-12T00:00:00Z",
+    )
+
+
+def extractor(body, content_type, max_chars):
+    return SimpleNamespace(text="[document]\nOfficial technical specification.", locators=("document",))
+
+
+class OrchestrationSeamTests(unittest.TestCase):
+    def test_valid_path_returns_candidate_and_exact_evidence(self):
+        researcher = Mock(return_value=json.dumps(CANDIDATE))
+        result = prepare_validated_research_task(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            config=CONFIG,
+            fetcher=fetcher,
+            extractor=extractor,
+            researcher=researcher,
+            today=date(2026, 11, 12),
+        )
+        self.assertEqual(result.candidate["performance"]["power_w"], 110000)
+        self.assertEqual(result.evidence, EVIDENCE)
+        self.assertEqual(result.source_ids, ("oem-1",))
+        researcher.assert_called_once()
+
+    def test_empty_manifest_stops_before_researcher(self):
+        researcher = Mock()
+        with self.assertRaises(OrchestrationRejected):
+            prepare_validated_research_task(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config={"version": 1, "approved_hosts": [], "source_policies": []},
+                fetcher=Mock(),
+                extractor=Mock(),
+                researcher=researcher,
+                today=date(2026, 11, 12),
+            )
+        researcher.assert_not_called()
+
+    def test_policy_or_transport_failure_stops_before_researcher(self):
+        researcher = Mock()
+        with self.assertRaises(OrchestrationRejected):
+            prepare_validated_research_task(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=Mock(side_effect=RuntimeError("network")),
+                extractor=extractor,
+                researcher=researcher,
+                today=date(2026, 11, 12),
+            )
+        researcher.assert_not_called()
+
+    def test_extraction_failure_stops_before_researcher(self):
+        researcher = Mock()
+        with self.assertRaises(OrchestrationRejected):
+            prepare_validated_research_task(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=Mock(side_effect=ValueError("bad document")),
+                researcher=researcher,
+                today=date(2026, 11, 12),
+            )
+        researcher.assert_not_called()
+
+    def test_malformed_researcher_response_stops_before_auditor(self):
+        researcher = Mock(return_value="not-json")
+        with self.assertRaises(OrchestrationRejected):
+            prepare_validated_research_task(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=extractor,
+                researcher=researcher,
+                today=date(2026, 11, 12),
+            )
+
+    def test_reserved_identity_cannot_be_repaired_by_model(self):
+        researcher = Mock(return_value=json.dumps({**CANDIDATE, "identity": {"make": "Other", "model": "Other"}}))
+        with self.assertRaises(OrchestrationRejected):
+            prepare_validated_research_task(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=extractor,
+                researcher=researcher,
+                today=date(2026, 11, 12),
+            )
+
+    def test_missing_claim_binding_stops_before_auditor(self):
+        candidate = json.loads(json.dumps(CANDIDATE))
+        candidate["provenance"]["claim_evidence"] = []
+        researcher = Mock(return_value=json.dumps(candidate))
+        with self.assertRaises(OrchestrationRejected):
+            prepare_validated_research_task(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=extractor,
+                researcher=researcher,
+                today=date(2026, 11, 12),
+            )
+
+    def test_result_contains_no_raw_bytes_or_secrets(self):
+        researcher = Mock(return_value=json.dumps(CANDIDATE))
+        result = prepare_validated_research_task(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            config=CONFIG,
+            fetcher=fetcher,
+            extractor=extractor,
+            researcher=researcher,
+            today=date(2026, 11, 12),
+        )
+        serialized = json.dumps(result.__dict__, default=lambda value: getattr(value, "__dict__", str(value)))
+        self.assertNotIn("official source bytes", serialized)
+        self.assertNotIn("QWEN_API_KEY", serialized)
+        self.assertNotIn("DEEPSEEK_API_KEY", serialized)
+        self.assertNotIn("GEMINI_API_KEY", serialized)
+
+
+if __name__ == "__main__":
+    unittest.main()
