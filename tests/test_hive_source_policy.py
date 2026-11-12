@@ -171,7 +171,7 @@ class SourcePolicyTests(unittest.TestCase):
                         load_policy(path)
 
 
-def test_versioned_or_non_ascii_user_agent_token_is_rejected(self):
+    def test_versioned_or_non_ascii_user_agent_token_is_rejected(self):
         for token in ("CarAutopsy-Research-Bot/1.0", "CarAutopsy!", "CårAutopsy"):
             with self.subTest(token=token):
                 with self.assertRaisesRegex(SourcePolicyDenied, "invalid user-agent"):
