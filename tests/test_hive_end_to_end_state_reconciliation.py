@@ -108,7 +108,7 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
             # the proposal's Hive-State-Base trailer.
             with patch.dict(os.environ, env, clear=True):
                 self.assertTrue(hive_state.save_state(writer, "baseline state"))
-                baseline = hive_state.proposal_state_base(writer)
+                baseline = hive_state.state_tip(writer)
 
             proposal_branch = "hive/research-state-reconciliation"
             self.sh("checkout", "-b", proposal_branch, cwd=writer, env=env)
@@ -140,8 +140,7 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
                 "import hive_state; root=Path(sys.argv[1]); "
                 "result=hive_state.reconcile_with_pr(root); "
                 "baseline=hive_state.proposal_state_base(root); "
-                "tip=subprocess.check_output(['git','rev-parse',hive_state.STATE_REF], "
-                "cwd=root, text=True).strip(); "
+                "tip=hive_state.state_tip(root); "
                 "print(json.dumps({'result':result, 'tip':tip, 'baseline':baseline, "
                 "'queue':json.loads((root/'tasks/queue.json').read_text()), "
                 "'failed':json.loads((root/'tasks/failed.json').read_text())}))"
