@@ -218,7 +218,9 @@ def audit_validated_research_task(
             "researcher vendor is not in the independent vendor set",
             code="response_format_failure",
         )
-    selected = [vendor for vendor in auditor_vendors if vendor != researcher_vendor]
+    selected = list(dict.fromkeys(
+        vendor for vendor in auditor_vendors if vendor != researcher_vendor
+    ))
     if len(selected) < 2:
         raise OrchestrationRejected(
             "two independent auditor vendors are not available",
@@ -283,25 +285,37 @@ def run_hive_research_and_audit(
     return result, audits
 
 
-def collect_reserved_batch(queue_snapshots: list[list[dict[str, Any]]], batch_size: int) -> list[dict[str, Any]]:
-    """Union possible next-batch queues and reject conflicting reserved identities."""
+def collect_reserved_batch(
+    queue_snapshots: list[list[dict[str, Any]]],
+    batch_size: int,
+    *,
+    skip_variant_ids: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Union possible next-batch queues, skipping catalog entries that need no research."""
     if not isinstance(batch_size, int) or batch_size < 1:
         raise ValueError("preflight batch size is invalid")
+    skipped = skip_variant_ids or set()
     upcoming: list[dict[str, Any]] = []
     seen: dict[str, tuple[str, str]] = {}
     for snapshot in queue_snapshots:
         if not isinstance(snapshot, list):
             raise ValueError("a queue snapshot is malformed")
-        for item in snapshot[:batch_size]:
+        eligible_count = 0
+        for item in snapshot:
             if not isinstance(item, dict):
                 raise ValueError("a queue snapshot contains a malformed task")
             variant_id, make, model = item.get("variant_id"), item.get("make"), item.get("model")
             if not all(isinstance(value, str) and value.strip() for value in (variant_id, make, model)):
                 raise ValueError("a queued task is missing its reserved variant identity")
+            if variant_id in skipped:
+                continue
+            eligible_count += 1
             identity = (make, model)
             if variant_id in seen and seen[variant_id] != identity:
                 raise ValueError("queue snapshots disagree on reserved identity for one variant ID")
             if variant_id not in seen:
                 seen[variant_id] = identity
                 upcoming.append(item)
+            if eligible_count >= batch_size:
+                break
     return upcoming
