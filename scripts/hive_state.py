@@ -127,6 +127,11 @@ def _tip(root):
     result = _git(root, ["rev-parse", "--verify", "-q", STATE_REF], check=False)
     return result.stdout.decode().strip() if result.returncode == 0 else None
 
+def state_tip(root):
+    """Return the currently fetched Hive state tip through the public API."""
+    return _tip(root)
+
+
 
 def _tip_files(root, tip):
     """Read the two ledger blobs from a specific Hive state commit."""
