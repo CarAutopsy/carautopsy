@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from scripts.hive_source_retrieval import fetch_source, _parse_source_url, _is_placeholder_identifier
+from scripts.hive_source_retrieval import fetch_source, validate_candidate_sources, _parse_source_url, _is_placeholder_identifier
 
 HOSTS = {"oem.example"}
 URL = "https://oem.example/specs/model.html"
@@ -22,6 +22,9 @@ class FakeResponse:
             return b""
         chunk, self.body = self.body[:amount], self.body[amount:]
         return chunk
+
+    def read1(self, amount=-1):
+        return self.read(amount)
 
 
 class FakeConnection:
@@ -106,6 +109,28 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         result = self.fetch("https://oem.example/spec?id=00000000")
         self.assertIn("placeholder", result.reason)
 
+    def test_percent_encoded_placeholder_identifiers_are_rejected(self):
+        urls = (
+            "https://oem.example/KBA-%31%32%33%34%35%36.html",
+            "https://oem.example/spec?id=%30%30%30%30%30%30",
+            "https://oem.example/spec?%69%64=000000",
+        )
+        for url in urls:
+            with self.subTest(url=url):
+                result = self.fetch(url)
+                self.assertIn("placeholder", result.reason)
+        self.resolver.assert_not_called()
+
+    def test_malformed_and_nested_percent_encoding_are_rejected(self):
+        for url in (
+            "https://oem.example/spec/KBA-%ZZ1234.html",
+            "https://oem.example/spec?id=%253030303030",
+        ):
+            with self.subTest(url=url):
+                result = self.fetch(url)
+                self.assertEqual(result.outcome, "rejected")
+        self.resolver.assert_not_called()
+
     def test_private_dns_answer_is_rejected(self):
         resolver = Mock(return_value=[(None, None, None, None, ("127.0.0.1", 443))])
         result = self.fetch(resolver=resolver)
@@ -172,6 +197,46 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         record = result.safe_record()
         self.assertNotIn("body", record)
         self.assertEqual(record["outcome"], "retrieved_unverified")
+
+    def test_safe_record_redacts_url_credentials_and_query_values(self):
+        result = self.fetch("https://alice:supersecret@oem.example/spec?token=private")
+        record = result.safe_record()
+        self.assertNotIn("alice", record["url"])
+        self.assertNotIn("supersecret", record["url"])
+        self.assertNotIn("private", record["url"])
+        self.assertEqual(record["url"], "https://oem.example/spec?[redacted]")
+
+    def test_declared_content_length_mismatch_is_rejected(self):
+        self.connection.response = FakeResponse(
+            headers={"Content-Type": "text/html", "Content-Length": "20"},
+            body=b"short",
+        )
+        result = self.fetch()
+        self.assertEqual(result.reason, "incomplete_response_body")
+
+    def test_total_deadline_stops_a_trickling_response(self):
+        now = {"value": 0.0}
+        response = FakeResponse(headers={"Content-Type": "text/html"}, body=b"x")
+        def trickle(amount):
+            now["value"] += 2.0
+            return response.read(amount)
+        response.read1 = trickle
+        self.connection.response = response
+        result = self.fetch(timeout=1.0, clock=lambda: now["value"])
+        self.assertEqual(result.reason, "request_timeout")
+
+    def test_candidate_source_batch_materializes_one_shot_allowlist(self):
+        urls = [URL, "https://oem.example/specs/second.html"]
+        def factory(host, pinned_ip, timeout):
+            return FakeConnection(FakeResponse())
+        results = validate_candidate_sources(
+            urls,
+            approved_hosts=(host for host in HOSTS),
+            robots_allowed=self.robots,
+            resolver=self.resolver,
+            connection_factory=factory,
+        )
+        self.assertEqual([item["outcome"] for item in results], ["retrieved_unverified"] * 2)
 
     def test_pinned_transport_dials_validated_ip_and_keeps_hostname_for_tls(self):
         from scripts.hive_source_retrieval import _PinnedHTTPSConnection
