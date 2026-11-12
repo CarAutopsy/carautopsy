@@ -410,20 +410,71 @@ def get_open_research_pr():
     return select_open_research_pr(pull_requests, "CarAutopsy/carautopsy")
 
 
-# Reuse the pending proposal branch instead of stopping the scheduler.
-# This carries queue/failed-ledger state forward between 15-minute runs and
-# accumulates candidate work in one human-review PR without creating duplicates.
+# Resolve the possible queue snapshots without checking out a proposal or
+# overlaying hive/state. Fetching remote refs is read-only with respect to the
+# working tree; policy and source retrieval must pass before checkout/state writes.
 open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None
+proposal_ref = None
+proposal_head_sha = None
+proposal_queue = []
 if open_research_pr:
-    # Start from the pending proposal's queue/ledger snapshot, not stale main.
-    run(["git", "fetch", "origin", open_research_pr["headRefName"]])
-    run(["git", "checkout", "-B", open_research_pr["headRefName"],
-         f"origin/{open_research_pr['headRefName']}"])
-    # The PR branch carries the ledger while a proposal is open. Align it with
-    # hive/state first: adopt a hand-edited state, or resync a mirror that lagged.
+    branch = open_research_pr["headRefName"]
+    run(["git", "fetch", "origin", branch])
+    proposal_ref = f"origin/{branch}"
+    proposal_head_sha = subprocess.run(
+        ["git", "rev-parse", proposal_ref], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    proposal_queue = json.loads(subprocess.run(
+        ["git", "show", f"{proposal_ref}:tasks/queue.json"],
+        capture_output=True, text=True, check=True,
+    ).stdout)
+
+state_available = fetch_state(ROOT) if RESEARCH_ONLY else False
+state_queue = []
+if state_available:
+    state_queue = json.loads(subprocess.run(
+        ["git", "show", f"{STATE_REF}:tasks/queue.json"],
+        capture_output=True, text=True, check=True,
+    ).stdout)
+main_queue_path = ROOT / "tasks" / "queue.json"
+main_queue = json.loads(main_queue_path.read_text(encoding="utf-8")) if main_queue_path.exists() else []
+
+if RESEARCH_ONLY:
+    queue_snapshots = [main_queue, state_queue]
+    if open_research_pr:
+        queue_snapshots.append(proposal_queue)
+    upcoming_tasks = []
+    seen_upcoming_ids = set()
+    for snapshot in queue_snapshots:
+        for item in snapshot[:RESEARCH_BATCH_SIZE]:
+            if not isinstance(item, dict):
+                raise ResearchPaused("a queue snapshot contains a malformed task")
+            variant_id = item.get("variant_id")
+            if not isinstance(variant_id, str) or not variant_id.strip():
+                raise ResearchPaused("a queued task is missing its reserved variant ID")
+            if variant_id not in seen_upcoming_ids:
+                seen_upcoming_ids.add(variant_id)
+                upcoming_tasks.append(item)
+    upcoming_ids = [item["variant_id"] for item in upcoming_tasks]
+    try:
+        require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)
+        for variant_id in upcoming_ids:
+            HIVE_PREFETCHED_EVIDENCE[variant_id] = retrieve_approved_evidence(
+                variant_id=variant_id,
+                config=HIVE_SOURCE_POLICY,
+            )
+    except Exception as exc:
+        raise ResearchPaused(
+            "owner-approved policy, robots, retrieval, or extraction preflight failed; "
+            "no proposal checkout or Hive state overlay was performed"
+        ) from exc
+
+# Only after every possible next-batch task has bounded evidence do we check
+# out the pending proposal or overlay the standalone Hive state branch.
+if open_research_pr:
+    run(["git", "checkout", "-B", open_research_pr["headRefName"], proposal_head_sha])
     reconcile_with_pr(ROOT)
 elif RESEARCH_ONLY:
-    # No pending proposal: resume from the ledger saved on the hive/state branch.
     load_state(ROOT)
 
 batch_messages = []
