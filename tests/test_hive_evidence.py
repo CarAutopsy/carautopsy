@@ -107,11 +107,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
         fetcher.assert_not_called()
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
-    def test_source_url_host_must_match_its_policy_entry(self):
+def test_source_url_host_must_match_its_policy_entry(self):
         other_host_url = "https://b.example/specs/model.html"
         mismatched_entry = dict(CONFIG["source_policies"][0], approved_urls=[{
             "url": other_host_url, "variant_ids": ["synthetic.model-x"]
@@ -124,3 +120,7 @@ if __name__ == "__main__":
                 fetcher=fetcher,
             )
         fetcher.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()
