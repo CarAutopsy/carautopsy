@@ -3,12 +3,15 @@ from pathlib import Path
 from datetime import datetime, timezone
 import yaml, requests
 from provider_retry import generate_content_with_fallback
-from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
-from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
+from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base, fetch_state, STATE_REF
 from hive_research_gate import ResearchPaused, require_verified_retrieval
-from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
+from hive_orchestration import OrchestrationRejected, collect_reserved_batch, run_hive_research_and_audit
+from hive_source_policy import SourcePolicyDenied, load_policy, require_variant_coverage
+from hive_evidence import retrieve_approved_evidence
+from hive_candidate import validate_evidence_bundle
+from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
 ROOT = Path.cwd()
 
@@ -24,14 +27,6 @@ def load(p):
     """Load and normalize a JSON or YAML file from the repository."""
     with open(p, encoding="utf-8") as f:
         return clean(json.load(f) if p.suffix == ".json" else yaml.safe_load(f))
-
-def clean_json_response(t):
-    """Extract a JSON object from a provider response or fenced code block."""
-    m = re.search(r"```json\s*(\{.*?\})\s*```", t, re.DOTALL)
-    if m: return m.group(1)
-    m = re.search(r"\{.*\}", t, re.DOTALL)
-    if m: return m.group(0)
-    return t
 
 def call_provider(prompt, key, url, model, temperature=0.1):
     """Return (text, actual_model), routing Gemini through its native API."""
@@ -167,17 +162,23 @@ if "--provider-smoke-test" in sys.argv:
 
 RESEARCH_ONLY = "--research-only" in sys.argv
 
-# Fail closed until issue #37 supplies verified retrieval and issue #44 binds
-# retrieved evidence into the researcher/auditor contract. Smoke tests and the
-# full TCO route intentionally bypass this research-only safety gate.
+# Runtime orchestration is wired but remains deliberately unreachable until
+# issue #37 acceptance, issue #47 independent review, and explicit owner approval.
+# Smoke tests and the full TCO route intentionally bypass this research-only gate.
 VERIFIED_RETRIEVAL_AVAILABLE = False
-
+# A single research PR may contain a small batch; never let one run fan out.
+RESEARCH_BATCH_SIZE = bounded_batch_size(os.getenv("HIVE_RESEARCH_BATCH_SIZE"), default=3, maximum=5)
+HIVE_SOURCE_POLICY = None
+HIVE_PREFETCHED_EVIDENCE = {}
 if RESEARCH_ONLY:
     try:
         require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)
-    except ResearchPaused as exc:
+        HIVE_SOURCE_POLICY = load_policy()
+        if not HIVE_SOURCE_POLICY.get("source_policies"):
+            raise SourcePolicyDenied("owner-approved source policy entries are empty")
+    except (ResearchPaused, SourcePolicyDenied) as exc:
         print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
-        sys.exit(exc.exit_code)
+        sys.exit(2)
 
 if RESEARCH_ONLY:
     taxes = defaults = inspections = None
@@ -194,9 +195,6 @@ research_failures_this_run = 0
 MAX_AUDIT_ATTEMPTS = 3
 MAX_RESEARCH_ATTEMPTS = 3
 MAX_VERDICT_CHARS = 240
-# A single research PR may contain a small batch; never let one run fan out.
-RESEARCH_BATCH_SIZE = bounded_batch_size(os.getenv("HIVE_RESEARCH_BATCH_SIZE"), default=3, maximum=5)
-
 def curate_one(attempted_variant_ids=None):
     """Research and independently audit at most one not-yet-attempted batch variant."""
     global audit_failures_this_run, research_failures_this_run
@@ -222,7 +220,8 @@ def curate_one(attempted_variant_ids=None):
                 if (ev.get("identity") or {}).get("powertrain"):
                     skipped += 1
                     tasks = tasks[1:]
-                    continue
+                    qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
+                    return True, f"skipped existing valid variant {vid}"
             except Exception:
                 pass  # malformed -> fall through and re-curate it
         
@@ -234,11 +233,7 @@ def curate_one(attempted_variant_ids=None):
              if (item.get("task") or {}).get("variant_id") == vid),
             None,
         )
-        prior_entry, migrated_legacy = migrate_legacy_entry(prior_entry)
-        if migrated_legacy:
-            failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
-            failed.append(prior_entry)
-            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+        prior_entry, _ = migrate_legacy_entry(prior_entry)
         if prior_entry and not requires_manual_review(prior_entry) and exhausted_outcome(prior_entry):
             tasks = [item for item in tasks if item.get("variant_id") != vid]
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
@@ -251,44 +246,47 @@ def curate_one(attempted_variant_ids=None):
             tasks = [item for item in tasks if item.get("variant_id") != vid]
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"legacy retry state for {vid} quarantined for human review"
+
         prior_categories = (prior_entry or {}).get("defect_categories") or []
-        prior_failure = ", ".join(
-            category for category in prior_categories
-            if category in {"provenance_evidence", "unit_mismatch", "schema_compliance", "numeric_consistency", "technical_specification", "unspecified_quality_defect"}
-        )
-        if not prior_failure:
-            prior_failure = ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
-        rp = f"""You are the CarAutopsy Researcher agent.
-Find OFFICIAL specifications for: {make} {model}.
-Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
-FORBIDDEN: EV Database, classifieds, forums.
-Return ONLY a valid JSON object with exactly these top-level keys:
-schema_version, variant_id, status, identity, performance, energy, dimensions, emissions, offers, warranty, extensions, provenance.
-Rules: variant_id must be "{vid}". SI units: power in W (integer), battery in Wh (integer), mass in kg, price in minor units (cents) with currency EUR and country AT. Unknown = null, never 0.
-Every non-null technical claim must be supported by a directly relevant official provenance URL. Do not invent URLs, engine codes, trim details, or precision absent from the source. Resolve this previous audit finding explicitly: {prior_failure or "No previous finding"}.
-provenance.sources must list the official URL(s) used, with retrieved date {datetime.now(timezone.utc).date().isoformat()}."""
-        
-        # Count the variant before provider calls so failures cannot be retried
-        # again during this same batch; it remains queued for a later run.
+        research_context = {"previous_audit_categories": prior_categories}
         attempted_variant_ids.add(vid)
-        raw, res_name, res_vendor, research_failure_code = call_any(rp)
-        veh = None
-        if raw:
-            try:
-                veh = json.loads(clean_json_response(raw))
-                assert isinstance(veh, dict) and "identity" in veh
-            except Exception as e:
-                print(f"Researcher bad JSON: {e}"); veh = None
-        
-        research_code = classify_research_response(raw, veh, failure_code=research_failure_code)
-        if research_code is not None:
-            research_failures_this_run += 1
-            previous = next((item for item in reversed(failed)
-                             if (item.get("task") or {}).get("variant_id") == vid), None)
+
+        evidence_bundle = HIVE_PREFETCHED_EVIDENCE.get(vid)
+        if evidence_bundle is None:
+            raise ResearchPaused(
+                f"no preflight evidence bundle exists for reserved variant {vid}; "
+                "stopping before researcher/auditor calls"
+            )
+        schema = json.loads((ROOT / "schemas" / "vehicle-variant.schema.json").read_text(encoding="utf-8"))
+        try:
+            orchestration, audit_results = run_hive_research_and_audit(
+                reserved_task=task,
+                schema=schema,
+                config=HIVE_SOURCE_POLICY,
+                researcher=call_any,
+                auditor=call_vendor,
+                research_context=research_context,
+                evidence_bundle=evidence_bundle,
+            )
+        except OrchestrationRejected as exc:
+            if exc.code == "retrieval_unavailable":
+                raise ResearchPaused(
+                    f"approved evidence is unavailable for reserved variant {vid}; "
+                    "no researcher/auditor call or durable state mutation was performed"
+                ) from exc
+            research_code = exc.code if exc.code in {
+                "provider_transport_failure", "response_format_failure", "provenance_rejection"
+            } else "response_format_failure"
+            if research_code in {"provider_transport_failure", "response_format_failure"}:
+                research_failures_this_run += 1
+            stage = "candidate_validation" if research_code == "provenance_rejection" else "research"
+            provider_status = "OFFLINE" if research_code == "provider_transport_failure" else "INVALID"
             entry, retryable = record_outcome(
-                task, previous, research_code, stage="research",
-                provider_statuses=[{"provider": res_name or "provider-pool",
-                                    "status": "OFFLINE" if research_code == "provider_transport_failure" else "INVALID"}],
+                task,
+                prior_entry,
+                research_code,
+                stage=stage,
+                provider_statuses=[{"provider": "researcher", "status": provider_status}],
             )
             counters = entry["outcome"]["counters"]
             entry.update({
@@ -311,36 +309,20 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
                 outcome = f"{research_code} retry ceiling reached; retained for human review"
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"{outcome} (skipped {skipped} existing)"
-        
-        veh["variant_id"] = vid
-        veh.setdefault("schema_version", "1.0.0")
-        veh.setdefault("status", "current")
-        prov = veh.setdefault("provenance", {})
-        prov["confidence"] = "low"
-        prov["reviewed_by"] = None
-        veh.setdefault("extensions", {})["hive"] = {
-            "researcher": res_name or "unknown", 
-            "curated_utc": datetime.now(timezone.utc).isoformat()
-        }
-        
-        ap = f"""You are the CarAutopsy Auditor agent.
-Review this vehicle JSON against Vehicle Catalog Protocol v1.04 and schema v1.0.0.
-Reject (FAIL) only for concrete defects: inconsistent numbers, missing/invalid provenance URLs, wrong units, or missing required schema keys. Confidence is intentionally forced to "low" by the pipeline and MUST NOT be a rejection reason.
-Data:
-{json.dumps(veh, indent=2)}
-Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAIL: <one concise, evidence-based reason>."""
-        
-        # Require independent vendor audits; Qwen's regional endpoints count as one vendor.
-        audit_vendors = [vendor for vendor in ("deepseek", "google", "qwen") if vendor != res_vendor]
-        audit_results = []
-        for audit_vendor in audit_vendors:
-            audit_raw, audit_name, audit_failure_code = call_vendor(ap, audit_vendor)
-            audit_verdict = concise_audit_verdict(audit_raw) if audit_raw else (
-                "INVALID_AUDIT_RESPONSE" if audit_failure_code == "response_format_failure" else "OFFLINE"
-            )
-            audit_results.append({"provider": audit_name or audit_vendor, "vendor": audit_vendor, "verdict": audit_verdict})
-            print(f"Auditor {audit_name or audit_vendor} says: {audit_verdict}")
 
+        veh = orchestration.candidate
+        res_name = orchestration.researcher_provider or "unknown"
+        extensions = veh.setdefault("extensions", {})
+        if not isinstance(extensions, dict):
+            extensions = {}
+            veh["extensions"] = extensions
+        extensions["hive"] = {
+            "researcher": res_name,
+            "curated_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        for item in audit_results:
+            print(f"Auditor {item.get('provider', item.get('vendor', 'unknown'))} says: {item.get('verdict', 'INVALID_AUDIT_RESPONSE')}")
+        
         audit_code = classify_audit_results(audit_results)
         safe_audits = []
         for item in audit_results:
@@ -362,9 +344,8 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
                 audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
-            previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), None)
             entry, retryable = record_outcome(
-                task, previous, audit_code, stage="audit",
+                task, prior_entry, audit_code, stage="audit",
                 provider_statuses=[
                     {"provider": item["provider"], "status": item["verdict"]}
                     for item in safe_audits
@@ -430,39 +411,146 @@ def get_open_research_pr():
     return select_open_research_pr(pull_requests, "CarAutopsy/carautopsy")
 
 
-# Reuse the pending proposal branch instead of stopping the scheduler.
-# This carries queue/failed-ledger state forward between 15-minute runs and
-# accumulates candidate work in one human-review PR without creating duplicates.
+# Resolve the possible queue snapshots without checking out a proposal or
+# overlaying hive/state. Fetching remote refs is read-only with respect to the
+# working tree; policy and source retrieval must pass before checkout/state writes.
 open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None
+proposal_ref = None
+proposal_head_sha = None
+proposal_queue = []
 if open_research_pr:
-    # Start from the pending proposal's queue/ledger snapshot, not stale main.
-    run(["git", "fetch", "origin", open_research_pr["headRefName"]])
-    run(["git", "checkout", "-B", open_research_pr["headRefName"],
-         f"origin/{open_research_pr['headRefName']}"])
-    # The PR branch carries the ledger while a proposal is open. Align it with
-    # hive/state first: adopt a hand-edited state, or resync a mirror that lagged.
+    branch = open_research_pr["headRefName"]
+    run(["git", "fetch", "origin", branch])
+    proposal_ref = f"origin/{branch}"
+    proposal_head_sha = subprocess.run(
+        ["git", "rev-parse", proposal_ref], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    proposal_queue = json.loads(subprocess.run(
+        ["git", "show", f"{proposal_ref}:tasks/queue.json"],
+        capture_output=True, text=True, check=True,
+    ).stdout)
+
+state_available = fetch_state(ROOT) if RESEARCH_ONLY else False
+state_queue = []
+if state_available:
+    state_queue = json.loads(subprocess.run(
+        ["git", "show", f"{STATE_REF}:tasks/queue.json"],
+        capture_output=True, text=True, check=True,
+    ).stdout)
+main_queue_path = ROOT / "tasks" / "queue.json"
+main_queue = []
+if RESEARCH_ONLY and main_queue_path.exists():
+    main_queue = json.loads(main_queue_path.read_text(encoding="utf-8"))
+
+if RESEARCH_ONLY:
+    try:
+        queue_snapshots = [main_queue, state_queue]
+        if open_research_pr:
+            queue_snapshots.append(proposal_queue)
+
+        # Curation skips catalog records that already have a valid powertrain.
+        # Exclude those variants before evidence preflight so one stale queue
+        # item cannot block later tasks that actually need research.
+        skippable_variant_ids = set()
+        for snapshot in queue_snapshots:
+            for queued_task in snapshot:
+                variant_id = queued_task.get("variant_id") if isinstance(queued_task, dict) else None
+                if not isinstance(variant_id, str) or not variant_id.strip():
+                    continue
+                catalog_candidates = [
+                    ROOT / "catalog" / "variants" / f"{variant_id}.json"
+                ]
+                if proposal_ref:
+                    catalog_candidates.append(
+                        f"{proposal_ref}:catalog/variants/{variant_id}.json"
+                    )
+                for catalog_candidate in catalog_candidates:
+                    try:
+                        if isinstance(catalog_candidate, Path):
+                            if not catalog_candidate.exists():
+                                continue
+                            record = load(catalog_candidate)
+                        else:
+                            raw_record = subprocess.run(
+                                ["git", "show", catalog_candidate],
+                                capture_output=True,
+                                text=True,
+                                check=True,
+                            ).stdout
+                            record = clean(json.loads(raw_record))
+                        if (record.get("identity") or {}).get("powertrain"):
+                            skippable_variant_ids.add(variant_id)
+                            break
+                    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError, AttributeError):
+                        # Missing or malformed catalog records still require evidence.
+                        continue
+
+        upcoming_tasks = collect_reserved_batch(
+            queue_snapshots,
+            RESEARCH_BATCH_SIZE,
+            skip_variant_ids=skippable_variant_ids,
+        )
+        upcoming_ids = [item["variant_id"] for item in upcoming_tasks]
+        require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)
+        for variant_id in upcoming_ids:
+            evidence = retrieve_approved_evidence(
+                variant_id=variant_id,
+                config=HIVE_SOURCE_POLICY,
+            )
+            if not evidence:
+                raise SourcePolicyDenied("approved source retrieval produced no bounded evidence")
+            HIVE_PREFETCHED_EVIDENCE[variant_id] = validate_evidence_bundle(evidence)
+    except ResearchPaused as exc:
+        print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
+        sys.exit(exc.exit_code)
+    except Exception:
+        print(
+            "HIVE_RESEARCH_PAUSED: owner-approved policy, robots, retrieval, "
+            "or extraction preflight failed; no proposal checkout or Hive state "
+            "overlay was performed",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+# Only after every possible next-batch task has bounded evidence do we check
+# out the pending proposal or overlay the standalone Hive state branch.
+if open_research_pr:
+    run(["git", "checkout", "-B", open_research_pr["headRefName"], proposal_head_sha])
     reconcile_with_pr(ROOT)
 elif RESEARCH_ONLY:
-    # No pending proposal: resume from the ledger saved on the hive/state branch.
     load_state(ROOT)
 
 batch_messages = []
 attempted_variant_ids = set()
-for _ in range(RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1):
-    queue_path = ROOT / "tasks" / "queue.json"
-    queued = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
-    if not queued:
-        break
-    did_work, batch_msg = curate_one(attempted_variant_ids if RESEARCH_ONLY else None)
-    if not did_work:
-        break
-    batch_messages.append(batch_msg)
+if RESEARCH_ONLY:
+    try:
+        for _ in range(RESEARCH_BATCH_SIZE):
+            queue_path = ROOT / "tasks" / "queue.json"
+            queued = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
+            if not queued:
+                break
+            did_work, batch_msg = curate_one(attempted_variant_ids)
+            if not did_work:
+                break
+            batch_messages.append(batch_msg)
+    except ResearchPaused as exc:
+        print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
+        sys.exit(exc.exit_code)
+else:
+    # Full TCO mode is a catalog calculation, not a research dispatch. Leave
+    # the Hive queue untouched and continue with the existing catalog.
+    print("Full TCO mode: research queue left untouched; analyzing existing catalog.")
 
 curated = bool(batch_messages)
-msg = "; ".join(batch_messages) if batch_messages else "queue empty"
-print(f"Research batch: {len(batch_messages)}/{RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1} item(s)")
-for batch_msg in batch_messages:
-    print(f"Curation: {batch_msg}")
+msg = "; ".join(batch_messages) if batch_messages else (
+    "queue empty" if RESEARCH_ONLY else "research dispatch skipped in full TCO mode"
+)
+if RESEARCH_ONLY:
+    print(f"Research batch: {len(batch_messages)}/{RESEARCH_BATCH_SIZE} item(s)")
+    for batch_msg in batch_messages:
+        print(f"Curation: {batch_msg}")
+else:
+    print("Research dispatch skipped (full TCO mode).")
 
 if RESEARCH_ONLY:
     # Inspect only paths staged below; unrelated files must not cause empty commits.

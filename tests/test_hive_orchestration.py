@@ -10,7 +10,13 @@ from datetime import date
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from scripts.hive_orchestration import OrchestrationRejected, prepare_validated_research_task
+from scripts.hive_orchestration import (
+    OrchestrationRejected,
+    audit_validated_research_task,
+    collect_reserved_batch,
+    prepare_validated_research_task,
+    run_hive_research_and_audit,
+)
 
 
 SCHEMA = {"type": "object"}
@@ -191,6 +197,153 @@ class OrchestrationSeamTests(unittest.TestCase):
         self.assertNotIn("QWEN_API_KEY", serialized)
         self.assertNotIn("DEEPSEEK_API_KEY", serialized)
         self.assertNotIn("GEMINI_API_KEY", serialized)
+
+
+    def test_invalid_candidate_never_reaches_paid_auditors(self):
+        candidate = json.loads(json.dumps(CANDIDATE))
+        candidate["provenance"]["claim_evidence"] = []
+        researcher = Mock(return_value=json.dumps(candidate))
+        auditor = Mock(return_value=("PASS", "deepseek", None))
+        with self.assertRaises(OrchestrationRejected):
+            run_hive_research_and_audit(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=extractor,
+                researcher=researcher,
+                auditor=auditor,
+                researcher_vendor="qwen",
+                today=date(2026, 11, 12),
+            )
+        auditor.assert_not_called()
+
+    def test_valid_candidate_reaches_two_independent_auditors_with_identical_prompt(self):
+        researcher = Mock(return_value=(json.dumps(CANDIDATE), "qwen-intl", "qwen", None))
+        auditor = Mock(side_effect=[
+            ("PASS", "deepseek", None),
+            ("PASS", "gemini", None),
+        ])
+        result, audits = run_hive_research_and_audit(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            config=CONFIG,
+            fetcher=fetcher,
+            extractor=extractor,
+            researcher=researcher,
+            auditor=auditor,
+            today=date(2026, 11, 12),
+        )
+        self.assertEqual([item["vendor"] for item in audits], ["deepseek", "google"])
+        self.assertEqual([item["verdict"] for item in audits], ["PASS", "PASS"])
+        self.assertEqual(auditor.call_count, 2)
+        first_prompt = auditor.call_args_list[0].args[0]
+        second_prompt = auditor.call_args_list[1].args[0]
+        self.assertEqual(first_prompt, second_prompt)
+        self.assertIn("claim_evidence", first_prompt)
+        self.assertEqual(result.candidate["variant_id"], TASK["variant_id"])
+
+    def test_invalid_researcher_json_never_reaches_auditors(self):
+        researcher = Mock(return_value='{"variant_id": NaN}')
+        auditor = Mock(return_value=("PASS", "deepseek", None))
+        with self.assertRaises(OrchestrationRejected) as raised:
+            run_hive_research_and_audit(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=extractor,
+                researcher=researcher,
+                auditor=auditor,
+                researcher_vendor="qwen",
+                today=date(2026, 11, 12),
+            )
+        self.assertEqual(raised.exception.code, "response_format_failure")
+        auditor.assert_not_called()
+
+
+    def test_preflight_evidence_bundle_is_reused_without_second_fetch(self):
+        researcher = Mock(return_value=(json.dumps(CANDIDATE), "qwen-intl", "qwen", None))
+        fetch = Mock()
+        auditor = Mock(side_effect=[
+            ("PASS", "deepseek", None),
+            ("PASS", "gemini", None),
+        ])
+        result, audits = run_hive_research_and_audit(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            researcher=researcher,
+            auditor=auditor,
+            evidence_bundle=EVIDENCE,
+            fetcher=fetch,
+        )
+        fetch.assert_not_called()
+        self.assertEqual(result.evidence, EVIDENCE)
+        self.assertEqual([item["verdict"] for item in audits], ["PASS", "PASS"])
+
+    def test_invalid_preflight_evidence_stops_before_any_provider(self):
+        researcher = Mock()
+        auditor = Mock()
+        with self.assertRaises(OrchestrationRejected):
+            run_hive_research_and_audit(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                researcher=researcher,
+                auditor=auditor,
+                researcher_vendor="qwen",
+                evidence_bundle=[{"source_id": "incomplete"}],
+            )
+        researcher.assert_not_called()
+        auditor.assert_not_called()
+
+
+    def test_reserved_batch_union_is_deduplicated_across_queue_snapshots(self):
+        first = [{"variant_id": "v1", "make": "A", "model": "One"},
+                 {"variant_id": "v2", "make": "B", "model": "Two"}]
+        second = [{"variant_id": "v1", "make": "A", "model": "One"},
+                  {"variant_id": "v3", "make": "C", "model": "Three"}]
+        result = collect_reserved_batch([first, second], 2)
+        self.assertEqual([item["variant_id"] for item in result], ["v1", "v2", "v3"])
+
+    def test_reserved_batch_rejects_identity_conflict_for_same_variant_id(self):
+        first = [{"variant_id": "v1", "make": "A", "model": "One"}]
+        second = [{"variant_id": "v1", "make": "A", "model": "Different"}]
+        with self.assertRaisesRegex(ValueError, "disagree on reserved identity"):
+            collect_reserved_batch([first, second], 2)
+
+    def test_auditor_vendor_selection_deduplicates_independent_vendors(self):
+        result = prepare_validated_research_task(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            config=CONFIG,
+            fetcher=fetcher,
+            extractor=extractor,
+            researcher=Mock(return_value=(json.dumps(CANDIDATE), "qwen-intl", "qwen", None)),
+            today=date(2026, 11, 12),
+        )
+        auditor = Mock(return_value=("PASS", "deepseek", None))
+        with self.assertRaisesRegex(OrchestrationRejected, "two independent auditor vendors"):
+            audit_validated_research_task(
+                result,
+                schema=SCHEMA,
+                researcher_vendor="qwen",
+                auditor=auditor,
+                auditor_vendors=("qwen", "deepseek", "deepseek"),
+            )
+        auditor.assert_not_called()
+
+    def test_reserved_batch_skips_catalog_valid_variants_before_batch_limit(self):
+        first = [
+            {"variant_id": "already.valid", "make": "A", "model": "One"},
+            {"variant_id": "needs.research", "make": "B", "model": "Two"},
+            {"variant_id": "later.task", "make": "C", "model": "Three"},
+        ]
+        result = collect_reserved_batch([first], 1, skip_variant_ids={"already.valid"})
+        self.assertEqual([item["variant_id"] for item in result], ["needs.research"])
+
+    def test_reserved_batch_rejects_malformed_task_identity(self):
+        with self.assertRaisesRegex(ValueError, "missing its reserved variant identity"):
+            collect_reserved_batch([[{"variant_id": "v1", "make": "A"}]], 1)
 
 
 if __name__ == "__main__":
