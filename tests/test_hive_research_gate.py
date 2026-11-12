@@ -143,7 +143,9 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
         gate = source.index("require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)")
         manifest = source.index("HIVE_SOURCE_POLICY = load_policy()")
+        coverage = source.index("require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)")
         self.assertGreater(manifest, gate)
+        self.assertGreater(coverage, manifest)
         for operation in (
             "run_hive_research_and_audit(",
             "open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None",
