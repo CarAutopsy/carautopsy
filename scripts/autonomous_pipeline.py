@@ -7,7 +7,7 @@ from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base, fetch_state, STATE_REF
 from hive_research_gate import ResearchPaused, require_verified_retrieval
-from hive_orchestration import OrchestrationRejected, run_hive_research_and_audit
+from hive_orchestration import OrchestrationRejected, collect_reserved_batch, run_hive_research_and_audit
 from hive_source_policy import SourcePolicyDenied, load_policy
 from hive_evidence import retrieve_approved_evidence
 from hive_candidate import validate_evidence_bundle
@@ -444,23 +444,10 @@ if RESEARCH_ONLY:
     queue_snapshots = [main_queue, state_queue]
     if open_research_pr:
         queue_snapshots.append(proposal_queue)
-    upcoming_tasks = []
-    seen_upcoming_ids = {}
-    for snapshot in queue_snapshots:
-        for item in snapshot[:RESEARCH_BATCH_SIZE]:
-            if not isinstance(item, dict):
-                raise ResearchPaused("a queue snapshot contains a malformed task")
-            variant_id = item.get("variant_id")
-            make = item.get("make")
-            model = item.get("model")
-            if not all(isinstance(value, str) and value.strip() for value in (variant_id, make, model)):
-                raise ResearchPaused("a queued task is missing its reserved variant identity")
-            identity = (make, model)
-            if variant_id in seen_upcoming_ids and seen_upcoming_ids[variant_id] != identity:
-                raise ResearchPaused("queue snapshots disagree on reserved identity for one variant ID")
-            if variant_id not in seen_upcoming_ids:
-                seen_upcoming_ids[variant_id] = identity
-                upcoming_tasks.append(item)
+    try:
+        upcoming_tasks = collect_reserved_batch(queue_snapshots, RESEARCH_BATCH_SIZE)
+    except ValueError as exc:
+        raise ResearchPaused(str(exc)) from exc
     upcoming_ids = [item["variant_id"] for item in upcoming_tasks]
     try:
         require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)
