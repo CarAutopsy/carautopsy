@@ -445,16 +445,21 @@ if RESEARCH_ONLY:
     if open_research_pr:
         queue_snapshots.append(proposal_queue)
     upcoming_tasks = []
-    seen_upcoming_ids = set()
+    seen_upcoming_ids = {}
     for snapshot in queue_snapshots:
         for item in snapshot[:RESEARCH_BATCH_SIZE]:
             if not isinstance(item, dict):
                 raise ResearchPaused("a queue snapshot contains a malformed task")
             variant_id = item.get("variant_id")
-            if not isinstance(variant_id, str) or not variant_id.strip():
-                raise ResearchPaused("a queued task is missing its reserved variant ID")
+            make = item.get("make")
+            model = item.get("model")
+            if not all(isinstance(value, str) and value.strip() for value in (variant_id, make, model)):
+                raise ResearchPaused("a queued task is missing its reserved variant identity")
+            identity = (make, model)
+            if variant_id in seen_upcoming_ids and seen_upcoming_ids[variant_id] != identity:
+                raise ResearchPaused("queue snapshots disagree on reserved identity for one variant ID")
             if variant_id not in seen_upcoming_ids:
-                seen_upcoming_ids.add(variant_id)
+                seen_upcoming_ids[variant_id] = identity
                 upcoming_tasks.append(item)
     upcoming_ids = [item["variant_id"] for item in upcoming_tasks]
     try:
