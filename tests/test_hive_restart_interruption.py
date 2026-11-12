@@ -232,15 +232,15 @@ class HiveRestartInterruptionProofTests(unittest.TestCase):
             self.assertIsNotNone(real_git, "git executable is required for the interruption wrapper")
             git_wrapper = bin_dir / "git"
             git_wrapper.write_text(
-                "#!/usr/bin/env python3\\n"
-                "import os, signal, subprocess, sys\\n"
-                + "REAL_GIT = " + repr(real_git) + "\\n"
-                + "args = sys.argv[1:]\\n"
-                + "result = subprocess.run([REAL_GIT, *args])\\n"
+                "#!/usr/bin/env python3\n"
+                "import os, signal, subprocess, sys\n"
+                + "REAL_GIT = " + repr(real_git) + "\n"
+                + "args = sys.argv[1:]\n"
+                + "result = subprocess.run([REAL_GIT, *args])\n"
                 + "if (result.returncode == 0 and os.environ.get('HIVE_KILL_AFTER_STATE_PUSH') == '1' "
-                  "and args[:1] == ['push'] and any('refs/heads/hive/state' in arg for arg in args[1:])):\\n"
-                + "    os.kill(os.getppid(), signal.SIGKILL)\\n"
-                + "raise SystemExit(result.returncode)\\n",
+                  "and args[:1] == ['push'] and any('refs/heads/hive/state' in arg for arg in args[1:])):\n"
+                + "    os.kill(os.getppid(), signal.SIGKILL)\n"
+                + "raise SystemExit(result.returncode)\n",
                 encoding="utf-8",
             )
             git_wrapper.chmod(0o755)
