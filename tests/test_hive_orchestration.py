@@ -310,6 +310,36 @@ class OrchestrationSeamTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "disagree on reserved identity"):
             collect_reserved_batch([first, second], 2)
 
+    def test_auditor_vendor_selection_deduplicates_independent_vendors(self):
+        result = prepare_validated_research_task(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            config=CONFIG,
+            fetcher=fetcher,
+            extractor=extractor,
+            researcher=Mock(return_value=(json.dumps(CANDIDATE), "qwen-intl", "qwen", None)),
+            today=date(2026, 11, 12),
+        )
+        auditor = Mock(return_value=("PASS", "deepseek", None))
+        with self.assertRaisesRegex(OrchestrationRejected, "two independent auditor vendors"):
+            audit_validated_research_task(
+                result,
+                schema=SCHEMA,
+                researcher_vendor="qwen",
+                auditor=auditor,
+                auditor_vendors=("qwen", "deepseek", "deepseek"),
+            )
+        auditor.assert_not_called()
+
+    def test_reserved_batch_skips_catalog_valid_variants_before_batch_limit(self):
+        first = [
+            {"variant_id": "already.valid", "make": "A", "model": "One"},
+            {"variant_id": "needs.research", "make": "B", "model": "Two"},
+            {"variant_id": "later.task", "make": "C", "model": "Three"},
+        ]
+        result = collect_reserved_batch([first], 1, skip_variant_ids={"already.valid"})
+        self.assertEqual([item["variant_id"] for item in result], ["needs.research"])
+
     def test_reserved_batch_rejects_malformed_task_identity(self):
         with self.assertRaisesRegex(ValueError, "missing its reserved variant identity"):
             collect_reserved_batch([[{"variant_id": "v1", "make": "A"}]], 1)
