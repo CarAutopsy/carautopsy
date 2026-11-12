@@ -173,6 +173,8 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
             for index, child in enumerate(value):
                 walk(child, f"{path}[{index}]")
         elif value is not None and (not isinstance(value, str) or value.strip()):
+            if path in paths:
+                raise CandidateRejected(f"ambiguous duplicate technical claim path: {path}")
             paths.add(path)
             if len(paths) > MAX_CLAIM_BINDINGS:
                 raise CandidateRejected("candidate contains too many technical claims")
@@ -180,6 +182,15 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
     for root in TECHNICAL_CLAIM_ROOTS:
         if root in candidate:
             walk(candidate[root], root)
+
+    # This established extension is consumed directly by TCO calculations.
+    # Keep unrelated extension metadata outside the technical-claim evidence gate.
+    extensions = candidate.get("extensions")
+    if isinstance(extensions, dict):
+        fuel = extensions.get("fuel_consumption_l_100km")
+        if isinstance(fuel, dict) and "real_world" in fuel:
+            walk(fuel["real_world"], "extensions.fuel_consumption_l_100km.real_world")
+
     return paths
 
 
