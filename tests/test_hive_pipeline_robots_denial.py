@@ -38,7 +38,7 @@ POLICY = {
         "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/37",
         "approved_urls": [{
             "url": SOURCE_URL,
-            "variant_ids": ["main-task"],
+            "variant_ids": ["main-task", "proposal-task", "state-task"],
         }],
     }],
 }
