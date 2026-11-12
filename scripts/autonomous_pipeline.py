@@ -495,10 +495,15 @@ else:
     print("Full TCO mode: research queue left untouched; analyzing existing catalog.")
 
 curated = bool(batch_messages)
-msg = "; ".join(batch_messages) if batch_messages else "queue empty"
-print(f"Research batch: {len(batch_messages)}/{RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1} item(s)")
-for batch_msg in batch_messages:
-    print(f"Curation: {batch_msg}")
+msg = "; ".join(batch_messages) if batch_messages else (
+    "queue empty" if RESEARCH_ONLY else "research dispatch skipped in full TCO mode"
+)
+if RESEARCH_ONLY:
+    print(f"Research batch: {len(batch_messages)}/{RESEARCH_BATCH_SIZE} item(s)")
+    for batch_msg in batch_messages:
+        print(f"Curation: {batch_msg}")
+else:
+    print("Research dispatch skipped (full TCO mode).")
 
 if RESEARCH_ONLY:
     # Inspect only paths staged below; unrelated files must not cause empty commits.
