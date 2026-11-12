@@ -217,7 +217,7 @@ class OrchestrationSeamTests(unittest.TestCase):
         auditor.assert_not_called()
 
     def test_valid_candidate_reaches_two_independent_auditors_with_identical_prompt(self):
-        researcher = Mock(return_value=json.dumps(CANDIDATE))
+        researcher = Mock(return_value=(json.dumps(CANDIDATE), "qwen-intl", "qwen", None))
         auditor = Mock(side_effect=[
             ("PASS", "deepseek", None),
             ("PASS", "gemini", None),
@@ -230,7 +230,6 @@ class OrchestrationSeamTests(unittest.TestCase):
             extractor=extractor,
             researcher=researcher,
             auditor=auditor,
-            researcher_vendor="qwen",
             today=date(2026, 11, 12),
         )
         self.assertEqual([item["vendor"] for item in audits], ["deepseek", "google"])
