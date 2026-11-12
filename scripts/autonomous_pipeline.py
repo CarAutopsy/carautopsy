@@ -231,11 +231,7 @@ def curate_one(attempted_variant_ids=None):
              if (item.get("task") or {}).get("variant_id") == vid),
             None,
         )
-        prior_entry, migrated_legacy = migrate_legacy_entry(prior_entry)
-        if migrated_legacy:
-            failed = [item for item in failed if (item.get("task") or {}).get("variant_id") != vid]
-            failed.append(prior_entry)
-            fp.write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
+        prior_entry, _ = migrate_legacy_entry(prior_entry)
         if prior_entry and not requires_manual_review(prior_entry) and exhausted_outcome(prior_entry):
             tasks = [item for item in tasks if item.get("variant_id") != vid]
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
@@ -248,44 +244,40 @@ def curate_one(attempted_variant_ids=None):
             tasks = [item for item in tasks if item.get("variant_id") != vid]
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"legacy retry state for {vid} quarantined for human review"
+
         prior_categories = (prior_entry or {}).get("defect_categories") or []
-        prior_failure = ", ".join(
-            category for category in prior_categories
-            if category in {"provenance_evidence", "unit_mismatch", "schema_compliance", "numeric_consistency", "technical_specification", "unspecified_quality_defect"}
-        )
-        if not prior_failure:
-            prior_failure = ((prior_entry or {}).get("verdict") if prior_entry else "") or ""
-        rp = f"""You are the CarAutopsy Researcher agent.
-Find OFFICIAL specifications for: {make} {model}.
-Allowed sources only: OEM press kits, OEM configurators, EU type-approval/CoC data.
-FORBIDDEN: EV Database, classifieds, forums.
-Return ONLY a valid JSON object with exactly these top-level keys:
-schema_version, variant_id, status, identity, performance, energy, dimensions, emissions, offers, warranty, extensions, provenance.
-Rules: variant_id must be "{vid}". SI units: power in W (integer), battery in Wh (integer), mass in kg, price in minor units (cents) with currency EUR and country AT. Unknown = null, never 0.
-Every non-null technical claim must be supported by a directly relevant official provenance URL. Do not invent URLs, engine codes, trim details, or precision absent from the source. Resolve this previous audit finding explicitly: {prior_failure or "No previous finding"}.
-provenance.sources must list the official URL(s) used, with retrieved date {datetime.now(timezone.utc).date().isoformat()}."""
-        
-        # Count the variant before provider calls so failures cannot be retried
-        # again during this same batch; it remains queued for a later run.
+        research_context = {"previous_audit_categories": prior_categories}
         attempted_variant_ids.add(vid)
-        raw, res_name, res_vendor, research_failure_code = call_any(rp)
-        veh = None
-        if raw:
-            try:
-                veh = json.loads(clean_json_response(raw))
-                assert isinstance(veh, dict) and "identity" in veh
-            except Exception as e:
-                print(f"Researcher bad JSON: {e}"); veh = None
-        
-        research_code = classify_research_response(raw, veh, failure_code=research_failure_code)
-        if research_code is not None:
-            research_failures_this_run += 1
-            previous = next((item for item in reversed(failed)
-                             if (item.get("task") or {}).get("variant_id") == vid), None)
+
+        schema = json.loads((ROOT / "schemas" / "vehicle-variant.schema.json").read_text(encoding="utf-8"))
+        try:
+            orchestration, audit_results = run_hive_research_and_audit(
+                reserved_task=task,
+                schema=schema,
+                config=HIVE_SOURCE_POLICY,
+                researcher=call_any,
+                auditor=call_vendor,
+                research_context=research_context,
+            )
+        except OrchestrationRejected as exc:
+            if exc.code == "retrieval_unavailable":
+                raise ResearchPaused(
+                    f"approved evidence is unavailable for reserved variant {vid}; "
+                    "no researcher/auditor call or durable state mutation was performed"
+                ) from exc
+            research_code = exc.code if exc.code in {
+                "provider_transport_failure", "response_format_failure", "provenance_rejection"
+            } else "response_format_failure"
+            if research_code in {"provider_transport_failure", "response_format_failure"}:
+                research_failures_this_run += 1
+            stage = "candidate_validation" if research_code == "provenance_rejection" else "research"
+            provider_status = "OFFLINE" if research_code == "provider_transport_failure" else "INVALID"
             entry, retryable = record_outcome(
-                task, previous, research_code, stage="research",
-                provider_statuses=[{"provider": res_name or "provider-pool",
-                                    "status": "OFFLINE" if research_code == "provider_transport_failure" else "INVALID"}],
+                task,
+                prior_entry,
+                research_code,
+                stage=stage,
+                provider_statuses=[{"provider": "researcher", "status": provider_status}],
             )
             counters = entry["outcome"]["counters"]
             entry.update({
@@ -308,36 +300,20 @@ provenance.sources must list the official URL(s) used, with retrieved date {date
                 outcome = f"{research_code} retry ceiling reached; retained for human review"
             qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
             return True, f"{outcome} (skipped {skipped} existing)"
-        
-        veh["variant_id"] = vid
-        veh.setdefault("schema_version", "1.0.0")
-        veh.setdefault("status", "current")
-        prov = veh.setdefault("provenance", {})
-        prov["confidence"] = "low"
-        prov["reviewed_by"] = None
-        veh.setdefault("extensions", {})["hive"] = {
-            "researcher": res_name or "unknown", 
-            "curated_utc": datetime.now(timezone.utc).isoformat()
-        }
-        
-        ap = f"""You are the CarAutopsy Auditor agent.
-Review this vehicle JSON against Vehicle Catalog Protocol v1.04 and schema v1.0.0.
-Reject (FAIL) only for concrete defects: inconsistent numbers, missing/invalid provenance URLs, wrong units, or missing required schema keys. Confidence is intentionally forced to "low" by the pipeline and MUST NOT be a rejection reason.
-Data:
-{json.dumps(veh, indent=2)}
-Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAIL: <one concise, evidence-based reason>."""
-        
-        # Require independent vendor audits; Qwen's regional endpoints count as one vendor.
-        audit_vendors = [vendor for vendor in ("deepseek", "google", "qwen") if vendor != res_vendor]
-        audit_results = []
-        for audit_vendor in audit_vendors:
-            audit_raw, audit_name, audit_failure_code = call_vendor(ap, audit_vendor)
-            audit_verdict = concise_audit_verdict(audit_raw) if audit_raw else (
-                "INVALID_AUDIT_RESPONSE" if audit_failure_code == "response_format_failure" else "OFFLINE"
-            )
-            audit_results.append({"provider": audit_name or audit_vendor, "vendor": audit_vendor, "verdict": audit_verdict})
-            print(f"Auditor {audit_name or audit_vendor} says: {audit_verdict}")
 
+        veh = orchestration.candidate
+        res_name = orchestration.researcher_provider or "unknown"
+        extensions = veh.setdefault("extensions", {})
+        if not isinstance(extensions, dict):
+            extensions = {}
+            veh["extensions"] = extensions
+        extensions["hive"] = {
+            "researcher": res_name,
+            "curated_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        for item in audit_results:
+            print(f"Auditor {item.get('provider', item.get('vendor', 'unknown'))} says: {item.get('verdict', 'INVALID_AUDIT_RESPONSE')}")
+        
         audit_code = classify_audit_results(audit_results)
         safe_audits = []
         for item in audit_results:
@@ -359,9 +335,8 @@ Do not reveal analysis or chain-of-thought. Return exactly one line: PASS or FAI
                 audit_failures_this_run += 1
             fp = ROOT / "tasks" / "failed.json"
             failed = json.loads(fp.read_text()) if fp.exists() else []
-            previous = next((item for item in reversed(failed) if (item.get("task") or {}).get("variant_id") == vid), None)
             entry, retryable = record_outcome(
-                task, previous, audit_code, stage="audit",
+                task, prior_entry, audit_code, stage="audit",
                 provider_statuses=[
                     {"provider": item["provider"], "status": item["verdict"]}
                     for item in safe_audits
