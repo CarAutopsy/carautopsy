@@ -159,7 +159,7 @@ def synthetic_gemini(prompt, api_key, primary_model, fallback_model, temperature
 provider_retry.generate_content_with_fallback = synthetic_gemini
 '''
 
-def clean_env():
+def clean_env(sandbox):
     env = dict(os.environ)
     for key in list(env):
         if key.startswith("GIT_") or key in {
@@ -173,7 +173,7 @@ def clean_env():
     # Keep global/system Git settings, templates, URL rewrites and hooks out
     # of this local-only fixture. The same isolated environment is inherited
     # by the pipeline and the test Git wrapper.
-    git_home = Path(tempfile.gettempdir()) / f"carautopsy-hive-git-home-{os.getpid()}"
+    git_home = sandbox / "git-home"
     git_home.mkdir(parents=True, exist_ok=True)
     hooks_dir = git_home / "empty-hooks"
     templates_dir = git_home / "empty-templates"
@@ -194,14 +194,14 @@ def clean_env():
 
 
 class HiveRestartInterruptionProofTests(unittest.TestCase):
-    def sh(self, *args, cwd, env=None):
+    def sh(self, *args, cwd, sandbox, env=None):
         return subprocess.run(
-            args, cwd=cwd, env=env or clean_env(), check=True,
+            args, cwd=cwd, env=env or clean_env(sandbox), check=True,
             capture_output=True, text=True,
         )
 
     def pipeline_env(self, sandbox, mode, trace, interrupt=False):
-        env = clean_env()
+        env = clean_env(sandbox)
         env.update({
             "PATH": str(sandbox / "bin") + os.pathsep + env.get("PATH", ""),
             "PYTHONPATH": os.pathsep.join((str(sandbox), str(ROOT / "scripts"))),
@@ -232,9 +232,9 @@ class HiveRestartInterruptionProofTests(unittest.TestCase):
             origin = sandbox / "origin.git"
             repo = sandbox / "work"
             repo.mkdir()
-            self.sh("git", "init", "--bare", str(origin), cwd=sandbox)
+            self.sh("git", "init", "--bare", str(origin), cwd=sandbox, sandbox=sandbox)
             self.sh("git", "init", "-b", "main", str(repo), cwd=sandbox)
-            self.sh("git", "config", "user.name", "Hive Retry Test", cwd=repo)
+            self.sh("git", "config", "user.name", "Hive Retry Test", cwd=repo, sandbox=sandbox)
             self.sh("git", "config", "user.email", "hive-retry@example.invalid", cwd=repo)
 
             (repo / "tasks").mkdir()
