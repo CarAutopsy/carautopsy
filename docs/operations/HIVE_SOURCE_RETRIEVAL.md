@@ -1,6 +1,6 @@
 # Hive source retrieval: security boundary and integration contract
 
-Status: retrieval primitive implemented; runtime integration and operational readiness are NOT complete.
+**Status:** source policy, retrieval, extraction, evidence, candidate validation, and pipeline orchestration are implemented on `main`; production retrieval remains deliberately disabled pending independent audits, owner-reviewed sources, and explicit owner authorization.
 
 ## Fail-closed policy
 
@@ -18,25 +18,30 @@ Status: retrieval primitive implemented; runtime integration and operational rea
 - Reject all redirects in this first implementation; no redirect target is ever requested.
 - Identify the crawler with a project-owned GitHub repository URL; do not embed a maintainer personal email in outbound headers.
 - Bound timeout to 30 seconds maximum and response bytes to 2 MB maximum; enforce both declared and streamed sizes.
-- Accept only HTML, plain text and PDF content types. The caller must extract text safely and must not treat binary PDF bytes as prompt text.
+- Accept only HTML, plain text and PDF content types. The extraction layer must never treat binary PDF bytes as prompt text.
 - Reject known placeholder KBA numeric filenames and all-zero configurator identifiers.
 
 ## Evidence semantics
 
 A successful HTTP response is recorded as `retrieved_unverified`. This means only that bytes were fetched from an allowed endpoint. It does not establish that the source supports any candidate claim. The returned response body is transient; `safe_record()` excludes it from durable diagnostics. Candidate provenance and claim-level support must still pass the deterministic candidate gate and two independent vendor audits.
 
-## Not enabled
+The deterministic claim-evidence gate proves that each required claim is bound to a quote and locator present in the supplied source text. It does **not** independently prove that the quote is semantically relevant or factually supports the claim. Independent auditors must assess that question, and the required external security review remains outstanding.
 
-The new policy checker, evidence adapter, and bounded HTML/plain-text/PDF extractor are still isolated building blocks: they are not wired into `autonomous_pipeline.py`, do not curate approved source URLs, and do not perform semantic claim verification. HTML and PDF extraction run in separate workers with 512 MiB address-space ceilings, 5-second CPU limits, 6.5-second parent timeouts, bounded input/output, and minimal environments without provider credentials. Evidence locators are passed as structured per-document/page text maps; the deterministic gate never parses locator boundaries out of untrusted source text. The worker does not establish a separate network namespace; its parser path must remain free of network access. The manifest remains empty and `VERIFIED_RETRIEVAL_AVAILABLE` must remain false. Do not enable paid research until these dependencies are integrated, independently reviewed, and proven end to end.
+## Integrated but disabled
 
-## Tests
+The following components are wired into the research-only path in `scripts/autonomous_pipeline.py`:
 
-`tests/test_hive_source_retrieval.py` covers invalid schemes and hosts, empty allowlist, credentials, ports, IP literals, placeholders, private and mixed DNS answers, DNS failure, redirects, content types, declared and streamed size limits, required robots policy, bounded timeout, safe diagnostics, and the pinned-IP/original-host TLS seam. Tests use fakes and make no live requests.
+- `scripts/hive_source_policy.py`: owner-reviewed exact URL and terms metadata checks plus live robots.txt policy evaluation.
+- `scripts/hive_source_retrieval.py`: HTTPS-only DNS-pinned transport, redirect rejection, public-address checks, bounded response/time limits, and safe retrieval metadata.
+- `scripts/hive_source_extract.py`: visible HTML text, strict UTF-8 plain text, and page-bounded PDF extraction. HTML and PDF parsing use OS-resource-limited workers (512 MiB address-space ceilings, 5-second CPU limit, 6.5-second parent timeout, bounded input/output, and minimal environments without provider credentials). The worker does not establish a separate network namespace; its parser path must remain free of network access.
+- `scripts/hive_evidence.py`: exact URL/variant-scoped evidence retrieval, policy preflight, stable source IDs, bounded evidence output, and structured per-document/page locator text. Raw response bytes are not returned or persisted.
+- `scripts/hive_candidate.py` and `scripts/hive_prompts.py`: schema, reserved identity, evidence, claim-quote/locator, prompt-injection-boundary, and exact verdict validation.
+- `scripts/hive_orchestration.py`: preflight and cache evidence before proposal checkout/state overlay; require two independent auditor vendors to return exact standalone PASS tokens.
 
-## New isolated implementation building blocks
+The production path remains unreachable because `VERIFIED_RETRIEVAL_AVAILABLE = False` and the research pause remains active. The owner-approved source manifest is empty. Do not enable paid research or live retrieval until the independent audits, owner source review, exact-head validation, and explicit owner authorization are complete.
 
-- `scripts/hive_source_policy.py`: owner-reviewed exact URL and terms metadata checks plus live robots.txt parsing with percent-normalized, bounded wildcard matching.
-- `scripts/hive_source_extract.py`: visible HTML text, strict UTF-8 plain text, and page-bounded PDF extraction; HTML and PDF parsing use OS-resource-limited workers (512 MiB address space, 5-second CPU limit, bounded wall time). Script/style/template/noscript/SVG/canvas/iframe/object content is excluded from HTML.
-- `scripts/hive_evidence.py`: retrieves only exact URLs scoped to the reserved variant ID in the owner manifest, verifies that each URL host matches its policy entry, checks policy before the source request, extracts bounded text, assigns stable source IDs, and returns only the candidate gate's bounded evidence fields. Raw response bytes are not returned or persisted. Human-readable page/document markers remain in the excerpt, while authoritative per-locator text spans are carried separately in `locator_texts`.
-- `scripts/hive_candidate.py`: requires every non-null technical, price, registration, and non-reserved identity claim, including the TCO-consumed real-world fuel-consumption extension, to bind to an exact quoted source-text span and locator from a declared provenance source. Dotted-path collisions are rejected. This proves traceability to supplied text, not semantic relevance; independent auditors must still assess whether the quote supports the claim.
-- Tests use mocked transport and synthetic documents only. They do not establish live OEM permission, source authenticity, factual claim support, or production readiness.
+## Tests and limits
+
+`tests/test_hive_source_retrieval.py` covers invalid schemes and hosts, empty allowlist, credentials, ports, IP literals, placeholders, private and mixed DNS answers, DNS failure, redirects, content types, declared and streamed size limits, required robots policy, bounded timeout, safe diagnostics, and the pinned-IP/original-host TLS seam. Other Hive tests cover source-policy parsing, extraction limits, candidate/evidence validation, orchestration ordering, and failure/recovery state invariants.
+
+Tests use mocks, synthetic documents, and local repositories. They do not establish live OEM permission, source authenticity, factual claim support, or production readiness. Full exact-head CI/security validation and independent external review remain mandatory.
