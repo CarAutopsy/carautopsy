@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,9 +17,14 @@ MAX_TOTAL_EXCERPT_CHARS = 60_000
 MAX_SOURCE_ID_CHARS = 128
 MAX_URL_CHARS = 2_048
 MAX_RETRIEVED_AT_CHARS = 64
-MAX_TOTAL_EVIDENCE_JSON_CHARS = 70_000
+MAX_TOTAL_EVIDENCE_JSON_CHARS = 140_000
 MAX_CANDIDATE_JSON_CHARS = 1_000_000
 MAX_CANDIDATE_DEPTH = 64
+TECHNICAL_CLAIM_ROOTS = ("identity", "performance", "energy", "dimensions", "emissions", "offers", "warranty", "registration")
+NON_CLAIM_OFFER_FIELDS = {"offer_id", "country", "currency"}
+NON_CLAIM_IDENTITY_FIELDS = {"make", "model"}
+MAX_CLAIM_QUOTE_CHARS = 2_000
+MAX_CLAIM_BINDINGS = 200
 
 
 class CandidateRejected(ValueError):
@@ -113,12 +119,27 @@ def validate_evidence_bundle(evidence: Any) -> list[dict[str, str]]:
         if len(excerpt) > MAX_EXCERPT_CHARS:
             raise CandidateRejected(f"evidence excerpt exceeds {MAX_EXCERPT_CHARS} characters")
         total_chars += len(excerpt)
-        normalized.append({
+        normalized_item = {
             "source_id": source_id,
             "url": url,
             "retrieved_at": retrieved_at,
             "text": excerpt.strip(),
-        })
+        }
+        locator_texts = item.get("locator_texts")
+        if locator_texts is not None:
+            if (
+                not isinstance(locator_texts, dict)
+                or not locator_texts
+                or len(locator_texts) > 20
+                or any(
+                    not isinstance(locator, str) or not re.fullmatch(r"(?:document|page:[1-9][0-9]*)", locator)
+                    or not isinstance(span, str) or not span.strip() or len(span) > MAX_EXCERPT_CHARS
+                    for locator, span in locator_texts.items()
+                )
+            ):
+                raise CandidateRejected(f"evidence item {index} has invalid structured locator text")
+            normalized_item["locator_texts"] = dict(locator_texts)
+        normalized.append(normalized_item)
     if total_chars > MAX_TOTAL_EXCERPT_CHARS:
         raise CandidateRejected(
             f"combined evidence excerpts exceed {MAX_TOTAL_EXCERPT_CHARS} characters"
@@ -134,6 +155,100 @@ def validate_evidence_bundle(evidence: Any) -> list[dict[str, str]]:
             f"serialized evidence bundle exceeds {MAX_TOTAL_EVIDENCE_JSON_CHARS} bytes"
         )
     return normalized
+
+
+def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
+    """Return paths for non-null canonical technical/registration/price claim values."""
+    paths: set[str] = set()
+
+    def walk(value: Any, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if (path == "offers" or re.fullmatch(r"offers\[\d+\]", path)) and key in NON_CLAIM_OFFER_FIELDS:
+                    continue
+                if path == "identity" and key in NON_CLAIM_IDENTITY_FIELDS:
+                    continue
+                walk(child, f"{path}.{key}" if path else str(key))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                walk(child, f"{path}[{index}]")
+        elif value is not None and (not isinstance(value, str) or value.strip()):
+            if path in paths:
+                raise CandidateRejected(f"ambiguous duplicate technical claim path: {path}")
+            paths.add(path)
+            if len(paths) > MAX_CLAIM_BINDINGS:
+                raise CandidateRejected("candidate contains too many technical claims")
+
+    for root in TECHNICAL_CLAIM_ROOTS:
+        if root in candidate:
+            walk(candidate[root], root)
+
+    # This established extension is consumed directly by TCO calculations.
+    # Keep unrelated extension metadata outside the technical-claim evidence gate.
+    extensions = candidate.get("extensions")
+    if isinstance(extensions, dict):
+        fuel = extensions.get("fuel_consumption_l_100km")
+        if isinstance(fuel, dict) and "real_world" in fuel:
+            walk(fuel["real_world"], "extensions.fuel_consumption_l_100km.real_world")
+
+    return paths
+
+
+def _validate_claim_evidence(
+    candidate: dict[str, Any],
+    evidence: list[dict[str, str]],
+    provenance: dict[str, Any],
+) -> None:
+    """Require each non-null technical claim to cite an exact supplied text span."""
+    required_paths = _technical_claim_paths(candidate)
+    bindings = provenance.get("claim_evidence")
+    if bindings is not None:
+        if not isinstance(bindings, list):
+            raise CandidateRejected("claim_evidence must be an array")
+        if len(bindings) > MAX_CLAIM_BINDINGS:
+            raise CandidateRejected("claim evidence exceeds the binding-count limit")
+    if not required_paths:
+        if bindings not in (None, []):
+            raise CandidateRejected("claim evidence was supplied without any claim paths")
+        return
+    if not isinstance(bindings, list) or not bindings:
+        raise CandidateRejected("every non-null technical claim requires claim_evidence")
+    evidence_by_id = {item["source_id"]: item for item in evidence}
+    locator_text_cache = {source_id: item.get("locator_texts", {}) for source_id, item in evidence_by_id.items()}
+    declared_ids = {
+        item.get("source_id") for item in (provenance.get("sources") or [])
+        if isinstance(item, dict)
+    }
+    covered: set[str] = set()
+    seen: set[tuple[str, str, str]] = set()
+    for index, binding in enumerate(bindings):
+        if not isinstance(binding, dict):
+            raise CandidateRejected(f"claim evidence item {index} must be an object")
+        claim_path = binding.get("claim_path")
+        source_id = binding.get("source_id")
+        locator = binding.get("locator")
+        quote = binding.get("quote")
+        if not isinstance(claim_path, str) or claim_path not in required_paths:
+            raise CandidateRejected(f"claim evidence item {index} references an unknown claim path")
+        if not isinstance(source_id, str) or source_id not in evidence_by_id or source_id not in declared_ids:
+            raise CandidateRejected(f"claim evidence item {index} references an unknown or undeclared source")
+        if not isinstance(locator, str) or not locator.strip() or len(locator) > 128:
+            raise CandidateRejected(f"claim evidence item {index} has an invalid locator")
+        if not isinstance(quote, str) or not quote.strip() or len(quote) > MAX_CLAIM_QUOTE_CHARS:
+            raise CandidateRejected(f"claim evidence item {index} has an invalid quote")
+        located_text = locator_text_cache[source_id].get(locator)
+        if located_text is None:
+            raise CandidateRejected(f"claim evidence locator {locator} is not present in source text")
+        if quote not in located_text:
+            raise CandidateRejected("claim evidence quote is not an exact span at the stated locator")
+        identity = (claim_path, source_id, quote)
+        if identity in seen:
+            raise CandidateRejected("duplicate claim evidence binding")
+        seen.add(identity)
+        covered.add(claim_path)
+    missing = sorted(required_paths - covered)
+    if missing:
+        raise CandidateRejected("technical claims lack evidence bindings: " + ", ".join(missing[:10]))
 
 
 def validate_candidate(
@@ -171,6 +286,7 @@ def validate_candidate(
     declared_sources = provenance.get("sources")
     if not isinstance(declared_sources, list) or not declared_sources:
         raise CandidateRejected("candidate must cite at least one supplied evidence source")
+    declared_ids = set()
     for index, source in enumerate(declared_sources):
         if not isinstance(source, dict):
             raise CandidateRejected(f"candidate provenance source {index} must be an object")
@@ -178,8 +294,13 @@ def validate_candidate(
         url = source.get("url")
         if not isinstance(source_id, str) or source_id not in evidence_by_id:
             raise CandidateRejected(f"candidate provenance source {index} is not in the evidence bundle")
+        if source_id in declared_ids:
+            raise CandidateRejected("candidate provenance contains a duplicate source_id")
+        declared_ids.add(source_id)
         if url != evidence_by_id[source_id]:
             raise CandidateRejected(f"candidate provenance URL does not match evidence source {source_id}")
+
+    _validate_claim_evidence(result, sources, provenance)
 
     # These fields are pipeline-owned, never trusted from model output.
     provenance["confidence"] = "low"

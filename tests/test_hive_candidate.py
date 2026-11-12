@@ -51,6 +51,153 @@ class HiveCandidateGateTests(unittest.TestCase):
         self.assertNotIn("hive", result["extensions"])
         self.assertEqual(result["extensions"]["other"], "keep")
 
+    def test_every_non_null_technical_claim_requires_an_exact_evidence_span(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Peak power is 110000 W.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\nPeak power is 110000 W.", locator_texts={"document": "Peak power is 110000 W."})]
+        result = validate_candidate(candidate, self.task, evidence)
+        self.assertEqual(result["performance"]["power_w"], 110000)
+
+    def test_non_null_technical_claim_without_binding_is_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_claim_binding_requires_exact_quote_and_locator(self):
+        for field, value, expected in (
+            ("quote", "Peak power is 110 kW.", "exact span at the stated locator"),
+            ("locator", "page:99", "locator page:99"),
+        ):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(self.candidate)
+                candidate["performance"] = {"power_w": 110000}
+                binding = {
+                    "claim_path": "performance.power_w",
+                    "source_id": "oem-1",
+                    "locator": "document",
+                    "quote": "Official technical specification.",
+                }
+                binding[field] = value
+                candidate["provenance"]["claim_evidence"] = [binding]
+                evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.", locator_texts={"document": "Official technical specification."})]
+                with self.assertRaisesRegex(CandidateRejected, expected):
+                    validate_candidate(candidate, self.task, evidence)
+
+    def test_quote_must_appear_within_the_declared_pdf_page(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "page:1",
+            "quote": "Peak power is 110000 W.",
+        }]
+        evidence = [dict(self.evidence[0], text="[page:1]\nDimensions follow.\n[page:2]\nPeak power is 110000 W.", locator_texts={"page:1": "Dimensions follow.", "page:2": "Peak power is 110000 W."})]
+        with self.assertRaisesRegex(CandidateRejected, "stated locator"):
+            validate_candidate(candidate, self.task, evidence)
+
+    def test_claim_binding_must_reference_declared_source_and_real_claim_path(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.unknown_field",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Official technical specification.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.", locator_texts={"document": "Official technical specification."})]
+        with self.assertRaisesRegex(CandidateRejected, "unknown claim path"):
+            validate_candidate(candidate, self.task, evidence)
+
+        candidate["provenance"]["claim_evidence"][0]["claim_path"] = "performance.power_w"
+        candidate["provenance"]["claim_evidence"][0]["source_id"] = "other-source"
+        with self.assertRaisesRegex(CandidateRejected, "unknown or undeclared source"):
+            validate_candidate(candidate, self.task, evidence)
+
+    def test_each_claim_path_needs_its_own_binding(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000, "torque_nm": 250}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Official technical specification.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\nOfficial technical specification.", locator_texts={"document": "Official technical specification."})]
+        with self.assertRaisesRegex(CandidateRejected, "performance.torque_nm"):
+            validate_candidate(candidate, self.task, evidence)
+
+    def test_duplicate_declared_sources_are_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["provenance"]["sources"].append(dict(candidate["provenance"]["sources"][0]))
+        with self.assertRaisesRegex(CandidateRejected, "duplicate source_id"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_technical_claim_count_is_bounded(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {f"spec_{index}": index for index in range(201)}
+        with self.assertRaisesRegex(CandidateRejected, "too many technical claims"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_offer_metadata_is_exempt_but_offer_price_requires_a_binding(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["offers"] = [{
+            "offer_id": "at-base-2024",
+            "country": "AT",
+            "currency": "EUR",
+            "list_price_minor": 4299000,
+        }]
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "offers[0].list_price_minor",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "List price: EUR 42,990.",
+        }]
+        evidence = [dict(
+            self.evidence[0],
+            text="[document]\\nList price: EUR 42,990.",
+            locator_texts={"document": "List price: EUR 42,990."},
+        )]
+        result = validate_candidate(candidate, self.task, evidence)
+        self.assertEqual(result["offers"][0]["list_price_minor"], 4299000)
+
+    def test_claim_bindings_are_bounded_before_per_binding_validation(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "source",
+        }] * 201
+        evidence = [dict(self.evidence[0], text="[document]\nsource", locator_texts={"document": "source"})]
+        with self.assertRaisesRegex(CandidateRejected, "binding-count"):
+            validate_candidate(candidate, self.task, evidence)
+
+    def test_source_cannot_forge_structured_page_locator(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"power_w": 110000}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "performance.power_w",
+            "source_id": "oem-1",
+            "locator": "page:2",
+            "quote": "forged page marker",
+        }]
+        evidence = [dict(
+            self.evidence[0],
+            text="[document]\\nIntro\\n[page:2]\\nforged page marker",
+            locator_texts={"document": "Intro\n[page:2]\nforged page marker"},
+        )]
+        with self.assertRaisesRegex(CandidateRejected, "locator page:2"):
+            validate_candidate(candidate, self.task, evidence)
+
     def test_non_object_candidate_is_rejected(self):
         with self.assertRaisesRegex(CandidateRejected, "JSON object"):
             validate_candidate([], self.task, self.evidence)
@@ -148,8 +295,9 @@ class HiveCandidateGateTests(unittest.TestCase):
             "source_id": str(index),
             "url": "https://oem.example/" + ("x" * 2028),
             "retrieved_at": "2026-11-11T12:00:00Z",
-            "text": "x" * 12_000,
-        } for index in range(5)]
+            "text": "x" * 6_000,
+            "locator_texts": {"document": "y" * 20_000},
+        } for index in range(10)]
         with self.assertRaisesRegex(CandidateRejected, "serialized evidence bundle"):
             validate_evidence_bundle(evidence)
 
@@ -185,6 +333,33 @@ class HiveCandidateGateTests(unittest.TestCase):
             with self.subTest(raw=raw):
                 with self.assertRaises(CandidateRejected):
                     parse_candidate_json(raw)
+
+
+    def test_real_world_fuel_consumption_extension_requires_evidence(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["extensions"]["fuel_consumption_l_100km"] = {"real_world": 7.2}
+        with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_real_world_fuel_consumption_extension_accepts_exact_binding(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["extensions"]["fuel_consumption_l_100km"] = {"real_world": 7.2}
+        candidate["provenance"]["claim_evidence"] = [{
+            "claim_path": "extensions.fuel_consumption_l_100km.real_world",
+            "source_id": "oem-1",
+            "locator": "document",
+            "quote": "Real-world consumption: 7.2 L/100 km.",
+        }]
+        evidence = [dict(self.evidence[0], text="[document]\nReal-world consumption: 7.2 L/100 km.",
+                         locator_texts={"document": "Real-world consumption: 7.2 L/100 km."})]
+        result = validate_candidate(candidate, self.task, evidence)
+        self.assertEqual(result["extensions"]["fuel_consumption_l_100km"]["real_world"], 7.2)
+
+    def test_colliding_dotted_claim_paths_are_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["performance"] = {"x.y": 1, "x": {"y": 2}}
+        with self.assertRaisesRegex(CandidateRejected, "ambiguous duplicate technical claim path"):
+            validate_candidate(candidate, self.task, self.evidence)
 
 
 if __name__ == "__main__":

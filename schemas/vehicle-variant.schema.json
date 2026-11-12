@@ -258,6 +258,42 @@
           "items": {
             "type": "object"
           }
+        },
+        "claim_evidence": {
+          "type": "array",
+          "description": "Claim-level evidence spans; required by the deterministic Hive gate for every non-null technical claim.",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim_path",
+              "source_id",
+              "locator",
+              "quote"
+            ],
+            "properties": {
+              "claim_path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "source_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "locator": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "quote": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              }
+            }
+          },
+          "maxItems": 200
         }
       },
       "additionalProperties": true
