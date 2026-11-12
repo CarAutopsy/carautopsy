@@ -142,8 +142,11 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
     def test_gate_ordering_remains_a_secondary_static_guard(self):
         source = SCRIPT.read_text(encoding="utf-8")
         gate = source.index("require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)")
+        manifest = source.index("HIVE_SOURCE_POLICY = load_policy()")
+        self.assertGreater(manifest, gate)
         for operation in (
             "raw, res_name, res_vendor, research_failure_code = call_any(rp)",
+            "run_hive_research_and_audit(",
             "audit_raw, audit_name, audit_failure_code = call_vendor(ap, audit_vendor)",
             "open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None",
             "load_state(ROOT)",
