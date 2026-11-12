@@ -1,6 +1,10 @@
 # Qodo Agentic Review automation.
 # Reviews are advisory; human approval and repository branch rules remain the merge gates.
 
+[config]
+# Include autonomous/bot-authored PRs in Qodo review coverage.
+ignore_bot_pr = false
+
 [github_app]
 pr_commands = [
   "/agentic_review",
@@ -12,6 +16,6 @@ push_commands = [
   "/agentic_review",
 ]
 
-# Include autonomous/bot-authored PRs and draft PRs in the review coverage.
-ignore_bot_pr = false
+# Review draft PRs as well. With this enabled, marking a draft ready does not
+# trigger a second pr_commands run; opened/reopened and push events remain covered.
 feedback_on_draft_pr = true
