@@ -21,12 +21,12 @@ from typing import Any, Callable
 
 try:  # Support package and script-context imports.
     from .hive_evidence import EvidenceRetrievalRejected, retrieve_approved_evidence
-    from .hive_candidate import CandidateRejected, parse_candidate_json, validate_candidate
+    from .hive_candidate import CandidateRejected, parse_candidate_json, validate_candidate, validate_evidence_bundle
     from .hive_prompts import build_auditor_prompt, build_researcher_prompt
     from .hive_audit import concise_audit_verdict
 except ImportError:  # pragma: no cover - exercised by direct script execution.
     from hive_evidence import EvidenceRetrievalRejected, retrieve_approved_evidence
-    from hive_candidate import CandidateRejected, parse_candidate_json, validate_candidate
+    from hive_candidate import CandidateRejected, parse_candidate_json, validate_candidate, validate_evidence_bundle
     from hive_prompts import build_auditor_prompt, build_researcher_prompt
     from hive_audit import concise_audit_verdict
 
@@ -85,6 +85,7 @@ def prepare_validated_research_task(
     extractor: Callable = None,
     researcher: Callable | None = None,
     research_context: dict[str, Any] | None = None,
+    evidence_bundle: list[dict[str, Any]] | None = None,
     today: date | None = None,
 ) -> OrchestrationResult:
     """Run the mandatory pre-auditor research sequence and return validated artifacts.
@@ -94,22 +95,31 @@ def prepare_validated_research_task(
     """
     variant_id, make, model = _reserved_identity(reserved_task)
 
-    retrieval_args = {"variant_id": variant_id, "today": today}
-    if config_path is not None:
-        retrieval_args["config_path"] = config_path
-    if config is not None:
-        retrieval_args["config"] = config
-    if fetcher is not None:
-        retrieval_args["fetcher"] = fetcher
-    if extractor is not None:
-        retrieval_args["extractor"] = extractor
-    try:
-        evidence = retrieve_approved_evidence(**retrieval_args)
-    except Exception as exc:
-        raise OrchestrationRejected(
-            "source retrieval or policy check failed closed",
-            code="retrieval_unavailable",
-        ) from exc
+    if evidence_bundle is not None:
+        try:
+            evidence = validate_evidence_bundle(evidence_bundle)
+        except CandidateRejected as exc:
+            raise OrchestrationRejected(
+                "preflight evidence bundle failed deterministic bounds",
+                code="retrieval_unavailable",
+            ) from exc
+    else:
+        retrieval_args = {"variant_id": variant_id, "today": today}
+        if config_path is not None:
+            retrieval_args["config_path"] = config_path
+        if config is not None:
+            retrieval_args["config"] = config
+        if fetcher is not None:
+            retrieval_args["fetcher"] = fetcher
+        if extractor is not None:
+            retrieval_args["extractor"] = extractor
+        try:
+            evidence = retrieve_approved_evidence(**retrieval_args)
+        except Exception as exc:
+            raise OrchestrationRejected(
+                "source retrieval or policy check failed closed",
+                code="retrieval_unavailable",
+            ) from exc
 
     if not evidence:
         raise OrchestrationRejected("no bounded evidence was produced")
@@ -248,6 +258,7 @@ def run_hive_research_and_audit(
     fetcher: Callable | None = None,
     extractor: Callable | None = None,
     research_context: dict[str, Any] | None = None,
+    evidence_bundle: list[dict[str, Any]] | None = None,
     today: date | None = None,
 ) -> tuple[OrchestrationResult, list[dict[str, str]]]:
     """Run retrieval, researcher, deterministic gate, then two independent audits."""
@@ -260,6 +271,7 @@ def run_hive_research_and_audit(
         extractor=extractor,
         researcher=researcher,
         research_context=research_context,
+        evidence_bundle=evidence_bundle,
         today=today,
     )
     audits = audit_validated_research_task(
