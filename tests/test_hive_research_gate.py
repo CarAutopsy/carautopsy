@@ -137,7 +137,7 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
             (sandbox / "tasks").mkdir()
             queue = sandbox / "tasks" / "queue.json"
             queue.write_text(
-                json.dumps([{"variant_id": "fixture-vehicle", "make": "Fixture", "model": "Vehicle"}]),
+                "{ malformed queue JSON",
                 encoding="utf-8",
             )
             provider_marker = sandbox / "provider-called.marker"
@@ -152,6 +152,17 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
             self.assertNotIn("HIVE_RESEARCH_PAUSED", result.stdout + result.stderr)
             self.assertFalse(provider_marker.exists(), "full TCO mode must not dispatch research providers")
             self.assertEqual(hashlib.sha256(queue.read_bytes()).hexdigest(), before)
+
+    def test_full_tco_mode_does_not_parse_research_queue(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sandbox = Path(directory)
+            (sandbox / "tasks").mkdir()
+            queue = sandbox / "tasks" / "queue.json"
+            queue.write_text("{ malformed queue JSON", encoding="utf-8")
+            env = self._sandbox(sandbox, {"HIVE_TCO_ROUTE_PROBE": "1"})
+            result = self._run_pipeline(sandbox, [], env)
+            self.assertIn("TCO_ROUTE_REACHED", result.stderr)
+            self.assertNotIn("JSONDecodeError", result.stderr)
 
     def test_gate_ordering_remains_a_secondary_static_guard(self):
         source = SCRIPT.read_text(encoding="utf-8")
