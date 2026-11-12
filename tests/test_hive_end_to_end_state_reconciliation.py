@@ -55,8 +55,9 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
         templates = home / "templates"
         hooks.mkdir(parents=True, exist_ok=True)
         templates.mkdir(parents=True, exist_ok=True)
-        return {
-            **os.environ,
+        env = {key: value for key, value in os.environ.items()
+               if not key.startswith("GIT_")}
+        env.update({
             "HOME": str(home),
             "XDG_CONFIG_HOME": str(home / "xdg"),
             "GIT_CONFIG_NOSYSTEM": "1",
@@ -65,7 +66,8 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
             "GIT_CONFIG_COUNT": "1",
             "GIT_CONFIG_KEY_0": "core.hooksPath",
             "GIT_CONFIG_VALUE_0": str(hooks),
-        }
+        })
+        return env
 
     def sh(self, *args, cwd, env):
         return subprocess.run(
@@ -76,8 +78,8 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
     def write_ledger(self, repo, queue, failed):
         tasks = repo / "tasks"
         tasks.mkdir(exist_ok=True)
-        (tasks / "queue.json").write_text(json.dumps(queue, indent=2) + "\\n", encoding="utf-8")
-        (tasks / "failed.json").write_text(json.dumps(failed, indent=2) + "\\n", encoding="utf-8")
+        (tasks / "queue.json").write_text(json.dumps(queue, indent=2) + "\n", encoding="utf-8")
+        (tasks / "failed.json").write_text(json.dumps(failed, indent=2) + "\n", encoding="utf-8")
 
     def test_fresh_process_adopts_newer_standalone_queue_and_failed_ledger(self):
         with tempfile.TemporaryDirectory() as directory:
