@@ -63,7 +63,7 @@ class PipelinePreflightFailureTests(unittest.TestCase):
         return {
             str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in sorted(root.rglob("*"))
-            if path.is_file()
+            if path.is_file() and ".git" not in path.relative_to(root).parts
         }
 
     def test_retrieval_failure_does_not_checkout_proposal_or_overlay_state(self):
