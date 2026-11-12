@@ -160,10 +160,12 @@ if "--provider-smoke-test" in sys.argv:
 
 RESEARCH_ONLY = "--research-only" in sys.argv
 
-# Fail closed until issue #37 supplies verified retrieval and issue #44 binds
-# retrieved evidence into the researcher/auditor contract. Smoke tests and the
-# full TCO route intentionally bypass this research-only safety gate.
+# Runtime orchestration is wired but remains deliberately unreachable until
+# issue #37 acceptance, issue #47 independent review, and explicit owner approval.
+# Smoke tests and the full TCO route intentionally bypass this research-only gate.
 VERIFIED_RETRIEVAL_AVAILABLE = False
+# A single research PR may contain a small batch; never let one run fan out.
+RESEARCH_BATCH_SIZE = bounded_batch_size(os.getenv("HIVE_RESEARCH_BATCH_SIZE"), default=3, maximum=5)
 HIVE_SOURCE_POLICY = None
 if RESEARCH_ONLY:
     try:
@@ -197,9 +199,6 @@ research_failures_this_run = 0
 MAX_AUDIT_ATTEMPTS = 3
 MAX_RESEARCH_ATTEMPTS = 3
 MAX_VERDICT_CHARS = 240
-# A single research PR may contain a small batch; never let one run fan out.
-RESEARCH_BATCH_SIZE = bounded_batch_size(os.getenv("HIVE_RESEARCH_BATCH_SIZE"), default=3, maximum=5)
-
 def curate_one(attempted_variant_ids=None):
     """Research and independently audit at most one not-yet-attempted batch variant."""
     global audit_failures_this_run, research_failures_this_run
