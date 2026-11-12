@@ -13,10 +13,10 @@ VALID_CANDIDATE = {
     "identity": {"make": "Synthetic", "model": "Model X"},
     "performance": {"power_w": 110000},
     "provenance": {
-        "sources": [{"source_id": "oem-1", "url": "https://oem.example/specs/model.html"}],
+        "sources": [{"source_id": "d91fac58588248c48d775c95", "url": "https://oem.example/specs/model.html"}],
         "claim_evidence": [{
             "claim_path": "performance.power_w",
-            "source_id": "oem-1",
+            "source_id": "d91fac58588248c48d775c95",
             "locator": "document",
             "quote": "Official technical specification.",
         }],
