@@ -131,13 +131,27 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
             self.assertNotIn("HIVE_RESEARCH_PAUSED", result.stdout + result.stderr)
             self.assertNotEqual(result.returncode, 2)
 
-    def test_full_tco_route_bypasses_research_pause(self):
+    def test_full_tco_route_bypasses_research_pause_without_dispatching_queue(self):
         with tempfile.TemporaryDirectory() as directory:
             sandbox = Path(directory)
-            env = self._sandbox(sandbox, {"HIVE_TCO_ROUTE_PROBE": "1"})
+            (sandbox / "tasks").mkdir()
+            queue = sandbox / "tasks" / "queue.json"
+            queue.write_text(
+                json.dumps([{"variant_id": "fixture-vehicle", "make": "Fixture", "model": "Vehicle"}]),
+                encoding="utf-8",
+            )
+            provider_marker = sandbox / "provider-called.marker"
+            env = self._sandbox(sandbox, {
+                "HIVE_TCO_ROUTE_PROBE": "1",
+                "QWEN_API_KEY": "test-key-not-a-real-secret",
+                "HIVE_PROVIDER_CALL_MARKER": str(provider_marker),
+            })
+            before = hashlib.sha256(queue.read_bytes()).hexdigest()
             result = self._run_pipeline(sandbox, [], env)
             self.assertIn("TCO_ROUTE_REACHED", result.stderr)
             self.assertNotIn("HIVE_RESEARCH_PAUSED", result.stdout + result.stderr)
+            self.assertFalse(provider_marker.exists(), "full TCO mode must not dispatch research providers")
+            self.assertEqual(hashlib.sha256(queue.read_bytes()).hexdigest(), before)
 
     def test_gate_ordering_remains_a_secondary_static_guard(self):
         source = SCRIPT.read_text(encoding="utf-8")
