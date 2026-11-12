@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from urllib.parse import urlsplit
 from datetime import date
 from pathlib import Path
 from typing import Callable
@@ -60,6 +61,13 @@ def retrieve_approved_evidence(
             variant_ids = source.get("variant_ids")
             if not isinstance(variant_ids, list) or not variant_ids:
                 raise EvidenceRetrievalRejected("approved source entry has no variant scope")
+            try:
+                source_host = (urlsplit(source["url"]).hostname or "").rstrip(".").lower()
+            except ValueError as exc:
+                raise EvidenceRetrievalRejected("approved source URL is malformed") from exc
+            entry_host = entry.get("host")
+            if not isinstance(entry_host, str) or source_host != entry_host.rstrip(".").lower():
+                raise EvidenceRetrievalRejected("approved source URL host does not match its policy entry")
             if variant_id in variant_ids:
                 seeded_sources.append((entry, source["url"]))
     if not seeded_sources:
