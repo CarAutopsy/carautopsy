@@ -4,21 +4,14 @@ MAX_VERDICT_CHARS = 240
 
 
 def concise_audit_verdict(raw):
-    """Accept an unambiguous standalone PASS or explicit FAIL: verdict."""
+    """Accept only one exact PASS token or one explicit single-line FAIL reason."""
     if not isinstance(raw, str):
         return "INVALID_AUDIT_RESPONSE"
-    passes = []
-    failures = []
-    for line in raw.splitlines():
-        line = line.strip()
-        if line.upper() in {"PASS", "PASS."}:
-            passes.append("PASS")
-        elif line.upper().startswith("FAIL:"):
-            failures.append(" ".join(line.split())[:MAX_VERDICT_CHARS])
-    if passes and failures:
-        return "INVALID_AUDIT_RESPONSE"
-    if len(passes) == 1:
+    response = raw.strip()
+    if response == "PASS":
         return "PASS"
-    if failures:
-        return failures[0]
+    if "\n" in response or "\r" in response:
+        return "INVALID_AUDIT_RESPONSE"
+    if response.startswith("FAIL: ") and response[6:].strip():
+        return " ".join(response.split())[:MAX_VERDICT_CHARS]
     return "INVALID_AUDIT_RESPONSE"
