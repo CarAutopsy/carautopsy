@@ -235,7 +235,7 @@ class HiveRestartInterruptionProofTests(unittest.TestCase):
             repo.mkdir()
             self.sh("git", "init", "--bare", str(origin), cwd=sandbox)
             self.sh("git", "init", "-b", "main", str(repo), cwd=sandbox)
-            self.sh("git", "config", "user.name", "Hive Retry Test", cwd=repo, sandbox=sandbox)
+            self.sh("git", "config", "user.name", "Hive Retry Test", cwd=repo)
             self.sh("git", "config", "user.email", "hive-retry@example.invalid", cwd=repo)
 
             (repo / "tasks").mkdir()
