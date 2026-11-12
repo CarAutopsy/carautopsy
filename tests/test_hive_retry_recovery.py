@@ -118,6 +118,17 @@ def synthetic_post(url, **kwargs):
         if os.environ.get("HIVE_TEST_PROVIDER_MODE") == "fail":
             trace("qwen-research-transport-failure")
             raise requests.exceptions.Timeout("synthetic timeout")
+        # Recovery must consume the persisted failed ledger, not stale files
+        # left in the shared working tree by the first subprocess.
+        failed_path = Path.cwd() / "tasks" / "failed.json"
+        recovered_failures = json.loads(failed_path.read_text(encoding="utf-8"))
+        assert len(recovered_failures) == 1, "hive/state failure ledger was not restored before retry"
+        prior_outcome = recovered_failures[0]["outcome"]
+        assert prior_outcome["code"] == "provider_transport_failure"
+        prior_counters = prior_outcome["counters"]
+        assert prior_counters["provider_attempts"] == 1
+        assert prior_counters["research_attempts"] == 1
+        assert prior_counters["attempts"] == 0
         trace("qwen-research-success")
         return SyntheticResponse(json.dumps(CANDIDATE))
     if "api.deepseek.com" in url:
@@ -260,6 +271,10 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             self.assertEqual(counters["research_attempts"], 1)
             self.assertEqual(counters["attempts"], 0)
             self.assertNotIn("synthetic timeout", json.dumps(state_failed), "raw provider errors must not enter the ledger")
+
+            # Remove the local copy deliberately. The second process must restore
+            # the failed outcome from the persisted hive/state branch before retrying.
+            (repo / "tasks" / "failed.json").write_text("[]\\n", encoding="utf-8")
 
             # Second process: a new process reloads hive/state, retries the same
             # reserved identity, passes the real candidate gate and both auditors.
