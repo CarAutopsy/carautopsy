@@ -5,18 +5,19 @@
 
 ## Immediate
 
-1. Review and merge the documentation-only roadmap reconciliation PR.
-2. Reconcile issue #44 with the prompt/candidate helper implementation already merged in PR #49; retain only genuinely outstanding acceptance work.
-3. Keep issue #37 open as the primary runtime integration and source-provenance workstream.
-4. Keep issue #47 open until a genuinely independent human/external audit is recorded against the exact reviewed SHA.
+1. Review and merge documentation-only roadmap PR #56.
+2. Review draft runtime-integration PR #57; CodeRabbit manual review was requested, but the free review allowance is currently rate-limited.
+3. Complete end-to-end tests for proposal/state reconciliation, retries, restarts, and zero durable mutation on retrieval/policy failures.
+4. Keep issue #37 open until integration/security acceptance is complete.
+5. Keep issue #47 open until a genuinely independent human/external audit is recorded against the exact reviewed SHA.
 
-## Next implementation increment
+## Current implementation in PR #57
 
-1. Inspect the actual exported APIs and side effects in `scripts/hive_prompts.py`, `scripts/hive_candidate.py`, `scripts/hive_evidence.py`, and `scripts/hive_source_policy.py`.
-2. Create one testable orchestration seam: reserved task → owner-approved evidence retrieval → researcher prompt → candidate parse → deterministic validation → validated candidate/evidence pair.
-3. Wire the seam before all auditor calls in `scripts/autonomous_pipeline.py`.
-4. Route retries, restarts, existing proposals, and state branches through the same gate.
-5. Add tests proving rejected candidates never reach auditors and failure/pause paths cause zero provider calls and zero durable state mutation.
+- Existing retrieval, prompt, candidate, and audit helpers are wired into one research path.
+- Candidate schema, reserved identity, provenance, and claim evidence validation run before either auditor.
+- Both auditors receive the same prompt and must return exact standalone PASS tokens.
+- Policy coverage and evidence retrieval are preflighted across main, Hive state, and open proposal queue snapshots before proposal checkout or state overlay.
+- The readiness flag remains false and the approved source manifest remains empty.
 
 ## Required verification
 
