@@ -13,7 +13,7 @@ This is the operational roadmap for the Hive workstream. GitHub issues remain th
 - PR #50 (DNS-pinned HTTPS transport) is merged.
 - PR #52 (source policy, robots checks, bounded extraction, and claim-level evidence bindings) is merged to `main`.
 - PR #53 (zero-bypass integration contract) is merged into `feat/hive-source-policy-extraction`, not directly into `main`. PR #56 brings the contract onto `main` as documentation.
-- PR #57 is a draft runtime-integration PR. Its current head `e3f4cf86d735d6f707ea88be68f79c356dd8e15a` wires the orchestration seam behind the hard research stop, preflights evidence before proposal/state changes, and has passing CI (265 tests, catalog validation, compilation, Repository Audit). It is not merged or activation-ready.
+- PR #57 is a draft runtime-integration PR. Its current head `96a624ebcc422626fdc6d2600bdd86a3cc4d77b9` wires the orchestration seam behind the hard research stop, preflights evidence before proposal/state changes, and has passing CI (268 tests, catalog validation, compilation, Repository Audit). Full TCO mode remains a catalog-only calculation and leaves the Hive queue untouched. It is not merged or activation-ready.
 - `data-connectors/approved-source-hosts.json` remains empty.
 - `VERIFIED_RETRIEVAL_AVAILABLE` remains `False`; `HIVE_RESEARCH_PAUSED` remains active.
 - No live OEM retrieval, paid provider calls, or new vehicle research dispatch is authorized.
@@ -53,6 +53,7 @@ Issue #45 (no-retrieval safety stop) is closed. Its zero-spend/no-state-mutation
 - [x] Wire retrieval → researcher prompt → bounded JSON parse → deterministic candidate validation → two independent auditors.
 - [x] Build one auditor prompt from the validated candidate/evidence and send identical inputs to two distinct vendors.
 - [x] Require an exact standalone `PASS` token.
+- [x] Keep full TCO calculation isolated from research dispatch; the queue is untouched in full mode.
 - [x] Preflight and validate evidence for the upcoming main/state/proposal queue snapshots before proposal checkout or state overlay.
 - [ ] Prove all retry, restart, existing-proposal, and state-branch paths cannot bypass the same gate.
 - [ ] Complete end-to-end failure-path tests and merge the reviewed implementation.
