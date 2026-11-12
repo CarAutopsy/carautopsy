@@ -8,7 +8,7 @@ from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base, fetch_state, STATE_REF
 from hive_research_gate import ResearchPaused, require_verified_retrieval
 from hive_orchestration import OrchestrationRejected, collect_reserved_batch, run_hive_research_and_audit
-from hive_source_policy import SourcePolicyDenied, load_policy
+from hive_source_policy import SourcePolicyDenied, load_policy, require_variant_coverage
 from hive_evidence import retrieve_approved_evidence
 from hive_candidate import validate_evidence_bundle
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
@@ -220,7 +220,7 @@ def curate_one(attempted_variant_ids=None):
                 if (ev.get("identity") or {}).get("powertrain"):
                     skipped += 1
                     tasks = tasks[1:]
-                    qp.write_text(json.dumps(tasks, indent=2) + "\\n", encoding="utf-8")
+                    qp.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
                     return True, f"skipped existing valid variant {vid}"
             except Exception:
                 pass  # malformed -> fall through and re-curate it
@@ -438,18 +438,38 @@ if state_available:
         capture_output=True, text=True, check=True,
     ).stdout)
 main_queue_path = ROOT / "tasks" / "queue.json"
-main_queue = json.loads(main_queue_path.read_text(encoding="utf-8")) if main_queue_path.exists() else []
+main_queue = (json.loads(main_queue_path.read_text(encoding="utf-8")) if main_queue_path.exists() else []) if RESEARCH_ONLY else []
 
 if RESEARCH_ONLY:
-    queue_snapshots = [main_queue, state_queue]
-    if open_research_pr:
-        queue_snapshots.append(proposal_queue)
     try:
-        upcoming_tasks = collect_reserved_batch(queue_snapshots, RESEARCH_BATCH_SIZE)
-    except ValueError as exc:
-        raise ResearchPaused(str(exc)) from exc
-    upcoming_ids = [item["variant_id"] for item in upcoming_tasks]
-    try:
+        queue_snapshots = [main_queue, state_queue]
+        if open_research_pr:
+            queue_snapshots.append(proposal_queue)
+
+        # Curation skips catalog records that already have a valid powertrain.
+        # Exclude those variants before evidence preflight so one stale queue
+        # item cannot block later tasks that actually need research.
+        skippable_variant_ids = set()
+        for snapshot in queue_snapshots:
+            for queued_task in snapshot:
+                variant_id = queued_task.get("variant_id") if isinstance(queued_task, dict) else None
+                if not isinstance(variant_id, str) or not variant_id.strip():
+                    continue
+                existing = ROOT / "catalog" / "variants" / f"{variant_id}.json"
+                if existing.exists():
+                    try:
+                        record = load(existing)
+                        if (record.get("identity") or {}).get("powertrain"):
+                            skippable_variant_ids.add(variant_id)
+                    except Exception:
+                        pass  # malformed catalog records still require evidence
+
+        upcoming_tasks = collect_reserved_batch(
+            queue_snapshots,
+            RESEARCH_BATCH_SIZE,
+            skip_variant_ids=skippable_variant_ids,
+        )
+        upcoming_ids = [item["variant_id"] for item in upcoming_tasks]
         require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)
         for variant_id in upcoming_ids:
             evidence = retrieve_approved_evidence(
@@ -459,11 +479,17 @@ if RESEARCH_ONLY:
             if not evidence:
                 raise SourcePolicyDenied("approved source retrieval produced no bounded evidence")
             HIVE_PREFETCHED_EVIDENCE[variant_id] = validate_evidence_bundle(evidence)
-    except Exception as exc:
-        raise ResearchPaused(
-            "owner-approved policy, robots, retrieval, or extraction preflight failed; "
-            "no proposal checkout or Hive state overlay was performed"
-        ) from exc
+    except ResearchPaused as exc:
+        print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
+        sys.exit(exc.exit_code)
+    except Exception:
+        print(
+            "HIVE_RESEARCH_PAUSED: owner-approved policy, robots, retrieval, "
+            "or extraction preflight failed; no proposal checkout or Hive state "
+            "overlay was performed",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
 # Only after every possible next-batch task has bounded evidence do we check
 # out the pending proposal or overlay the standalone Hive state branch.
