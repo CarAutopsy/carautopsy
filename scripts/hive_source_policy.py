@@ -263,3 +263,57 @@ def check_source_access(
     if permitted is not True:
         raise SourcePolicyDenied("robots.txt disallows this exact source URL")
     return True
+
+
+def require_variant_coverage(config: dict, variant_ids: list[str], today: date | None = None) -> None:
+    """Preflight owner policy coverage before any proposal checkout or state access."""
+    if not isinstance(config, dict):
+        raise SourcePolicyDenied("source policy configuration is invalid")
+    hosts = config.get("approved_hosts")
+    entries = config.get("source_policies")
+    if not isinstance(hosts, list) or not hosts or not isinstance(entries, list) or not entries:
+        raise SourcePolicyDenied("owner-approved source manifest is empty")
+    if not isinstance(variant_ids, list) or any(
+        not isinstance(value, str) or not value.strip() for value in variant_ids
+    ):
+        raise SourcePolicyDenied("reserved variant batch is invalid")
+    current_date = today or date.today()
+    covered: set[str] = set()
+    seen_hosts: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise SourcePolicyDenied("source policy entry is malformed")
+        host = entry.get("host")
+        if not isinstance(host, str) or host not in hosts:
+            raise SourcePolicyDenied("source policy entry host is not owner-approved")
+        if host not in seen_hosts:
+            _host_policy(config, host, current_date)
+            seen_hosts.add(host)
+        for source in entry.get("approved_urls", []):
+            if not isinstance(source, dict) or not isinstance(source.get("url"), str):
+                raise SourcePolicyDenied("approved source entry is malformed")
+            try:
+                parsed = urlsplit(source["url"])
+                port = parsed.port
+            except ValueError as exc:
+                raise SourcePolicyDenied("approved source URL is malformed") from exc
+            if (
+                parsed.scheme != "https"
+                or parsed.hostname != host
+                or parsed.username is not None
+                or parsed.password is not None
+                or port not in (None, 443)
+                or parsed.fragment
+            ):
+                raise SourcePolicyDenied("approved source URL does not match its exact HTTPS policy host")
+            scopes = source.get("variant_ids")
+            if not isinstance(scopes, list) or not scopes or any(
+                not isinstance(value, str) or not value.strip() for value in scopes
+            ):
+                raise SourcePolicyDenied("approved source URL requires explicit variant scope")
+            covered.update(scopes)
+    missing = sorted(set(variant_ids) - covered)
+    if missing:
+        raise SourcePolicyDenied(
+            "owner-approved source manifest does not cover the upcoming reserved batch"
+        )
