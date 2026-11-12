@@ -166,9 +166,30 @@ def clean_env():
             "PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "PYTHONUSERBASE",
             "GH_TOKEN", "GITHUB_TOKEN", "QWEN_API_KEY", "DEEPSEEK_API_KEY",
             "DEEPSEEK_API_CARAUTOPSY_KEY", "GEMINI_API_KEY",
+            "HIVE_KILL_AFTER_STATE_PUSH",
         }:
             env.pop(key, None)
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
+
+    # Keep global/system Git settings, templates, URL rewrites and hooks out
+    # of this local-only fixture. The same isolated environment is inherited
+    # by the pipeline and the test Git wrapper.
+    git_home = Path(tempfile.gettempdir()) / f"carautopsy-hive-git-home-{os.getpid()}"
+    git_home.mkdir(parents=True, exist_ok=True)
+    hooks_dir = git_home / "empty-hooks"
+    templates_dir = git_home / "empty-templates"
+    hooks_dir.mkdir(exist_ok=True)
+    templates_dir.mkdir(exist_ok=True)
+    env.update({
+        "HOME": str(git_home),
+        "XDG_CONFIG_HOME": str(git_home / "xdg"),
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_TEMPLATE_DIR": str(templates_dir),
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "core.hooksPath",
+        "GIT_CONFIG_VALUE_0": str(hooks_dir),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    })
     return env
 
 
