@@ -8,7 +8,7 @@ from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
 from hive_research_gate import ResearchPaused, require_verified_retrieval
 from hive_orchestration import OrchestrationRejected, run_hive_research_and_audit
-from hive_source_policy import SourcePolicyDenied, load_policy
+from hive_source_policy import SourcePolicyDenied, load_policy, require_variant_coverage
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
 ROOT = Path.cwd()
@@ -164,7 +164,6 @@ RESEARCH_ONLY = "--research-only" in sys.argv
 # retrieved evidence into the researcher/auditor contract. Smoke tests and the
 # full TCO route intentionally bypass this research-only safety gate.
 VERIFIED_RETRIEVAL_AVAILABLE = False
-
 HIVE_SOURCE_POLICY = None
 if RESEARCH_ONLY:
     try:
@@ -172,6 +171,13 @@ if RESEARCH_ONLY:
         HIVE_SOURCE_POLICY = load_policy()
         if not HIVE_SOURCE_POLICY.get("source_policies"):
             raise SourcePolicyDenied("owner-approved source policy entries are empty")
+        queue_path = ROOT / "tasks" / "queue.json"
+        queued_tasks = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
+        upcoming_ids = [
+            item.get("variant_id") for item in queued_tasks[:RESEARCH_BATCH_SIZE]
+            if isinstance(item, dict)
+        ]
+        require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)
     except (ResearchPaused, SourcePolicyDenied) as exc:
         print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
         sys.exit(2)
