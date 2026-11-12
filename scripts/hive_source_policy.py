@@ -86,12 +86,51 @@ def _host_policy(config: dict, host: str, today: date) -> dict:
     return item
 
 
+def _normalize_robots_octets(value: str) -> str:
+    """Decode percent-encoded unreserved ASCII octets; preserve reserved escapes."""
+    unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+
+    def replace(match: re.Match[str]) -> str:
+        octet = int(match.group(1), 16)
+        char = chr(octet)
+        return char if char in unreserved else f"%{octet:02X}"
+
+    return re.sub(r"%([0-9A-Fa-f]{2})", replace, value)
+
+
+def _robots_glob_matches(pattern: str, value: str, *, terminal: bool) -> bool:
+    """Match '*' with a linear greedy glob algorithm, never a backtracking regex."""
+    pattern_index = value_index = 0
+    last_star = -1
+    star_value_index = 0
+    while value_index < len(value):
+        if pattern_index < len(pattern) and pattern[pattern_index] != "*" and pattern[pattern_index] == value[value_index]:
+            pattern_index += 1
+            value_index += 1
+        elif pattern_index < len(pattern) and pattern[pattern_index] == "*":
+            last_star = pattern_index
+            pattern_index += 1
+            star_value_index = value_index
+        elif last_star >= 0:
+            star_value_index += 1
+            value_index = star_value_index
+            pattern_index = last_star + 1
+        else:
+            return False
+        if not terminal and pattern_index == len(pattern):
+            return True
+    while pattern_index < len(pattern) and pattern[pattern_index] == "*":
+        pattern_index += 1
+    return pattern_index == len(pattern)
+
+
 def _robots_can_fetch(text: str, user_agent: str, url: str) -> bool:
-    """Evaluate RFC 9309-style longest-match rules; malformed directives deny."""
+    """Evaluate bounded RFC 9309-style longest-match rules; malformed directives deny."""
     groups: list[tuple[list[str], list[tuple[str, str]]]] = []
     agents: list[str] = []
     rules: list[tuple[str, str]] = []
     saw_rule = False
+    directive_count = 0
 
     def finish_group() -> None:
         nonlocal agents, rules, saw_rule
@@ -100,15 +139,20 @@ def _robots_can_fetch(text: str, user_agent: str, url: str) -> bool:
         agents, rules, saw_rule = [], [], False
 
     for raw_line in text.splitlines():
+        if len(raw_line) > 2048:
+            raise SourcePolicyDenied("robots.txt contains an overlong directive")
         line = raw_line.split("#", 1)[0].strip()
         if not line:
             continue
+        directive_count += 1
+        if directive_count > 10_000:
+            raise SourcePolicyDenied("robots.txt contains too many directives")
         if ":" not in line:
             raise SourcePolicyDenied("robots.txt contains a malformed directive")
         key, value = (part.strip() for part in line.split(":", 1))
         key = key.lower()
         if key == "user-agent":
-            if not value or any(ch.isspace() for ch in value):
+            if not re.fullmatch(r"(?:\*|[A-Za-z_-]+)", value, flags=re.ASCII):
                 raise SourcePolicyDenied("robots.txt contains an invalid user-agent")
             if saw_rule:
                 finish_group()
@@ -118,15 +162,14 @@ def _robots_can_fetch(text: str, user_agent: str, url: str) -> bool:
                 raise SourcePolicyDenied("robots.txt rule appears before a user-agent group")
             if value and not value.startswith("/") and not value.startswith("*"):
                 raise SourcePolicyDenied("robots.txt contains an invalid path rule")
+            if len(value) > 2048:
+                raise SourcePolicyDenied("robots.txt contains an overlong path rule")
             rules.append((key, value))
             saw_rule = True
         elif key in ("sitemap", "crawl-delay", "request-rate", "host"):
-            # These directives do not grant or deny a path. Validate their presence,
-            # but do not use non-standard extensions to relax access decisions.
             if not value:
                 raise SourcePolicyDenied("robots.txt contains an empty extension directive")
         else:
-            # Unknown directives are ambiguous for this conservative crawler.
             raise SourcePolicyDenied("robots.txt contains an unsupported directive")
     finish_group()
     if not groups:
@@ -148,18 +191,17 @@ def _robots_can_fetch(text: str, user_agent: str, url: str) -> bool:
     rules_to_apply = selected_rules if matching_specificity >= 0 else wildcard_rules
 
     parsed = urlsplit(url)
-    path_query = parsed.path or "/"
+    path_query = _normalize_robots_octets(parsed.path or "/")
     if parsed.query:
-        path_query += "?" + parsed.query
+        path_query += "?" + _normalize_robots_octets(parsed.query)
     matches: list[tuple[int, str]] = []
-    for directive, pattern in rules_to_apply:
-        if not pattern:
+    for directive, raw_pattern in rules_to_apply:
+        if not raw_pattern:
             continue
-        terminal = pattern.endswith("$")
-        expression = re.escape(pattern[:-1] if terminal else pattern).replace(r"\*", ".*")
-        expression = "^" + expression + ("$" if terminal else "")
-        if re.search(expression, path_query):
-            specificity = len(pattern.rstrip("$").replace("*", ""))
+        terminal = raw_pattern.endswith("$")
+        pattern = _normalize_robots_octets(raw_pattern[:-1] if terminal else raw_pattern)
+        if _robots_glob_matches(pattern, path_query, terminal=terminal):
+            specificity = len(pattern.replace("*", "").encode("utf-8"))
             matches.append((specificity, directive))
     if not matches:
         return True
