@@ -420,15 +420,19 @@ elif RESEARCH_ONLY:
 
 batch_messages = []
 attempted_variant_ids = set()
-for _ in range(RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1):
-    queue_path = ROOT / "tasks" / "queue.json"
-    queued = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
-    if not queued:
-        break
-    did_work, batch_msg = curate_one(attempted_variant_ids if RESEARCH_ONLY else None)
-    if not did_work:
-        break
-    batch_messages.append(batch_msg)
+try:
+    for _ in range(RESEARCH_BATCH_SIZE if RESEARCH_ONLY else 1):
+        queue_path = ROOT / "tasks" / "queue.json"
+        queued = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
+        if not queued:
+            break
+        did_work, batch_msg = curate_one(attempted_variant_ids if RESEARCH_ONLY else None)
+        if not did_work:
+            break
+        batch_messages.append(batch_msg)
+except ResearchPaused as exc:
+    print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
+    sys.exit(exc.exit_code)
 
 curated = bool(batch_messages)
 msg = "; ".join(batch_messages) if batch_messages else "queue empty"
