@@ -18,11 +18,11 @@
 
 - Open issues: #37 (retrieval/provenance/runtime integration), #44 (candidate gate/prompt integration acceptance), #47 (independent third-party audit).
 - Draft PR #57 wires the orchestration path through retrieval, researcher prompt, deterministic candidate gate, and two independent auditors. It preflights and caches evidence before proposal checkout/state overlay.
-- PR #57 head `e3f4cf86d735d6f707ea88be68f79c356dd8e15a`: 265 Python tests pass; catalog validation, module compilation, and Repository Audit pass. The audit reports one existing warning for missing `apps/web/package.json` and zero errors.
+- PR #57 head `96a624ebcc422626fdc6d2600bdd86a3cc4d77b9`: 268 Python tests pass; catalog validation, module compilation, and Repository Audit pass. The audit reports one existing warning for missing `apps/web/package.json` and zero errors.
 - This is not activation-ready: full retry/restart/state-reconciliation failure-path proof and independent external review remain outstanding.
 - `data-connectors/approved-source-hosts.json` has an empty approved-host and source-policy list.
 - `VERIFIED_RETRIEVAL_AVAILABLE = False`; `HIVE_RESEARCH_PAUSED` remains active.
-- No live OEM retrieval, paid provider calls, or vehicle research dispatch is authorized.
+- Full TCO mode calculates from the existing catalog and leaves the Hive research queue untouched; provider smoke-test routing remains separate.\n- No live OEM retrieval, paid provider calls, or vehicle research dispatch is authorized.
 - The vehicle queue has 23 variants; failed candidate/audit records remain in `tasks/failed.json`. Do not automatically retry or promote them while paused.
 
 ## Immediate engineering sequence
