@@ -142,6 +142,7 @@ class PipelineRobotsDenialTests(unittest.TestCase):
                     self.sh("git", "config", "user.name", "Hive Test", cwd=repo)
                     self.sh("git", "config", "user.email", "hive-test@example.invalid", cwd=repo)
                     self.write_queue(repo, "main-task" if scenario == "main-task" else None)
+                    (repo / "tasks" / "fixture-branch.txt").write_text("main\n", encoding="utf-8")
                     self.sh("git", "add", "tasks", cwd=repo)
                     self.sh("git", "commit", "-m", "seed main queue", cwd=repo)
                     self.sh("git", "remote", "add", "origin", str(origin), cwd=repo)
@@ -151,6 +152,7 @@ class PipelineRobotsDenialTests(unittest.TestCase):
                     # checkout or state overlay as observable mutations.
                     self.sh("git", "checkout", "-b", "hive/research-fixture", cwd=repo)
                     self.write_queue(repo, "proposal-task" if scenario == "proposal-task" else None)
+                    (repo / "tasks" / "fixture-branch.txt").write_text("proposal\n", encoding="utf-8")
                     self.sh("git", "add", "tasks", cwd=repo)
                     self.sh("git", "commit", "-m", "seed proposal queue", cwd=repo)
                     self.sh("git", "push", "origin", "hive/research-fixture", cwd=repo)
@@ -158,6 +160,7 @@ class PipelineRobotsDenialTests(unittest.TestCase):
                     self.sh("git", "checkout", "main", cwd=repo)
                     self.sh("git", "checkout", "-b", "hive/state", cwd=repo)
                     self.write_queue(repo, "state-task" if scenario == "state-task" else None)
+                    (repo / "tasks" / "fixture-branch.txt").write_text("state\n", encoding="utf-8")
                     self.sh("git", "add", "tasks", cwd=repo)
                     self.sh("git", "commit", "-m", "seed state queue", cwd=repo)
                     self.sh("git", "push", "origin", "hive/state", cwd=repo)
