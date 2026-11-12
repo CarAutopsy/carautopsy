@@ -109,3 +109,18 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_source_url_host_must_match_its_policy_entry(self):
+        other_host_url = "https://b.example/specs/model.html"
+        mismatched_entry = dict(CONFIG["source_policies"][0], approved_urls=[{
+            "url": other_host_url, "variant_ids": ["synthetic.model-x"]
+        }])
+        fetcher = Mock()
+        with self.assertRaisesRegex(EvidenceRetrievalRejected, "host does not match"):
+            retrieve_approved_evidence(
+                variant_id="synthetic.model-x",
+                config=dict(CONFIG, source_policies=[mismatched_entry]),
+                fetcher=fetcher,
+            )
+        fetcher.assert_not_called()
