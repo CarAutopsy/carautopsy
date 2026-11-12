@@ -335,7 +335,7 @@ class HiveCandidateGateTests(unittest.TestCase):
                     parse_candidate_json(raw)
 
 
-def test_real_world_fuel_consumption_extension_requires_evidence(self):
+    def test_real_world_fuel_consumption_extension_requires_evidence(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["extensions"]["fuel_consumption_l_100km"] = {"real_world": 7.2}
         with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
