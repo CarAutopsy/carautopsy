@@ -8,6 +8,7 @@ the durable state, recover the same task, and complete it exactly once.
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
