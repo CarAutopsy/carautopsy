@@ -161,10 +161,10 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             "PYTHONPATH": os.pathsep.join((str(sandbox), str(ROOT / "scripts"))),
             "HIVE_TEST_PROVIDER_MODE": mode,
             "HIVE_RETRY_TRACE": str(trace),
-            "GEMINI_API_KEY": "synthetic-google-key",
         })
         if mode == "recover":
             env["DEEPSEEK_API_KEY"] = "synthetic-deepseek-key"
+            env["GEMINI_API_KEY"] = "synthetic-google-key"
             env["QWEN_API_KEY"] = "synthetic-qwen-key"
         else:
             env["QWEN_API_KEY"] = "synthetic-qwen-key"
