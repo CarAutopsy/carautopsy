@@ -5,10 +5,11 @@ import yaml, requests
 from provider_retry import generate_content_with_fallback
 from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
-from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
+from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base, fetch_state, STATE_REF
 from hive_research_gate import ResearchPaused, require_verified_retrieval
 from hive_orchestration import OrchestrationRejected, run_hive_research_and_audit
-from hive_source_policy import SourcePolicyDenied, load_policy, require_variant_coverage
+from hive_source_policy import SourcePolicyDenied, load_policy
+from hive_evidence import retrieve_approved_evidence
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
 ROOT = Path.cwd()
@@ -167,19 +168,13 @@ VERIFIED_RETRIEVAL_AVAILABLE = False
 # A single research PR may contain a small batch; never let one run fan out.
 RESEARCH_BATCH_SIZE = bounded_batch_size(os.getenv("HIVE_RESEARCH_BATCH_SIZE"), default=3, maximum=5)
 HIVE_SOURCE_POLICY = None
+HIVE_PREFETCHED_EVIDENCE = {}
 if RESEARCH_ONLY:
     try:
         require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)
         HIVE_SOURCE_POLICY = load_policy()
         if not HIVE_SOURCE_POLICY.get("source_policies"):
             raise SourcePolicyDenied("owner-approved source policy entries are empty")
-        queue_path = ROOT / "tasks" / "queue.json"
-        queued_tasks = json.loads(queue_path.read_text(encoding="utf-8")) if queue_path.exists() else []
-        upcoming_ids = [
-            item.get("variant_id") for item in queued_tasks[:RESEARCH_BATCH_SIZE]
-            if isinstance(item, dict)
-        ]
-        require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)
     except (ResearchPaused, SourcePolicyDenied) as exc:
         print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
         sys.exit(2)
@@ -224,7 +219,8 @@ def curate_one(attempted_variant_ids=None):
                 if (ev.get("identity") or {}).get("powertrain"):
                     skipped += 1
                     tasks = tasks[1:]
-                    continue
+                    qp.write_text(json.dumps(tasks, indent=2) + "\\n", encoding="utf-8")
+                    return True, f"skipped existing valid variant {vid}"
             except Exception:
                 pass  # malformed -> fall through and re-curate it
         
@@ -254,6 +250,12 @@ def curate_one(attempted_variant_ids=None):
         research_context = {"previous_audit_categories": prior_categories}
         attempted_variant_ids.add(vid)
 
+        evidence_bundle = HIVE_PREFETCHED_EVIDENCE.get(vid)
+        if evidence_bundle is None:
+            raise ResearchPaused(
+                f"no preflight evidence bundle exists for reserved variant {vid}; "
+                "stopping before researcher/auditor calls"
+            )
         schema = json.loads((ROOT / "schemas" / "vehicle-variant.schema.json").read_text(encoding="utf-8"))
         try:
             orchestration, audit_results = run_hive_research_and_audit(
@@ -263,6 +265,7 @@ def curate_one(attempted_variant_ids=None):
                 researcher=call_any,
                 auditor=call_vendor,
                 research_context=research_context,
+                evidence_bundle=evidence_bundle,
             )
         except OrchestrationRejected as exc:
             if exc.code == "retrieval_unavailable":
