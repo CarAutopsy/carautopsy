@@ -10,7 +10,7 @@ def concise_audit_verdict(raw):
     response = raw.strip()
     if response == "PASS":
         return "PASS"
-    if "\n" in response or "\r" in response:
+    if len(response.splitlines()) != 1:
         return "INVALID_AUDIT_RESPONSE"
     if response.startswith("FAIL: ") and response[6:].strip():
         return " ".join(response.split())[:MAX_VERDICT_CHARS]
