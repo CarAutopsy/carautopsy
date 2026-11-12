@@ -9,6 +9,7 @@ from tests.test_hive_orchestration import CONFIG, SCHEMA, TASK, extractor, fetch
 
 
 VALID_CANDIDATE = {
+    "variant_id": "synthetic.model-x",
     "identity": {"make": "Synthetic", "model": "Model X"},
     "performance": {"power_w": 110000},
     "provenance": {
