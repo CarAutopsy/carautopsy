@@ -127,6 +127,16 @@ def _tip(root):
     result = _git(root, ["rev-parse", "--verify", "-q", STATE_REF], check=False)
     return result.stdout.decode().strip() if result.returncode == 0 else None
 
+def fetched_state_tip(root):
+    """Return the raw fetched state ref without asserting reconciliation.
+
+    This read-only observation must not be used as a proposal baseline or as
+    authorization to save state. Use proposal_state_base() for an acknowledged
+    baseline; save_state() independently enforces the acknowledgment gate.
+    """
+    return _tip(root)
+
+
 
 def _tip_files(root, tip):
     """Read the two ledger blobs from a specific Hive state commit."""
