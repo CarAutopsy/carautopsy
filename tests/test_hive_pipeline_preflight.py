@@ -36,6 +36,19 @@ def fail_closed_retrieval(*, variant_id, config):
         Path(marker).write_text(variant_id, encoding="utf-8")
     raise RuntimeError("synthetic retrieval failure")
 hive_evidence.retrieve_approved_evidence = fail_closed_retrieval
+
+# Make an accidental provider call observable even though only a synthetic key
+# is supplied to the subprocess.
+try:
+    import requests
+    def forbidden_provider_call(*args, **kwargs):
+        marker = os.environ.get("HIVE_PROVIDER_CALL_MARKER")
+        if marker:
+            Path(marker).write_text("called", encoding="utf-8")
+        raise AssertionError("provider call reached in preflight failure test")
+    requests.post = forbidden_provider_call
+except ImportError:
+    pass
 """
 
 
