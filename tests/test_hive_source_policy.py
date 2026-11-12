@@ -173,3 +173,29 @@ class SourcePolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_versioned_or_non_ascii_user_agent_token_is_rejected(self):
+        for token in ("CarAutopsy-Research-Bot/1.0", "CarAutopsy!", "CårAutopsy"):
+            with self.subTest(token=token):
+                with self.assertRaisesRegex(SourcePolicyDenied, "invalid user-agent"):
+                    _robots_can_fetch(f"User-agent: {token}\\nDisallow: /", USER_AGENT, URL)
+
+    def test_percent_encoded_unreserved_octets_are_normalized_before_matching(self):
+        text = "User-agent: *\\nDisallow: /specs/car.html"
+        self.assertFalse(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/%63ar.html"))
+
+    def test_reserved_percent_encoded_octets_remain_encoded(self):
+        text = "User-agent: *\\nDisallow: /specs/%2Fcar.html"
+        self.assertFalse(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs/%2fcar.html"))
+        self.assertTrue(_robots_can_fetch(text, USER_AGENT, "https://oem.example/specs//car.html"))
+
+    def test_adjacent_wildcards_match_without_regex_backtracking(self):
+        pattern = "User-agent: *\\nDisallow: /" + "*a" * 32 + "Z$"
+        self.assertTrue(_robots_can_fetch(pattern, USER_AGENT, "https://oem.example/" + "a" * 80))
+        self.assertFalse(_robots_can_fetch("User-agent: *\\nDisallow: /*.pdf$", USER_AGENT,
+                                           "https://oem.example/specs/model.pdf"))
+
+    def test_robots_directive_and_rule_lengths_are_bounded(self):
+        with self.assertRaisesRegex(SourcePolicyDenied, "overlong directive"):
+            _robots_can_fetch("User-agent: *\\n" + "Disallow: /" + "x" * 2048, USER_AGENT, URL)
