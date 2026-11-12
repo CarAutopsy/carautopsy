@@ -116,7 +116,12 @@ class SyntheticResponse:
 def synthetic_post(url, **kwargs):
     if "dashscope" in url:
         if os.environ.get("HIVE_TEST_PROVIDER_MODE") == "fail":
-            trace("qwen-research-transport-failure")
+            if url == "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions":
+                trace("qwen-intl-transport-failure")
+            elif url == "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions":
+                trace("qwen-cn-transport-failure")
+            else:
+                raise AssertionError("unexpected Qwen endpoint: " + url)
             raise requests.exceptions.Timeout("synthetic timeout")
         # Recovery must consume the persisted failed ledger, not stale files
         # left in the shared working tree by the first subprocess.
@@ -251,7 +256,7 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             first_trace = trace.read_text(encoding="utf-8").splitlines()
             self.assertEqual(
                 first_trace,
-                ["qwen-research-transport-failure", "qwen-research-transport-failure"],
+                ["qwen-intl-transport-failure", "qwen-cn-transport-failure"],
                 "both configured Qwen endpoints must fail before the provider is classified offline",
             )
 
@@ -284,7 +289,7 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             second_trace = trace.read_text(encoding="utf-8").splitlines()
             self.assertEqual(
                 second_trace,
-                ["qwen-research-transport-failure", "qwen-research-transport-failure",
+                ["qwen-intl-transport-failure", "qwen-cn-transport-failure",
                  "qwen-research-success", "deepseek-audit", "google-audit"],
             )
             proposal_refs = self.sh(
