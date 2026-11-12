@@ -438,7 +438,9 @@ if state_available:
         capture_output=True, text=True, check=True,
     ).stdout)
 main_queue_path = ROOT / "tasks" / "queue.json"
-main_queue = (json.loads(main_queue_path.read_text(encoding="utf-8")) if main_queue_path.exists() else []) if RESEARCH_ONLY else []
+main_queue = []
+if RESEARCH_ONLY and main_queue_path.exists():
+    main_queue = json.loads(main_queue_path.read_text(encoding="utf-8"))
 
 if RESEARCH_ONLY:
     try:
@@ -455,14 +457,33 @@ if RESEARCH_ONLY:
                 variant_id = queued_task.get("variant_id") if isinstance(queued_task, dict) else None
                 if not isinstance(variant_id, str) or not variant_id.strip():
                     continue
-                existing = ROOT / "catalog" / "variants" / f"{variant_id}.json"
-                if existing.exists():
+                catalog_candidates = [
+                    ROOT / "catalog" / "variants" / f"{variant_id}.json"
+                ]
+                if proposal_ref:
+                    catalog_candidates.append(
+                        f"{proposal_ref}:catalog/variants/{variant_id}.json"
+                    )
+                for catalog_candidate in catalog_candidates:
                     try:
-                        record = load(existing)
+                        if isinstance(catalog_candidate, Path):
+                            if not catalog_candidate.exists():
+                                continue
+                            record = load(catalog_candidate)
+                        else:
+                            raw_record = subprocess.run(
+                                ["git", "show", catalog_candidate],
+                                capture_output=True,
+                                text=True,
+                                check=True,
+                            ).stdout
+                            record = clean(json.loads(raw_record))
                         if (record.get("identity") or {}).get("powertrain"):
                             skippable_variant_ids.add(variant_id)
-                    except Exception:
-                        pass  # malformed catalog records still require evidence
+                            break
+                    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError, AttributeError):
+                        # Missing or malformed catalog records still require evidence.
+                        continue
 
         upcoming_tasks = collect_reserved_batch(
             queue_snapshots,
