@@ -48,6 +48,8 @@ class OrchestrationResult:
     orchestration_id: str
     retrieved_at: str
     source_ids: tuple[str, ...]
+    researcher_provider: str | None = None
+    researcher_vendor: str | None = None
 
 
 def _reserved_identity(task: dict[str, Any]) -> tuple[str, str, str]:
@@ -133,7 +135,7 @@ def prepare_validated_research_task(
         raise OrchestrationRejected("researcher callback is required")
     try:
         prompt = build_researcher_prompt(research_task, schema, evidence)
-        raw_response = researcher(prompt)
+        researcher_response = researcher(prompt)
     except Exception as exc:
         failure_code = getattr(exc, "failure_code", "provider_transport_failure")
         if failure_code not in {"provider_transport_failure", "response_format_failure"}:
@@ -141,6 +143,25 @@ def prepare_validated_research_task(
         raise OrchestrationRejected(
             "researcher invocation failed closed", code=failure_code
         ) from exc
+
+    researcher_provider = None
+    researcher_vendor = None
+    if isinstance(researcher_response, tuple):
+        if len(researcher_response) != 4:
+            raise OrchestrationRejected(
+                "researcher response metadata is malformed",
+                code="response_format_failure",
+            )
+        raw_response, researcher_provider, researcher_vendor, failure_code = researcher_response
+        if not isinstance(raw_response, str) or not raw_response.strip():
+            safe_code = failure_code if failure_code in {
+                "provider_transport_failure", "response_format_failure"
+            } else "provider_transport_failure"
+            raise OrchestrationRejected(
+                "researcher provider returned no usable response", code=safe_code
+            )
+    else:
+        raw_response = researcher_response
 
     candidate = _parse_researcher_response(raw_response)
     try:
@@ -164,6 +185,8 @@ def prepare_validated_research_task(
         orchestration_id=orchestration_id,
         retrieved_at=retrieved_at,
         source_ids=source_ids,
+        researcher_provider=researcher_provider,
+        researcher_vendor=researcher_vendor,
     )
 
 
@@ -172,7 +195,7 @@ def audit_validated_research_task(
     result: OrchestrationResult,
     *,
     schema: dict[str, Any],
-    researcher_vendor: str,
+    researcher_vendor: str | None,
     auditor: Callable,
     auditor_vendors: tuple[str, ...] = ("deepseek", "google", "qwen"),
 ) -> list[dict[str, str]]:
@@ -218,7 +241,7 @@ def run_hive_research_and_audit(
     schema: dict[str, Any],
     researcher: Callable,
     auditor: Callable,
-    researcher_vendor: str,
+    researcher_vendor: str | None = None,
     config_path: Path | None = None,
     config: dict[str, Any] | None = None,
     fetcher: Callable | None = None,
@@ -241,7 +264,7 @@ def run_hive_research_and_audit(
     audits = audit_validated_research_task(
         result,
         schema=schema,
-        researcher_vendor=researcher_vendor,
+        researcher_vendor=researcher_vendor or result.researcher_vendor,
         auditor=auditor,
     )
     return result, audits
