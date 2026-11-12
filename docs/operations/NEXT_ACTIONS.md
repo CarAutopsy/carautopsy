@@ -17,7 +17,7 @@
 - Candidate schema, reserved identity, provenance, and claim evidence validation run before either auditor.
 - Both auditors receive the same prompt and must return exact standalone PASS tokens.
 - Policy coverage and evidence retrieval are preflighted across main, Hive state, and open proposal queue snapshots before proposal checkout or state overlay.
-- The readiness flag remains false and the approved source manifest remains empty.
+- Full TCO mode skips Hive dispatch and leaves the research queue untouched.\n- The readiness flag remains false and the approved source manifest remains empty.
 
 ## Required verification
 
