@@ -281,3 +281,27 @@ def run_hive_research_and_audit(
         auditor=auditor,
     )
     return result, audits
+
+
+def collect_reserved_batch(queue_snapshots: list[list[dict[str, Any]]], batch_size: int) -> list[dict[str, Any]]:
+    """Union possible next-batch queues and reject conflicting reserved identities."""
+    if not isinstance(batch_size, int) or batch_size < 1:
+        raise ValueError("preflight batch size is invalid")
+    upcoming: list[dict[str, Any]] = []
+    seen: dict[str, tuple[str, str]] = {}
+    for snapshot in queue_snapshots:
+        if not isinstance(snapshot, list):
+            raise ValueError("a queue snapshot is malformed")
+        for item in snapshot[:batch_size]:
+            if not isinstance(item, dict):
+                raise ValueError("a queue snapshot contains a malformed task")
+            variant_id, make, model = item.get("variant_id"), item.get("make"), item.get("model")
+            if not all(isinstance(value, str) and value.strip() for value in (variant_id, make, model)):
+                raise ValueError("a queued task is missing its reserved variant identity")
+            identity = (make, model)
+            if variant_id in seen and seen[variant_id] != identity:
+                raise ValueError("queue snapshots disagree on reserved identity for one variant ID")
+            if variant_id not in seen:
+                seen[variant_id] = identity
+                upcoming.append(item)
+    return upcoming
