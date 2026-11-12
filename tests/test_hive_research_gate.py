@@ -142,6 +142,8 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
     def test_gate_ordering_remains_a_secondary_static_guard(self):
         source = SCRIPT.read_text(encoding="utf-8")
         gate = source.index("require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)")
+        batch_bound = source.index("RESEARCH_BATCH_SIZE = bounded_batch_size")
+        self.assertLess(batch_bound, gate)
         manifest = source.index("HIVE_SOURCE_POLICY = load_policy()")
         coverage = source.index("require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)")
         self.assertGreater(manifest, gate)
