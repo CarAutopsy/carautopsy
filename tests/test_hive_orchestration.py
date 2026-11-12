@@ -16,6 +16,7 @@ from scripts.hive_orchestration import OrchestrationRejected, prepare_validated_
 SCHEMA = {"type": "object"}
 URL = "https://oem.example/specs/model.html"
 ROBOTS_URL = "https://oem.example/robots.txt"
+SOURCE_ID = "d91fac58588248c48d775c95"
 CONFIG = {
     "version": 1,
     "approved_hosts": ["oem.example"],
@@ -30,15 +31,24 @@ CONFIG = {
     }],
 }
 TASK = {"variant_id": "synthetic.model-x", "make": "Synthetic", "model": "Model X"}
-EVIDENCE = [{"source_id": "oem-1", "url": URL, "retrieved_at": "2026-11-12T00:00:00Z", "text": "[document]\nOfficial technical specification."}]
+EVIDENCE = [{
+    "source_id": SOURCE_ID,
+    "url": URL,
+    "retrieved_at": "2026-11-12T00:00:00Z",
+    "text": "[document]\nOfficial technical specification.",
+    "locator_texts": {"document": "Official technical specification."},
+}]
 CANDIDATE = {
+    "schema_version": "1.0.0",
+    "variant_id": "synthetic.model-x",
+    "status": "production",
     "identity": {"make": "Synthetic", "model": "Model X"},
     "performance": {"power_w": 110000},
     "provenance": {
-        "sources": [{"source_id": "oem-1", "url": URL}],
+        "sources": [{"source_id": SOURCE_ID, "url": URL}],
         "claim_evidence": [{
             "claim_path": "performance.power_w",
-            "source_id": "oem-1",
+            "source_id": SOURCE_ID,
             "locator": "document",
             "quote": "Official technical specification.",
         }],
@@ -58,7 +68,11 @@ def fetcher(url, **kwargs):
 
 
 def extractor(body, content_type, max_chars):
-    return SimpleNamespace(text="[document]\nOfficial technical specification.", locators=("document",))
+    return SimpleNamespace(
+        text="Official technical specification.",
+        locators=("document",),
+        locator_texts={"document": "Official technical specification."},
+    )
 
 
 class OrchestrationSeamTests(unittest.TestCase):
@@ -75,7 +89,7 @@ class OrchestrationSeamTests(unittest.TestCase):
         )
         self.assertEqual(result.candidate["performance"]["power_w"], 110000)
         self.assertEqual(result.evidence, EVIDENCE)
-        self.assertEqual(result.source_ids, ("oem-1",))
+        self.assertEqual(result.source_ids, (SOURCE_ID,))
         researcher.assert_called_once()
 
     def test_empty_manifest_stops_before_researcher(self):
