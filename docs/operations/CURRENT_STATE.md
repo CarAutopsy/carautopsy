@@ -11,7 +11,7 @@
 - PR #49 merged: schema-aligned prompt builders and deterministic candidate/evidence validation helpers.
 - PR #50 merged: DNS-pinned HTTPS retrieval primitive.
 - PR #52 merged to `main`: owner-controlled source policy checks, robots handling, bounded extraction workers, and claim-level quote/locator evidence bindings.
-- PR #53 merged into `feat/hive-source-policy-extraction`, not directly into `main`. PR #56 brings its zero-bypass contract onto `main` as documentation.
+- PR #53 merged into `feat/hive-source-policy-extraction`, not directly into `main`. Documentation PR #56 is open to bring its zero-bypass contract onto `main`.
 - Issue #45 (no-retrieval safety stop) is closed; its invariants remain mandatory.
 
 ## Active Hive status
