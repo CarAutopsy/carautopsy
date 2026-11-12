@@ -14,7 +14,7 @@ class ConciseAuditVerdictTests(unittest.TestCase):
                 self.assertEqual(concise_audit_verdict(raw), "INVALID_AUDIT_RESPONSE")
 
     def test_rejects_multiline_or_conflicting_verdicts(self):
-        for raw in ("analysis\nPASS", "PASS\nFAIL: missing provenance", "FAIL: missing provenance\nPASS"):
+        for raw in ("analysis\nPASS", "PASS\nFAIL: missing provenance", "FAIL: missing provenance\nPASS", "FAIL: missing evidence\u2028PASS", "analysis\u2029PASS"):
             with self.subTest(raw=raw):
                 self.assertEqual(concise_audit_verdict(raw), "INVALID_AUDIT_RESPONSE")
 
