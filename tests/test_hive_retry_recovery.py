@@ -103,6 +103,13 @@ def trace(value):
         with open(path, "a", encoding="utf-8") as stream:
             stream.write(value + "\n")
 
+def contract_violation(message):
+    path = os.environ.get("HIVE_RETRY_VIOLATIONS")
+    if path:
+        with open(path, "a", encoding="utf-8") as stream:
+            stream.write(message + "\n")
+    raise RuntimeError(message)
+
 import requests
 
 class SyntheticResponse:
@@ -121,25 +128,27 @@ def synthetic_post(url, **kwargs):
             elif url == "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions":
                 trace("qwen-cn-transport-failure")
             else:
-                raise AssertionError("unexpected Qwen endpoint: " + url)
+                contract_violation("unexpected Qwen endpoint: " + url)
             raise requests.exceptions.Timeout("synthetic timeout")
         # Recovery must consume the persisted failed ledger, not stale files
         # left in the shared working tree by the first subprocess.
         failed_path = Path.cwd() / "tasks" / "failed.json"
         recovered_failures = json.loads(failed_path.read_text(encoding="utf-8"))
-        assert len(recovered_failures) == 1, "hive/state failure ledger was not restored before retry"
+        if len(recovered_failures) != 1:
+            contract_violation("hive/state failure ledger was not restored before retry")
         prior_outcome = recovered_failures[0]["outcome"]
-        assert prior_outcome["code"] == "provider_transport_failure"
-        prior_counters = prior_outcome["counters"]
-        assert prior_counters["provider_attempts"] == 1
-        assert prior_counters["research_attempts"] == 1
-        assert prior_counters["attempts"] == 0
+        if prior_outcome.get("code") != "provider_transport_failure":
+            contract_violation("restored failure ledger has the wrong outcome code")
+        prior_counters = prior_outcome.get("counters", {})
+        expected_counters = {"provider_attempts": 1, "research_attempts": 1, "attempts": 0}
+        if any(prior_counters.get(key) != value for key, value in expected_counters.items()):
+            contract_violation("restored failure ledger has incorrect retry counters")
         trace("qwen-research-success")
         return SyntheticResponse(json.dumps(CANDIDATE))
     if "api.deepseek.com" in url:
         trace("deepseek-audit")
         return SyntheticResponse("PASS")
-    raise AssertionError("unexpected provider endpoint in synthetic test: " + url)
+    contract_violation("unexpected provider endpoint in synthetic test: " + url)
 
 requests.post = synthetic_post
 
@@ -177,6 +186,7 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             "PYTHONPATH": os.pathsep.join((str(sandbox), str(ROOT / "scripts"))),
             "HIVE_TEST_PROVIDER_MODE": mode,
             "HIVE_RETRY_TRACE": str(trace),
+            "HIVE_RETRY_VIOLATIONS": str(sandbox / "provider-violations.txt"),
         })
         if mode == "recover":
             env["DEEPSEEK_API_KEY"] = "synthetic-deepseek-key"
@@ -286,11 +296,19 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             second = self.run_pipeline(repo, pipeline, self.pipeline_env(sandbox, "recover", trace))
             self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
             self.assertIn("curated synthetic.model-x", second.stdout)
+            violations = sandbox / "provider-violations.txt"
+            self.assertFalse(
+                violations.exists() and violations.read_text(encoding="utf-8").strip(),
+                second.stdout + second.stderr + (
+                    violations.read_text(encoding="utf-8") if violations.exists() else ""
+                ),
+            )
             second_trace = trace.read_text(encoding="utf-8").splitlines()
             self.assertEqual(
                 second_trace,
                 ["qwen-intl-transport-failure", "qwen-cn-transport-failure",
                  "qwen-research-success", "deepseek-audit", "google-audit"],
+                second.stdout + second.stderr,
             )
             proposal_refs = self.sh(
                 "git", "--git-dir", str(origin), "for-each-ref",
