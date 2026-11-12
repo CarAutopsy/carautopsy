@@ -138,8 +138,9 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
             script = (
                 "import json,sys; from pathlib import Path; "
                 "import hive_state; root=Path(sys.argv[1]); "
-                "result=hive_state.reconcile_with_pr(root); "
-                "print(json.dumps({'result':result, "
+                "result=hive_state.reconcile_with_pr(root); tip=hive_state._tip(root); "
+                "baseline=hive_state.proposal_state_base(root); "
+                "print(json.dumps({'result':result, 'tip':tip, 'baseline':baseline, "
                 "'queue':json.loads((root/'tasks/queue.json').read_text()), "
                 "'failed':json.loads((root/'tasks/failed.json').read_text())}))"
             )
@@ -162,12 +163,11 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
             self.assertEqual(recovered["queue"], latest_queue)
             self.assertEqual(recovered["failed"], latest_failed)
 
-            # The fetched state tip must remain a valid bot-written snapshot,
-            # and the proposal checkout must acknowledge that exact tip.
+            # The fresh process itself must acknowledge the exact bot-written
+            # state tip; a parent-process acknowledgment would not prove restart safety.
+            self.assertEqual(recovered["baseline"], recovered["tip"])
             with patch.dict(os.environ, env, clear=True):
-                tip = hive_state._tip(reopened)
-                self.assertTrue(hive_state.tip_is_bot_written(reopened, tip))
-                self.assertEqual(hive_state.proposal_state_base(reopened), tip)
+                self.assertTrue(hive_state.tip_is_bot_written(reopened, recovered["tip"]))
 
 
 if __name__ == "__main__":
