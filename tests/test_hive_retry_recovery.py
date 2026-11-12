@@ -274,7 +274,7 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             )
             proposal_refs = self.sh(
                 "git", "--git-dir", str(origin), "for-each-ref",
-                "--format=%(refname)", "refs/heads/hive/research-", cwd=repo
+                "--format=%(refname)", "refs/heads/hive/research-*", cwd=repo
             ).stdout.strip().splitlines()
             self.assertEqual(len(proposal_refs), 1, "successful recovery should publish one review branch")
             proposal_ref = proposal_refs[0]
