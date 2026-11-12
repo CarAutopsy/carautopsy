@@ -10,6 +10,7 @@ from hive_research_gate import ResearchPaused, require_verified_retrieval
 from hive_orchestration import OrchestrationRejected, run_hive_research_and_audit
 from hive_source_policy import SourcePolicyDenied, load_policy
 from hive_evidence import retrieve_approved_evidence
+from hive_candidate import validate_evidence_bundle
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
 ROOT = Path.cwd()
@@ -459,10 +460,13 @@ if RESEARCH_ONLY:
     try:
         require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)
         for variant_id in upcoming_ids:
-            HIVE_PREFETCHED_EVIDENCE[variant_id] = retrieve_approved_evidence(
+            evidence = retrieve_approved_evidence(
                 variant_id=variant_id,
                 config=HIVE_SOURCE_POLICY,
             )
+            if not evidence:
+                raise SourcePolicyDenied("approved source retrieval produced no bounded evidence")
+            HIVE_PREFETCHED_EVIDENCE[variant_id] = validate_evidence_bundle(evidence)
     except Exception as exc:
         raise ResearchPaused(
             "owner-approved policy, robots, retrieval, or extraction preflight failed; "
