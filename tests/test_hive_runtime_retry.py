@@ -4,7 +4,7 @@ from datetime import date
 from unittest.mock import Mock
 
 from scripts.hive_runtime import RuntimeResearchRejected, run_hive_research_path
-from tests.test_hive_orchestration import CONFIG, SCHEMA, TASK, extractor, fetcher
+from tests.test_hive_runtime import CONFIG, SCHEMA, TASK, extractor, fetcher
 
 
 class RuntimeRetryTests(unittest.TestCase):

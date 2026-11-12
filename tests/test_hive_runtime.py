@@ -1,27 +1,62 @@
 """Runtime integration tests; all provider and auditor interactions are mocked."""
+import hashlib
 import json
 import unittest
 from datetime import date
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 from scripts.hive_runtime import AuditorFailure, RuntimeResearchRejected, run_hive_research_path
-from tests.test_hive_orchestration import CONFIG, SCHEMA, TASK, extractor, fetcher
 
 
+SCHEMA = {"type": "object"}
+URL = "https://oem.example/specs/model.html"
+ROBOTS_URL = "https://oem.example/robots.txt"
+SOURCE_ID = hashlib.sha256(URL.encode("utf-8")).hexdigest()[:24]
+CONFIG = {
+    "version": 1,
+    "approved_hosts": ["oem.example"],
+    "source_policies": [{
+        "host": "oem.example",
+        "automated_access_allowed": True,
+        "terms_url": "https://oem.example/terms",
+        "terms_reviewed_at": "2026-11-01",
+        "terms_reviewed_by": "repository-owner",
+        "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/37",
+        "approved_urls": [{"url": URL, "variant_ids": ["synthetic.model-x"]}],
+    }],
+}
+TASK = {"variant_id": "synthetic.model-x", "make": "Synthetic", "model": "Model X"}
+EVIDENCE = [{"source_id": SOURCE_ID, "url": URL, "retrieved_at": "2026-11-12T00:00:00Z", "text": "[document]\nOfficial technical specification."}]
 VALID_CANDIDATE = {
     "variant_id": "synthetic.model-x",
     "identity": {"make": "Synthetic", "model": "Model X"},
     "performance": {"power_w": 110000},
     "provenance": {
-        "sources": [{"source_id": "d91fac58588248c48d775c95", "url": "https://oem.example/specs/model.html"}],
+        "sources": [{"source_id": SOURCE_ID, "url": URL}],
         "claim_evidence": [{
             "claim_path": "performance.power_w",
-            "source_id": "d91fac58588248c48d775c95",
+            "source_id": SOURCE_ID,
             "locator": "document",
             "quote": "Official technical specification.",
         }],
     },
 }
+
+
+def fetcher(url, **kwargs):
+    if url == ROBOTS_URL:
+        return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
+    return SimpleNamespace(
+        outcome="retrieved_unverified",
+        body=b"official source bytes",
+        content_type="text/plain",
+        retrieved_at="2026-11-12T00:00:00Z",
+    )
+
+
+def extractor(body, content_type, max_chars):
+    return SimpleNamespace(text="[document]\nOfficial technical specification.", locators=("document",))
 
 
 class RuntimeResearchPathTests(unittest.TestCase):

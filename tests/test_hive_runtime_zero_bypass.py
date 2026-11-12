@@ -5,7 +5,7 @@ from datetime import date
 from unittest.mock import Mock
 
 from scripts.hive_runtime import RuntimeResearchRejected, run_hive_research_path
-from tests.test_hive_orchestration import CONFIG, SCHEMA, TASK, extractor, fetcher
+from tests.test_hive_runtime import CONFIG, SCHEMA, TASK, VALID_CANDIDATE, extractor, fetcher
 
 
 class RuntimeZeroBypassTests(unittest.TestCase):
@@ -61,20 +61,7 @@ class RuntimeZeroBypassTests(unittest.TestCase):
         catalog_write.assert_not_called()
 
     def test_no_publication_without_human_review(self):
-        researcher = Mock(return_value=json.dumps({
-            "variant_id": "synthetic.model-x",
-            "identity": {"make": "Synthetic", "model": "Model X"},
-            "performance": {"power_w": 110000},
-            "provenance": {
-                "sources": [{"source_id": "d91fac58588248c48d775c95", "url": "https://oem.example/specs/model.html"}],
-                "claim_evidence": [{
-                    "claim_path": "performance.power_w",
-                    "source_id": "d91fac58588248c48d775c95",
-                    "locator": "document",
-                    "quote": "Official technical specification.",
-                }],
-            },
-        }))
+        researcher = Mock(return_value=json.dumps(VALID_CANDIDATE))
         result = run_hive_research_path(
             reserved_task=TASK,
             schema=SCHEMA,
