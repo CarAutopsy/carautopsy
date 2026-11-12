@@ -10,7 +10,11 @@ from datetime import date
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from scripts.hive_orchestration import OrchestrationRejected, prepare_validated_research_task
+from scripts.hive_orchestration import (
+    OrchestrationRejected,
+    prepare_validated_research_task,
+    run_hive_research_and_audit,
+)
 
 
 SCHEMA = {"type": "object"}
@@ -191,6 +195,70 @@ class OrchestrationSeamTests(unittest.TestCase):
         self.assertNotIn("QWEN_API_KEY", serialized)
         self.assertNotIn("DEEPSEEK_API_KEY", serialized)
         self.assertNotIn("GEMINI_API_KEY", serialized)
+
+
+    def test_invalid_candidate_never_reaches_paid_auditors(self):
+        candidate = json.loads(json.dumps(CANDIDATE))
+        candidate["provenance"]["claim_evidence"] = []
+        researcher = Mock(return_value=json.dumps(candidate))
+        auditor = Mock(return_value=("PASS", "deepseek", None))
+        with self.assertRaises(OrchestrationRejected):
+            run_hive_research_and_audit(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=extractor,
+                researcher=researcher,
+                auditor=auditor,
+                researcher_vendor="qwen",
+                today=date(2026, 11, 12),
+            )
+        auditor.assert_not_called()
+
+    def test_valid_candidate_reaches_two_independent_auditors_with_identical_prompt(self):
+        researcher = Mock(return_value=json.dumps(CANDIDATE))
+        auditor = Mock(side_effect=[
+            ("PASS", "deepseek", None),
+            ("PASS", "gemini", None),
+        ])
+        result, audits = run_hive_research_and_audit(
+            reserved_task=TASK,
+            schema=SCHEMA,
+            config=CONFIG,
+            fetcher=fetcher,
+            extractor=extractor,
+            researcher=researcher,
+            auditor=auditor,
+            researcher_vendor="qwen",
+            today=date(2026, 11, 12),
+        )
+        self.assertEqual([item["vendor"] for item in audits], ["deepseek", "google"])
+        self.assertEqual([item["verdict"] for item in audits], ["PASS", "PASS"])
+        self.assertEqual(auditor.call_count, 2)
+        first_prompt = auditor.call_args_list[0].args[0]
+        second_prompt = auditor.call_args_list[1].args[0]
+        self.assertEqual(first_prompt, second_prompt)
+        self.assertIn("claim_evidence", first_prompt)
+        self.assertEqual(result.candidate["variant_id"], TASK["variant_id"])
+
+    def test_invalid_researcher_json_never_reaches_auditors(self):
+        researcher = Mock(return_value='{"variant_id": NaN}')
+        auditor = Mock(return_value=("PASS", "deepseek", None))
+        with self.assertRaises(OrchestrationRejected) as raised:
+            run_hive_research_and_audit(
+                reserved_task=TASK,
+                schema=SCHEMA,
+                config=CONFIG,
+                fetcher=fetcher,
+                extractor=extractor,
+                researcher=researcher,
+                auditor=auditor,
+                researcher_vendor="qwen",
+                today=date(2026, 11, 12),
+            )
+        self.assertEqual(raised.exception.code, "response_format_failure")
+        auditor.assert_not_called()
 
 
 if __name__ == "__main__":
