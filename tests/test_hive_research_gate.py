@@ -146,13 +146,15 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
         self.assertLess(batch_bound, gate)
         manifest = source.index("HIVE_SOURCE_POLICY = load_policy()")
         coverage = source.index("require_variant_coverage(HIVE_SOURCE_POLICY, upcoming_ids)")
-        evidence_prefetch = source.index("HIVE_PREFETCHED_EVIDENCE[variant_id] = retrieve_approved_evidence")
+        evidence_prefetch = source.index("evidence = retrieve_approved_evidence(")
+        evidence_validation = source.index("HIVE_PREFETCHED_EVIDENCE[variant_id] = validate_evidence_bundle(evidence)")
         proposal_checkout = source.index('run(["git", "checkout", "-B", open_research_pr["headRefName"], proposal_head_sha])')
         state_overlay = source.index("load_state(ROOT)")
         self.assertGreater(manifest, gate)
         self.assertGreater(coverage, manifest)
-        self.assertLess(evidence_prefetch, proposal_checkout)
-        self.assertLess(evidence_prefetch, state_overlay)
+        self.assertLess(evidence_prefetch, evidence_validation)
+        self.assertLess(evidence_validation, proposal_checkout)
+        self.assertLess(evidence_validation, state_overlay)
         for operation in (
             "run_hive_research_and_audit(",
             "open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None",
