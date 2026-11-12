@@ -56,7 +56,10 @@ def fetcher(url, **kwargs):
 
 
 def extractor(body, content_type, max_chars):
-    return SimpleNamespace(text="[document]\nOfficial technical specification.", locators=("document",))
+    return SimpleNamespace(
+        text="[document]\nOfficial technical specification.",
+        locator_texts={"document": "Official technical specification."},
+    )
 
 
 class RuntimeResearchPathTests(unittest.TestCase):
