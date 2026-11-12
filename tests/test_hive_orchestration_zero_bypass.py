@@ -2,11 +2,10 @@
 import json
 import unittest
 from datetime import date
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 from scripts.hive_orchestration import OrchestrationRejected, prepare_validated_research_task
-from tests.test_hive_orchestration import CONFIG, EVIDENCE, SCHEMA, TASK, URL, extractor, fetcher
+from tests.test_hive_orchestration import CANDIDATE, CONFIG, SCHEMA, TASK, fetcher, extractor
 
 
 class ZeroBypassTests(unittest.TestCase):
@@ -52,19 +51,7 @@ class ZeroBypassTests(unittest.TestCase):
         auditor_b.assert_not_called()
 
     def test_valid_path_does_not_auto_publish(self):
-        researcher = Mock(return_value=json.dumps({
-            "identity": {"make": "Synthetic", "model": "Model X"},
-            "performance": {"power_w": 110000},
-            "provenance": {
-                "sources": [{"source_id": "oem-1", "url": URL}],
-                "claim_evidence": [{
-                    "claim_path": "performance.power_w",
-                    "source_id": "oem-1",
-                    "locator": "document",
-                    "quote": "Official technical specification.",
-                }],
-            },
-        }))
+        researcher = Mock(return_value=json.dumps(CANDIDATE))
         result = prepare_validated_research_task(
             reserved_task=TASK,
             schema=SCHEMA,
