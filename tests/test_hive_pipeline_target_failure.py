@@ -62,7 +62,7 @@ def synthetic_fetcher(url, *, approved_hosts, robots_allowed, **kwargs):
             raise AssertionError("robots bootstrap was not authorized")
         return SimpleNamespace(
             outcome="retrieved_unverified",
-            body=b"User-agent: *\\nAllow: /\\n",
+            body=b"User-agent: *\nAllow: /\n",
         )
     if url == SOURCE_URL:
         marker = os.environ.get("HIVE_TARGET_REQUEST_MARKER")
