@@ -169,11 +169,14 @@ class ResearchOnlySafetyGateTests(unittest.TestCase):
         self.assertLess(evidence_prefetch, evidence_validation)
         self.assertLess(evidence_validation, proposal_checkout)
         self.assertLess(evidence_validation, state_overlay)
+        full_tco = source.index("Full TCO mode: research queue left untouched")
+        self.assertGreater(full_tco, gate)
+        self.assertLess(full_tco, source.index("results = []"))
         for operation in (
             "run_hive_research_and_audit(",
             "open_research_pr = get_open_research_pr() if RESEARCH_ONLY else None",
             "load_state(ROOT)",
-            "curate_one(attempted_variant_ids if RESEARCH_ONLY else None)",
+            "curate_one(attempted_variant_ids)",
             "reconcile_with_pr(ROOT)",
             "save_state(ROOT",
             'run(["git", "checkout"',
