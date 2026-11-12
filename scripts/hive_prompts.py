@@ -4,7 +4,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from hive_candidate import validate_evidence_bundle
+try:
+    from .hive_candidate import validate_evidence_bundle
+except ImportError:  # pragma: no cover - direct script execution.
+    from hive_candidate import validate_evidence_bundle
 
 
 def _serialize(label: str, value: Any) -> str:
