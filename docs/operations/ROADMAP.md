@@ -34,7 +34,7 @@ Issue #45 (no-retrieval safety stop) is closed. Its zero-spend/no-state-mutation
 ### M0 — Roadmap and contract reconciliation
 
 - [x] Confirm merged PRs and actual target branches.
-- [x] Bring the PR #53 integration contract onto `main` as documentation only (PR #56).
+- [ ] Merge the PR #53 integration contract onto `main` through documentation PR #56.
 - [x] Establish this dependency-ordered roadmap and refresh operational handover documents.
 - [ ] Review and merge PR #56.
 
