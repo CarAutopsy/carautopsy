@@ -198,10 +198,10 @@ class SourcePolicyTests(unittest.TestCase):
 
 
     def test_total_robots_matching_work_is_bounded(self):
-        rules = "\\n".join("Disallow: /" + "x" * 1800 for _ in range(2))
+        rules = "\n".join("Disallow: /" + "x" * 1800 for _ in range(2))
         long_url = "https://oem.example/" + "y" * 1900
         with self.assertRaisesRegex(SourcePolicyDenied, "complexity"):
-            _robots_can_fetch("User-agent: *\\n" + rules, USER_AGENT, long_url)
+            _robots_can_fetch("User-agent: *\n" + rules, USER_AGENT, long_url)
 
 
 if __name__ == "__main__":
