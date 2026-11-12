@@ -3,12 +3,13 @@ from pathlib import Path
 from datetime import datetime, timezone
 import yaml, requests
 from provider_retry import generate_content_with_fallback
-from hive_audit import concise_audit_verdict
 from hive_batch import bounded_batch_size, next_unattempted_task
 from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
 from hive_state import load_state, reconcile_with_pr, save_state, proposal_state_base
 from hive_research_gate import ResearchPaused, require_verified_retrieval
-from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_research_response, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
+from hive_orchestration import OrchestrationRejected, run_hive_research_and_audit
+from hive_source_policy import SourcePolicyDenied, load_policy
+from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
 ROOT = Path.cwd()
 
@@ -24,14 +25,6 @@ def load(p):
     """Load and normalize a JSON or YAML file from the repository."""
     with open(p, encoding="utf-8") as f:
         return clean(json.load(f) if p.suffix == ".json" else yaml.safe_load(f))
-
-def clean_json_response(t):
-    """Extract a JSON object from a provider response or fenced code block."""
-    m = re.search(r"```json\s*(\{.*?\})\s*```", t, re.DOTALL)
-    if m: return m.group(1)
-    m = re.search(r"\{.*\}", t, re.DOTALL)
-    if m: return m.group(0)
-    return t
 
 def call_provider(prompt, key, url, model, temperature=0.1):
     """Return (text, actual_model), routing Gemini through its native API."""
@@ -172,12 +165,16 @@ RESEARCH_ONLY = "--research-only" in sys.argv
 # full TCO route intentionally bypass this research-only safety gate.
 VERIFIED_RETRIEVAL_AVAILABLE = False
 
+HIVE_SOURCE_POLICY = None
 if RESEARCH_ONLY:
     try:
         require_verified_retrieval(VERIFIED_RETRIEVAL_AVAILABLE)
-    except ResearchPaused as exc:
+        HIVE_SOURCE_POLICY = load_policy()
+        if not HIVE_SOURCE_POLICY.get("source_policies"):
+            raise SourcePolicyDenied("owner-approved source policy entries are empty")
+    except (ResearchPaused, SourcePolicyDenied) as exc:
         print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
-        sys.exit(exc.exit_code)
+        sys.exit(2)
 
 if RESEARCH_ONLY:
     taxes = defaults = inspections = None
