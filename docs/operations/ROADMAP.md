@@ -9,21 +9,22 @@ This is the operational roadmap for the Hive workstream. GitHub issues remain th
 ## Current operating state
 
 - PR #43 (prompt/schema contract) is merged to `main` under an explicit owner waiver of the independent-audit prerequisite. The waiver did not complete the audit tracked by issue #47.
-- PR #49 (prompt builders and deterministic candidate/evidence gate) is merged. Its helpers are building blocks; their presence alone does not prove that the live pipeline calls them.
+- PR #49 (prompt builders and deterministic candidate/evidence gate) is merged.
 - PR #50 (DNS-pinned HTTPS transport) is merged.
 - PR #52 (source policy, robots checks, bounded extraction, and claim-level evidence bindings) is merged to `main`.
-- PR #53 (zero-bypass integration contract) is merged into `feat/hive-source-policy-extraction`, not directly into `main`. This roadmap change brings the contract document onto `main`; it does not implement runtime wiring.
+- PR #53 (zero-bypass integration contract) is merged into `feat/hive-source-policy-extraction`, not directly into `main`. PR #56 brings the contract onto `main` as documentation.
+- PR #57 is a draft runtime-integration PR. Its current head `e3f4cf86d735d6f707ea88be68f79c356dd8e15a` wires the orchestration seam behind the hard research stop, preflights evidence before proposal/state changes, and has passing CI (265 tests, catalog validation, compilation, Repository Audit). It is not merged or activation-ready.
 - `data-connectors/approved-source-hosts.json` remains empty.
 - `VERIFIED_RETRIEVAL_AVAILABLE` remains `False`; `HIVE_RESEARCH_PAUSED` remains active.
-- No live OEM retrieval, paid provider calls, or new vehicle research dispatch is authorized by this roadmap.
+- No live OEM retrieval, paid provider calls, or new vehicle research dispatch is authorized.
 
 ## Open work and dependencies
 
 | Order | Workstream | GitHub issue | Status | Depends on |
 |---:|---|---|---|---|
 | 1 | Prompt/schema contract independent audit | [#47](https://github.com/CarAutopsy/carautopsy/issues/47) | Open; independent human/external audit outstanding | Merged PR #43 |
-| 2 | Runtime prompt and deterministic candidate-gate integration | [#44](https://github.com/CarAutopsy/carautopsy/issues/44) | Open; helper implementation merged in #49; runtime acceptance remains | #49, #52, #53 contract |
-| 3 | Retrieval, provenance, and zero-bypass integration | [#37](https://github.com/CarAutopsy/carautopsy/issues/37) | Open; isolated components merged in #50/#52; orchestration and end-to-end proof remain | #49, #50, #52, #53 |
+| 2 | Runtime prompt and deterministic candidate-gate integration | [#44](https://github.com/CarAutopsy/carautopsy/issues/44) | Draft implementation in PR #57; runtime acceptance and full failure-path proof remain | #49, #52, #53 contract |
+| 3 | Retrieval, provenance, and zero-bypass integration | [#37](https://github.com/CarAutopsy/carautopsy/issues/37) | Draft integration in PR #57; end-to-end retry/restart/state-reconciliation proof and external security review remain | #49, #50, #52, #53 |
 | 4 | Integrated security and operational review | Tracked under #37 and #47 | Not complete | Final integrated PR head |
 
 Issue #45 (no-retrieval safety stop) is closed. Its zero-spend/no-state-mutation guarantees remain mandatory regression requirements.
@@ -33,31 +34,34 @@ Issue #45 (no-retrieval safety stop) is closed. Its zero-spend/no-state-mutation
 ### M0 — Roadmap and contract reconciliation
 
 - [x] Confirm merged PRs and actual target branches.
-- [x] Bring the PR #53 integration contract onto `main` as documentation only.
+- [x] Bring the PR #53 integration contract onto `main` as documentation only (PR #56).
 - [x] Establish this dependency-ordered roadmap and refresh operational handover documents.
-- [ ] Review and merge this documentation PR.
+- [ ] Review and merge PR #56.
 
 ### M1 — Confirm the deterministic gate boundary
 
-- [ ] Review the exported APIs in `scripts/hive_prompts.py`, `scripts/hive_candidate.py`, `scripts/hive_evidence.py`, and `scripts/hive_source_policy.py` at the current `main` head.
-- [ ] Reconcile issue #44 with the already-merged helper work in #49; avoid duplicating implementation tasks.
-- [ ] Define one callable orchestration seam that returns only a validated candidate/evidence pair.
-- [ ] Keep imports side-effect free and preserve exact reserved task identity.
+- [x] Inspect the exported APIs in `scripts/hive_prompts.py`, `scripts/hive_candidate.py`, `scripts/hive_evidence.py`, and `scripts/hive_source_policy.py`.
+- [x] Reconcile issue #44 with the helper implementation merged in #49; avoid duplicating helper work.
+- [x] Define a callable orchestration seam that returns only a validated candidate/evidence pair.
+- [x] Preserve side-effect-free imports and exact reserved task identity.
+- [ ] Merge and audit the implementation in PR #57.
 
 ### M2 — Runtime integration (primary engineering milestone)
 
-- [ ] Retrieve evidence only for the reserved variant using the owner-controlled manifest and existing pinned transport.
-- [ ] Check terms and robots policy before every target request.
-- [ ] Build the researcher prompt from the reserved task, repository schema, and bounded retrieved evidence.
-- [ ] Parse and deterministically validate the candidate before any auditor call.
-- [ ] Pass the same immutable validated candidate and evidence bundle to both independent auditors.
-- [ ] Route every retry, restart, existing-proposal, and state-branch path through the same gate.
+*Implementation is in draft PR #57; keep this milestone open until review and integration acceptance are complete.*
+
+- [x] Wire retrieval → researcher prompt → bounded JSON parse → deterministic candidate validation → two independent auditors.
+- [x] Build one auditor prompt from the validated candidate/evidence and send identical inputs to two distinct vendors.
+- [x] Require an exact standalone `PASS` token.
+- [x] Preflight and validate evidence for the upcoming main/state/proposal queue snapshots before proposal checkout or state overlay.
+- [ ] Prove all retry, restart, existing-proposal, and state-branch paths cannot bypass the same gate.
+- [ ] Complete end-to-end failure-path tests and merge the reviewed implementation.
 - [ ] Keep `VERIFIED_RETRIEVAL_AVAILABLE = False` and the research pause active throughout implementation.
 
 ### M3 — Zero-bypass and zero-spend proof
 
 - [ ] Empty/malformed manifest and denied/unavailable robots: zero target fetches where policy requires preflight denial; zero provider calls; zero durable state changes.
-- [ ] Extraction/transport failure: zero researcher and auditor calls; no candidate publication.
+- [ ] Extraction/transport failure: zero researcher and auditor calls; no candidate publication or proposal/state mutation.
 - [ ] Malformed JSON, schema/identity/provenance/quote/locator mismatch: zero auditor calls.
 - [ ] Accepted candidate: both auditors receive equivalent immutable candidate/evidence inputs.
 - [ ] Retry/restart and existing-proposal paths cannot bypass the gate.
