@@ -238,7 +238,11 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             self.assertIn("provider_transport_failure", first.stdout)
             self.assertFalse((repo / "catalog" / "variants" / "synthetic.model-x.json").exists())
             first_trace = trace.read_text(encoding="utf-8").splitlines()
-            self.assertEqual(first_trace, ["qwen-research-transport-failure"])
+            self.assertEqual(
+                first_trace,
+                ["qwen-research-transport-failure", "qwen-research-transport-failure"],
+                "both configured Qwen endpoints must fail before the provider is classified offline",
+            )
 
             state_queue = json.loads(self.sh(
                 "git", "--git-dir", str(origin), "show",
@@ -265,8 +269,8 @@ class HiveRetryRecoveryProofTests(unittest.TestCase):
             second_trace = trace.read_text(encoding="utf-8").splitlines()
             self.assertEqual(
                 second_trace,
-                ["qwen-research-transport-failure", "qwen-research-success",
-                 "deepseek-audit", "google-audit"],
+                ["qwen-research-transport-failure", "qwen-research-transport-failure",
+                 "qwen-research-success", "deepseek-audit", "google-audit"],
             )
             proposal_refs = self.sh(
                 "git", "--git-dir", str(origin), "for-each-ref",
