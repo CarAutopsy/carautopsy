@@ -289,7 +289,10 @@ def require_variant_coverage(config: dict, variant_ids: list[str], today: date |
         if host not in seen_hosts:
             _host_policy(config, host, current_date)
             seen_hosts.add(host)
-        for source in entry.get("approved_urls", []):
+        approved_urls = entry.get("approved_urls")
+        if not isinstance(approved_urls, list) or not approved_urls:
+            raise SourcePolicyDenied("owner-approved exact source URL list is missing")
+        for source in approved_urls:
             if not isinstance(source, dict) or not isinstance(source.get("url"), str):
                 raise SourcePolicyDenied("approved source entry is malformed")
             try:
