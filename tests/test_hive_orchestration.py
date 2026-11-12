@@ -12,6 +12,7 @@ from unittest.mock import Mock
 
 from scripts.hive_orchestration import (
     OrchestrationRejected,
+    collect_reserved_batch,
     prepare_validated_research_task,
     run_hive_research_and_audit,
 )
@@ -293,6 +294,25 @@ class OrchestrationSeamTests(unittest.TestCase):
             )
         researcher.assert_not_called()
         auditor.assert_not_called()
+
+
+    def test_reserved_batch_union_is_deduplicated_across_queue_snapshots(self):
+        first = [{"variant_id": "v1", "make": "A", "model": "One"},
+                 {"variant_id": "v2", "make": "B", "model": "Two"}]
+        second = [{"variant_id": "v1", "make": "A", "model": "One"},
+                  {"variant_id": "v3", "make": "C", "model": "Three"}]
+        result = collect_reserved_batch([first, second], 2)
+        self.assertEqual([item["variant_id"] for item in result], ["v1", "v2", "v3"])
+
+    def test_reserved_batch_rejects_identity_conflict_for_same_variant_id(self):
+        first = [{"variant_id": "v1", "make": "A", "model": "One"}]
+        second = [{"variant_id": "v1", "make": "A", "model": "Different"}]
+        with self.assertRaisesRegex(ValueError, "disagree on reserved identity"):
+            collect_reserved_batch([first, second], 2)
+
+    def test_reserved_batch_rejects_malformed_task_identity(self):
+        with self.assertRaisesRegex(ValueError, "missing its reserved variant identity"):
+            collect_reserved_batch([[{"variant_id": "v1", "make": "A"}]], 1)
 
 
 if __name__ == "__main__":
