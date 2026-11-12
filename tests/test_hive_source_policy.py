@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from scripts.hive_source_policy import USER_AGENT, SourcePolicyDenied, _robots_can_fetch, check_source_access, load_policy
+from scripts.hive_source_policy import USER_AGENT, SourcePolicyDenied, _robots_can_fetch, check_source_access, load_policy, require_variant_coverage
 
 
 HOST = "oem.example"
@@ -202,6 +202,24 @@ class SourcePolicyTests(unittest.TestCase):
         long_url = "https://oem.example/" + "y" * 1900
         with self.assertRaisesRegex(SourcePolicyDenied, "complexity"):
             _robots_can_fetch("User-agent: *\n" + rules, USER_AGENT, long_url)
+
+
+    def test_batch_preflight_requires_exact_owner_approved_variant_coverage(self):
+        require_variant_coverage(config(), ["synthetic.model-x"], today=date(2026, 11, 11))
+        with self.assertRaisesRegex(SourcePolicyDenied, "does not cover"):
+            require_variant_coverage(config(), ["synthetic.model-x", "other.variant"], today=date(2026, 11, 11))
+
+    def test_batch_preflight_rejects_mismatched_source_host_before_checkout(self):
+        value = config()
+        value["source_policies"][0]["approved_urls"][0]["url"] = "https://attacker.example/specs/car.html"
+        with self.assertRaisesRegex(SourcePolicyDenied, "does not match"):
+            require_variant_coverage(value, ["synthetic.model-x"], today=date(2026, 11, 11))
+
+    def test_batch_preflight_rejects_stale_terms_before_state_access(self):
+        value = config()
+        value["source_policies"][0]["terms_reviewed_at"] = "2025-01-01"
+        with self.assertRaises(SourcePolicyDenied):
+            require_variant_coverage(value, ["synthetic.model-x"], today=date(2026, 11, 11))
 
 
 if __name__ == "__main__":
