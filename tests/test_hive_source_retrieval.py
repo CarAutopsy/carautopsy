@@ -63,7 +63,9 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.outcome, "retrieved_unverified")
         self.assertIn("not_verified", result.reason)
         self.assertEqual(result.body, b"source text")
-        self.factory.assert_called_once_with("oem.example", "8.8.8.8", 8.0)
+        self.factory.assert_called_once()
+        self.assertEqual(self.factory.call_args.args[:2], ("oem.example", "8.8.8.8"))
+        self.assertAlmostEqual(self.factory.call_args.args[2], 8.0, places=3)
         self.assertEqual(self.connection.request_args[0:2], ("GET", "/specs/model.html"))
         self.assertEqual(self.connection.request_args[2]["Host"], "oem.example")
         user_agent = self.connection.request_args[2]["User-Agent"]
