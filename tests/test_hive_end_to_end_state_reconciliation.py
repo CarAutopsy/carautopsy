@@ -136,7 +136,7 @@ class HiveEndToEndStateReconciliationTests(unittest.TestCase):
 
             self.sh("clone", "--branch", proposal_branch, origin, reopened, cwd=root, env=env)
             script = (
-                "import json,sys; from pathlib import Path; "
+                "import json,sys,subprocess; from pathlib import Path; "
                 "import hive_state; root=Path(sys.argv[1]); "
                 "result=hive_state.reconcile_with_pr(root); "
                 "baseline=hive_state.proposal_state_base(root); "
