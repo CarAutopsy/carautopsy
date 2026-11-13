@@ -261,7 +261,7 @@
         },
         "claim_evidence": {
           "type": "array",
-          "description": "Claim-level evidence spans; required by the deterministic Hive gate for every non-null technical claim.",
+          "description": "Claim-level evidence spans intended for the future deterministic Hive gate to cover every non-null externally sourced, decision-relevant claim, including offer and price fields. The schema validates span shape only; it does not enforce claim coverage.",
           "items": {
             "type": "object",
             "required": [
