@@ -1,4 +1,6 @@
 """Security regression tests for the fail-closed Hive source retriever."""
+import socket
+import threading
 import time
 import unittest
 from types import SimpleNamespace
@@ -38,6 +40,9 @@ class FakeResponse:
     def read1(self, amount=-1):
         return self.read(amount)
 
+    def isclosed(self):
+        return not self.body
+
 
 class FakeConnection:
     def __init__(self, response):
@@ -73,13 +78,13 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         return fetch_source(url, **options)
 
     def test_valid_approved_source_is_only_retrieved_unverified(self):
-        result = self.fetch()
+        result = self.fetch(clock=lambda: 0.0)
         self.assertEqual(result.outcome, "retrieved_unverified")
         self.assertIn("not_verified", result.reason)
         self.assertEqual(result.body, b"source text")
         self.factory.assert_called_once()
         self.assertEqual(self.factory.call_args.args[:2], ("oem.example", "8.8.8.8"))
-        self.assertAlmostEqual(self.factory.call_args.args[2], 8.0, places=3)
+        self.assertEqual(self.factory.call_args.args[2], 8.0)
         self.assertEqual(self.connection.request_args[0:2], ("GET", "/specs/model.html"))
         self.assertEqual(self.connection.request_args[2]["Host"], "oem.example")
         user_agent = self.connection.request_args[2]["User-Agent"]
@@ -255,6 +260,40 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.outcome, "retrieved_unverified")
         self.assertTrue(self.connection.response.socket.timeouts)
         self.assertTrue(all(value > 0 for value in self.connection.response.socket.timeouts))
+
+    def test_closed_content_length_response_finishes_without_socket_lookup(self):
+        self.connection.response = FakeResponse(body=b"complete")
+        result = self.fetch()
+        self.assertEqual(result.outcome, "retrieved_unverified")
+        self.assertEqual(result.body, b"complete")
+
+    def test_deadline_socket_bounds_slow_header_or_chunk_framing_reads(self):
+        from scripts.hive_source_retrieval import _DeadlineSocket
+        client, server = socket.socketpair()
+        deadline = time.monotonic() + 0.08
+        wrapped = _DeadlineSocket(client, deadline, time.monotonic)
+        reader = wrapped.makefile("rb")
+
+        def drip_bytes():
+            try:
+                for byte in b"HTTP/1.1 200 OK\\r\\nContent-Type: text/html\\r\\n":
+                    server.sendall(bytes([byte]))
+                    time.sleep(0.02)
+            except OSError:
+                pass
+
+        worker = threading.Thread(target=drip_bytes, daemon=True)
+        worker.start()
+        started = time.monotonic()
+        try:
+            with self.assertRaises(socket.timeout):
+                reader.readline()
+            self.assertLess(time.monotonic() - started, 0.5)
+        finally:
+            reader.close()
+            wrapped.close()
+            server.close()
+            worker.join(timeout=0.2)
 
     def test_candidate_source_batch_materializes_one_shot_allowlist(self):
         urls = [URL, "https://oem.example/specs/second.html"]
