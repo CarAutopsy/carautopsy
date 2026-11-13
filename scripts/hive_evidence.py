@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import Callable
 
 try:  # Support both script execution and package imports in unit tests.
-    from .hive_source_extract import extract_source_text
+    from .hive_source_extract import ExtractionRejected, extract_source_text
     from .hive_source_policy import SourcePolicyDenied, check_source_access, load_policy
     from .hive_source_retrieval import fetch_source
     from .hive_candidate import validate_evidence_bundle
 except ImportError:  # pragma: no cover - exercised by the script entry point.
-    from hive_source_extract import extract_source_text
+    from hive_source_extract import ExtractionRejected, extract_source_text
     from hive_source_policy import SourcePolicyDenied, check_source_access, load_policy
     from hive_source_retrieval import fetch_source
     from hive_candidate import validate_evidence_bundle
@@ -81,18 +81,16 @@ def retrieve_approved_evidence(
     evidence = []
     total_chars = 0
     for entry, url in seeded_sources:
-            try:
-                # Check owner terms and fetch/parse robots.txt before requesting the
-                # source document. The second request uses the same pinned transport;
-                # its callback is a one-use authorization from the immediately prior check.
-                check_source_access(url, config=config, fetcher=fetcher, today=today)
-                result = fetcher(
-                    url,
-                    approved_hosts=hosts,
-                    robots_allowed=lambda requested: requested == url,
-                )
-            except Exception as exc:
-                raise EvidenceRetrievalRejected("source retrieval failed closed") from exc
+            # The production fetcher converts expected transport/policy rejections
+            # into a rejected RetrievalResult, while the robots check raises the
+            # explicit SourcePolicyDenied type. Do not catch arbitrary exceptions
+            # here: programming errors and broken injected fetchers must fail red.
+            check_source_access(url, config=config, fetcher=fetcher, today=today)
+            result = fetcher(
+                url,
+                approved_hosts=hosts,
+                robots_allowed=lambda requested: requested == url,
+            )
             if getattr(result, "outcome", None) != "retrieved_unverified":
                 raise EvidenceRetrievalRejected("approved source was not retrieved successfully")
             body = getattr(result, "body", None)
@@ -104,7 +102,7 @@ def retrieve_approved_evidence(
                 # Reserve space for the generated document locator marker so the
                 # final serialized excerpt never exceeds the shared 20k ceiling.
                 extracted = extractor(body, content_type, max_chars=19_989)
-            except Exception as exc:
+            except ExtractionRejected as exc:
                 raise EvidenceRetrievalRejected("source extraction failed closed") from exc
             text = extracted.text
             if tuple(getattr(extracted, "locators", ())) == ("document",):
