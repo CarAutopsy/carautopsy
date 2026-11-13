@@ -95,9 +95,16 @@ jobs:
             exit "$pipeline_status"
           fi
 
+          rejection_summary="$(grep -F "Research cycle completed and saved for human review:" "$RUNNER_TEMP/hive-research.log" | tail -n 1 || true)"
           {
             echo "### Research outcome"
-            echo "**COMPLETED**"
+            if [ -n "$rejection_summary" ]; then
+              echo "**COMPLETED WITH REJECTIONS**"
+              echo "- $rejection_summary"
+            else
+              echo "**COMPLETED**"
+              echo "- Research cycle completed successfully; proposal is awaiting human review."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Provider smoke test only
         if: github.event_name == 'workflow_dispatch' && inputs.run_mode == 'provider-smoke-test'
