@@ -312,6 +312,21 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         )
         self.assertEqual([item["outcome"] for item in results], ["retrieved_unverified"] * 2)
 
+    def test_response_reader_keeps_socket_alive_after_connection_close(self):
+        from scripts.hive_source_retrieval import _DeadlineSocket
+
+        client, server = socket.socketpair()
+        wrapped = _DeadlineSocket(client, time.monotonic() + 1.0, time.monotonic)
+        reader = wrapped.makefile("rb")
+        wrapped.close()  # Mirrors HTTPConnection closing a Connection: close socket.
+        try:
+            server.sendall(b"response body")
+            self.assertEqual(reader.read(13), b"response body")
+        finally:
+            reader.close()
+            server.close()
+        self.assertEqual(client.fileno(), -1)
+
     def test_tls_handshake_observes_shared_deadline(self):
         from scripts.hive_source_retrieval import _PinnedHTTPSConnection
 
