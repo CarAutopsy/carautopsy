@@ -1,193 +1,155 @@
-# Hive external security review brief
+# Hive security review record template
 
-**Review target:** `CarAutopsy/carautopsy`  
-**Target ref:** `main`  
-**Exact target commit:** `71465beab90527e8a8788ab276cc42bba3383701`  
-**Prepared:** 2026-11-12  
-**Purpose:** Independent external security assessment for issue [#37](https://github.com/CarAutopsy/carautopsy/issues/37).
+**Project:** `CarAutopsy/carautopsy`  
+**Issue:** [#37 — Hive retrieval/provenance security](https://github.com/CarAutopsy/carautopsy/issues/37)  
+**Operating model:** one-person, zero-budget hobby project  
+**Prepared:** 2026-11-13
 
-## 1. Independence and reviewer requirements
+## 1. Review model
 
-This review must be performed by a security reviewer independent of the implementation author and project owner. Before starting, the reviewer should disclose:
+The project owner is the sole human maintainer and performs the required human security review. No paid external auditor is required or budgeted.
 
-- Full name and professional role.
-- Employer or organization (or state that the review is independent).
-- Any financial, employment, advisory, personal, or other relationship with the project, repository owner, or implementers.
-- Whether AI tools were used, which tools, and what work they performed.
-- Relevant application-security, network-security, Python, SSRF, and document-parser experience.
+The owner uses the five AI services already in the project as supplementary cross-reviewers. AI findings are not represented as independent human certification. The owner remains responsible for reading the implementation, evaluating each finding, documenting disagreements, and issuing the final human verdict.
 
-A review by the repository owner, implementation author, this assistant, Qodo, CodeRabbit, Copilot, or another automated agent is useful supplementary evidence but does **not** satisfy the independent external review requirement.
+Record the five service names and exact model/version identifiers actually used at review time; do not infer or invent a list of completed reviews. For each service, preserve the prompt/scope, reviewed SHA (or state that it could not verify the SHA), findings, disagreements, and unresolved limitations. An unavailable service or uncompleted review must be marked pending, not passed.
 
-Review the exact commit above. If `main` advances, either keep this SHA as the explicit review target or agree and record a new exact SHA before beginning. Do not silently mix findings from different revisions.
+## 2. Exact review target
 
-## 2. System purpose and security boundary
+- Repository: `CarAutopsy/carautopsy`
+- Branch/ref: `main`
+- Exact audited commit SHA: **REQUIRED**
+- Review date (UTC): **REQUIRED**
+- Owner/auditor: project owner
+- Relevant PRs and files: list exact PRs/files inspected.
 
-Hive research is intended to collect official, variant-scoped vehicle-source material, extract bounded evidence, validate candidate claims deterministically, and then submit the same validated bundle to two independent research auditors.
+Do not silently mix findings from different revisions. If `main` advances during review, either finish against the pinned SHA or record a new exact SHA and repeat affected checks.
 
-The system is integrated but deliberately disabled:
+## 3. System boundary and stop conditions
+
+Hive research is integrated but deliberately disabled:
 
 - `VERIFIED_RETRIEVAL_AVAILABLE = False`.
 - `HIVE_RESEARCH_PAUSED` remains active.
 - `data-connectors/approved-source-hosts.json` has empty `approved_hosts` and `source_policies` arrays.
-- No live OEM retrieval, paid provider call, or vehicle research dispatch is authorized.
-- The queue and failed-candidate ledger remain quarantined; no automatic retry or promotion is permitted while paused.
+- No live OEM retrieval, paid provider calls, or vehicle research dispatch is authorized.
 
-**The review must not enable retrieval, add source hosts/URLs, remove the pause, dispatch research, or make paid provider calls.** Use static analysis, local tests, synthetic documents, and controlled local fixtures. If a reviewer believes live testing is necessary, stop and request separate explicit owner authorization and a separately approved test plan.
+Use static review, local unit tests, synthetic documents, and controlled local fixtures. Do not enable retrieval, add source hosts/URLs, remove the pause, dispatch research, access OEM endpoints, or make paid provider calls as part of this review. Those actions require a separate explicit owner authorization after all acceptance criteria are met.
 
-## 3. Components in scope
+## 4. Review scope and security questions
 
-Review these files at the target commit, plus their direct call sites and relevant tests:
-
-### Source policy and retrieval
-- `scripts/hive_source_policy.py`
-- `scripts/hive_source_retrieval.py`
-- `scripts/hive_evidence.py`
-- `data-connectors/approved-source-hosts.json`
-
-### Extraction and untrusted content handling
-- `scripts/hive_source_extract.py`
-- `scripts/hive_html_worker.py`
-- `scripts/hive_pdf_worker.py`
-
-### Candidate, evidence, and prompt validation
-- `scripts/hive_candidate.py`
-- `scripts/hive_prompts.py`
-- `schemas/vehicle-variant.schema.json`
-
-### Runtime ordering and recovery
-- `scripts/hive_orchestration.py`
-- `scripts/autonomous_pipeline.py`
-- `scripts/hive_research_gate.py`
-- Relevant queue, proposal, state, retry, and ledger call paths.
-
-### Relevant test files
-- `tests/test_hive_source_policy.py`
-- `tests/test_hive_source_retrieval.py`
-- `tests/test_hive_source_extract.py`
-- `tests/test_hive_evidence.py`
-- `tests/test_hive_candidate.py`
-- `tests/test_hive_orchestration.py`
-- All additional tests covering pipeline ordering, queue preflight, retry/restart, interruption, and cross-process state reconciliation.
-
-The list is an entry point, not a restriction. Trace the full reachable call graph and inspect any additional security-relevant code or tests discovered.
-
-## 4. Threat model and required review questions
-
-Treat candidate JSON, source URLs, fetched HTML/text/PDF, extracted strings, provider responses, persisted state, and remote queue/proposal state as untrusted unless independently validated.
+Review the exact audited SHA, trace reachable call paths, and record files/lines and evidence. Treat candidate JSON, source URLs, fetched HTML/text/PDF, provider responses, and persisted state as untrusted.
 
 ### A. Destination control, SSRF, and DNS pinning
 
-Verify that:
+- HTTPS only; malformed URLs, credentials, IP literals, control characters, non-standard ports and unsafe schemes rejected.
+- Candidate data cannot choose or broaden approved hostname/path/URL scope.
+- Every A/AAAA answer validated; private, loopback, link-local, metadata, mixed, reserved or otherwise unsafe answers denied.
+- The validated IP is the actual TCP destination; no second resolver path.
+- Original hostname retained for TLS SNI and certificate verification.
+- No proxy, browser, redirect or alternate transport bypass.
+- Connection, read, total-time, response-size and content-type bounds enforced.
+- URL parsing/normalization resists user-info, suffix, encoding and parser-differential bypasses.
 
-1. Only HTTPS URLs are accepted; malformed URLs, credentials, IP literals, control characters, non-standard ports, and disallowed schemes are rejected.
-2. A candidate cannot choose or broaden an approved hostname, path, or URL. The owner-controlled manifest is the only authority.
-3. Every A/AAAA answer is checked and any non-public, mixed, private, loopback, link-local, multicast, reserved, or otherwise unsafe answer causes denial.
-4. The validated public IP is the IP actually used for the TCP connection. There is no second DNS lookup or resolver path between validation and socket connection.
-5. TLS SNI and certificate hostname verification use the original hostname, not the pinned IP.
-6. Environment proxies, proxy variables, browser automation, redirects, alternate clients, and fallback transports cannot bypass the pinned connection.
-7. Redirects are rejected, and no redirect target is requested.
-8. Connection, read, total-time, response-size, and content-type limits are enforced on both declared and streamed data.
-9. URL parsing and hostname normalization do not permit user-info, suffix, encoding, Unicode, trailing-dot, or parser-differential bypasses.
+### B. Owner source approval, robots, and terms
 
-**Demand code-level evidence** for the actual socket dial and TLS identity. A unit test that only mocks DNS validation is not sufficient.
+- Empty, missing, malformed, stale, ambiguous or unreadable policy fails closed.
+- Exact owner-reviewed host and HTTPS URL scope enforced; no wildcards or candidate expansion.
+- Owner approval metadata and freshness enforced.
+- Robots policy retrieved via the same protected transport before target document fetch.
+- Missing, unavailable, malformed, denying or exceptional robots results deny retrieval.
+- Bootstrap exception permits only the exact robots path.
+- Robots matching, normalization, wildcard/anchor and Allow/Disallow precedence behave as specified.
+- Terms metadata is an owner-reviewed attestation, not an automated legal determination.
 
-### B. Owner approval, robots.txt, and terms policy
+### C. Extraction, parser safety, and prompt injection
 
-Verify that:
+- Only supported HTML, plain-text and PDF types accepted.
+- Input bytes, pages, extracted characters, parse duration and worker resources bounded.
+- Malformed, encrypted, oversized or unsupported documents fail safely.
+- HTML/PDF extraction cannot trigger network access.
+- Parser workers receive minimal environments without provider credentials or unnecessary secrets.
+- Resource limits are not overstated as a complete OS sandbox or network namespace.
+- Source text is untrusted data and cannot override system/developer instructions.
+- Raw bodies, secrets and arbitrary untrusted page text are not persisted in retry ledgers or diagnostics.
 
-1. Empty, missing, malformed, stale, ambiguous, or unreadable policy configuration fails closed.
-2. Exact host and exact HTTPS URL scope is enforced, with no wildcard or candidate-controlled expansion.
-3. Owner approval metadata is required and freshness is enforced.
-4. Robots policy is retrieved through the same protected transport before target-document retrieval.
-5. Missing, unavailable, malformed, denying, or exceptional robots results deny retrieval.
-6. The robots bootstrap exception authorizes only the exact robots path, not the target document.
-7. The selected user-agent, path matching, percent-encoding normalization, wildcard and end-anchor behavior, and Allow/Disallow precedence conform to the intended policy.
-8. Terms metadata is treated as an owner-reviewed attestation, not as an automated legal determination. Review whether its freshness and reference requirements are adequate.
+### D. Evidence and candidate integrity
 
-### C. Extraction, parser isolation, and prompt injection
+- Evidence bound to exact approved URLs and reserved variant IDs.
+- Source IDs, canonical URLs, timestamps, content types, locators, quote spans and excerpt sizes validated.
+- Required non-null technical claims have bounded source/quote/locator support.
+- Mismatched URLs/variants, fabricated IDs, missing evidence, unsupported claims and malformed data fail closed.
+- Quote presence is not mistaken for semantic relevance or factual support.
+- HTTP 2xx and `retrieved_unverified` are never correctness proof.
 
-Verify that:
+### E. Pipeline ordering and zero bypass
 
-1. Only supported HTML, plain-text, and PDF types are accepted.
-2. Input bytes, pages, per-page text, total extracted characters, parse duration, and worker memory/CPU are bounded.
-3. Malformed, encrypted, oversized, or unsupported documents fail safely without unbounded resource use.
-4. HTML extraction excludes active/non-visible content as intended and cannot trigger network access.
-5. PDF/HTML workers receive minimal environments and no provider credentials or unnecessary secrets.
-6. Worker isolation claims are precise: assess the limits of POSIX resource limits and the absence of a separate network namespace or stronger OS sandbox.
-7. Source text is always treated as untrusted data, never as instructions that can override system/developer prompts or validation rules.
-8. Raw response bodies, arbitrary page text, secrets, and untrusted instructions are not persisted in retry ledgers or durable diagnostics.
+- Readiness gate checked before research activity.
+- Owner policy and evidence preflight precede proposal checkout, state overlay, and durable mutation.
+- Deterministic candidate/schema/identity/evidence validation precedes both research-auditor calls.
+- Rejected candidates trigger zero auditor calls.
+- Both independent vendor auditors receive the same bounded validated candidate/evidence bundle.
+- The two independent vendor PASS requirement cannot be bypassed by malformed verdicts, retries, fallback, exceptions or partial responses.
+- Failed candidates cannot be promoted through retry, restart, proposal recovery or cross-process reconciliation.
+- Failures leave queue/proposal/ledger/acknowledged state unchanged where required.
+- The hard-disabled readiness flag and pause cannot be changed by candidate data, provider output, or ordinary task/PR paths.
 
-### D. Evidence semantics and candidate integrity
+### F. Operations and supply chain
 
-Verify that:
+Assess dependency/parser risks, secrets, logging, exception handling, test realism, CI/workflow permissions, and any diagnostic path that could invoke retrieval outside the readiness gate. Separate repository controls from deployment-level assumptions.
 
-1. Evidence records are bound to exact approved source URLs and reserved variant IDs.
-2. Source IDs, URL canonicalization, timestamps, content types, locators, quote spans, and excerpt sizes are validated.
-3. Every required non-null technical/price/registration/identity claim has the required source and bounded quote/locator binding.
-4. Mismatched URLs, variants, fabricated identifiers, duplicate IDs, missing evidence, unsupported claims, excessive counts, and malformed JSON fail closed.
-5. A quote's presence is not incorrectly treated as semantic relevance or factual support.
-6. HTTP 2xx and `retrieved_unverified` are never treated as proof that a claim is correct.
-7. Normalization cannot silently convert an unsupported or fabricated claim into an accepted claim.
+## 5. AI cross-review evidence
 
-### E. Pipeline ordering, auditor independence, and zero-bypass behavior
+Complete one subsection per AI service actually used. Repeat rows as needed.
 
-Trace the production call graph and verify that:
+| Service | Model/version | Exact SHA verified? | Scope/prompt reference | Findings | Disagreements / unresolved risks |
+|---|---|---|---|---|---|
+| Service 1 | REQUIRED | Yes/No | REQUIRED | REQUIRED | REQUIRED |
+| Service 2 | REQUIRED | Yes/No | REQUIRED | REQUIRED | REQUIRED |
+| Service 3 | REQUIRED | Yes/No | REQUIRED | REQUIRED | REQUIRED |
+| Service 4 | REQUIRED | Yes/No | REQUIRED | REQUIRED | REQUIRED |
+| Service 5 | REQUIRED | Yes/No | REQUIRED | REQUIRED | REQUIRED |
 
-1. The readiness gate is checked before any research work.
-2. Owner manifest/variant coverage and evidence preflight happen before proposal checkout, state overlay, or durable mutation.
-3. Candidate parsing and deterministic schema/identity/evidence validation complete before either paid auditor is invoked.
-4. Rejected candidates produce zero auditor calls.
-5. Both independent auditors receive the same bounded, validated candidate/evidence bundle.
-6. The two independent vendor PASS requirement cannot be bypassed by malformed verdicts, retries, fallback paths, exceptions, or partial responses.
-7. Failed candidates cannot reach auditors or become promoted/accepted through retry, restart, proposal recovery, or cross-process state reconciliation.
-8. A failure at any preflight/retrieval/extraction/validation stage leaves queue, proposal, ledger, and acknowledged state unchanged where the contract requires no mutation.
-9. The hard-disabled readiness flag and research pause cannot be changed by candidate data, provider output, environment fallback, or an ordinary task/PR path.
+Do not fill a row with an assumed result. Record service outage, rate limit, refusal, incomplete output, or an inability to confirm the reviewed SHA as a limitation.
 
-### F. Operational and supply-chain considerations
+## 6. Automated and manual test evidence
 
-Assess dependency and parser risk, secret exposure, logging, exception handling, test realism, CI coverage, workflow permissions, and whether any development or diagnostic path can invoke retrieval outside the readiness gate. Identify assumptions that require deployment-level controls rather than repository code.
+Record actual commands, runtime/tool versions, exact SHA, test result, and relevant run URLs.
 
-## 5. Existing proof and its limits
+- Python unit suite:
+- Catalog validation:
+- Recursive compilation:
+- Repository Audit:
+- Exact-head workflow checks:
+- Targeted retrieval security regressions:
+- Manual code-path/transport trace:
+- Additional tests and limitations:
 
-The repository contains synthetic/local tests for policy decisions, retrieval controls, extraction limits, evidence binding, candidate validation, orchestration order, and recovery. The documented suite also includes subprocess proofs for retrieval preflight failure, robots denial, target-server failure, retry recovery, abrupt interruption, and cross-process state reconciliation.
+Mocked and synthetic tests do not prove OEM permission, source authenticity, factual claim support or production readiness. A pinned-transport test must be checked at the actual connection seam. Quote/locator validation proves traceability, not semantic relevance or truth. Parser resource limits do not prove full OS/network isolation.
 
-These tests are useful evidence but have explicit limits:
+## 7. Findings register
 
-- Mocked and synthetic tests do not prove OEM source permission or live-site behavior.
-- A pinned-transport unit test must be inspected to ensure it exercises the real connection seam rather than only a mocked resolver.
-- Quote/locator validation proves traceability to supplied source text, not semantic relevance or factual truth.
-- A passing CI run does not replace independent security analysis.
-- The worker resource limits do not, by themselves, prove complete OS sandboxing or network isolation.
+For each finding record unique ID, severity (Critical/High/Medium/Low/Informational), file/line at exact SHA, preconditions, attack/failure scenario, impact, reproduction evidence, remediation, and disposition. Record disagreements between owner analysis and each AI service explicitly. Track unresolved risks and residual limitations even when no code change is required.
 
-The reviewer should independently reproduce important claims, identify gaps, and state which conclusions are code-reviewed, test-reproduced, or assumed.
+## 8. Owner verdict
 
-## 6. Required reviewer deliverable
+- Exact audited SHA:
+- Verdict: **PASS / PASS WITH CONDITIONS / FAIL**
+- Findings disposition:
+- Outstanding conditions:
+- Five AI cross-reviews completed:
+- Unresolved disagreements/risks:
+- Residual limitations:
+- CI/test evidence:
+- Confirmed no live provider calls, OEM retrieval, or factual vehicle-data verification:
+- Confirmed no manifest, queue, ledger, branch, or production-state mutation:
+- Owner authorization status (separate from verdict):
 
-Please provide a written report containing:
+A PASS must not be issued while a Critical or High finding remains unresolved. A conditional verdict must list objective closure conditions. The owner records the final human decision and rationale; AI services do not vote or substitute for the owner.
 
-1. **Identity and independence disclosure** from section 1.
-2. **Exact reviewed repository and commit SHA**.
-3. **Scope and exclusions**, including any files, call paths, tests, or deployment controls not reviewed.
-4. **Verdict:** `PASS`, `PASS WITH CONDITIONS`, or `FAIL`.
-5. **Findings**, each with:
-   - Unique ID and severity (Critical/High/Medium/Low/Informational).
-   - Affected file and line range at the reviewed SHA.
-   - Preconditions and attack scenario.
-   - Concrete impact.
-   - Reproduction steps or a reason reproduction is not possible.
-   - Recommended remediation.
-6. **Acceptance-criteria matrix** mapping each requirement in issue #37 to Pass / Fail / Not Tested / Not Applicable, with evidence.
-7. **Tests and tools used**, including commands, versions, and results.
-8. **Residual risks and deployment assumptions**.
-9. **Explicit statement** whether any live network request, OEM access, provider call, or production-state mutation was performed.
-10. **Re-review requirements**, including the exact commit SHA required after remediation.
+## 9. Acceptance and activation boundary
 
-A PASS must not be issued while a Critical or High finding remains unresolved. A conditional verdict must list objective closure conditions. Findings must be tied to the exact SHA and must distinguish verified vulnerabilities from defense-in-depth recommendations.
+Issue #37 may be considered review-complete only after the owner has recorded the exact-SHA human review, the five-service cross-review results/disagreements/limitations, finding dispositions, and exact-head automated validation.
 
-## 7. Stop conditions and acceptance
+Even then, review completion is **not** activation permission. The source manifest remains empty, `VERIFIED_RETRIEVAL_AVAILABLE = False`, and `HIVE_RESEARCH_PAUSED` remains active until the owner separately reviews proposed sources and explicitly authorizes activation.
 
-The reviewer must stop and notify the owner if testing would require live OEM requests, external scanning, paid providers, manifest changes, retrieval activation, or mutation of the Hive queue/state.
-
-Issue #37 remains open until the independent report is received, findings are resolved, exact-head CI/security checks pass, owner source review is completed for any proposed source entries, and the owner separately authorizes any future activation.
-
-**This brief is a review handoff only. It is not an audit result, security certification, source-access permission, or activation approval.**
+This document is a review record template, not an audit result, certification, source-access permission, or activation approval.
