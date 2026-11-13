@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import http.client
 import ipaddress
+import queue
 import re
 import socket
+import threading
 import ssl
 import time
 from dataclasses import asdict, dataclass
@@ -149,6 +151,50 @@ def _is_placeholder_identifier(url: str) -> bool:
     return False
 
 
+
+def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: float, clock) -> list[str]:
+    """Run blocking system DNS in a daemon worker and stop waiting at the shared deadline."""
+    result_queue = queue.Queue(maxsize=1)
+
+    def resolve():
+        try:
+            result_queue.put((True, resolver(host, 443, type=socket.SOCK_STREAM)))
+        except BaseException as exc:
+            result_queue.put((False, exc))
+
+    worker = threading.Thread(target=resolve, name="hive-dns-resolution", daemon=True)
+    worker.start()
+    remaining = deadline - clock()
+    if remaining <= 0:
+        raise TimeoutError("retrieval deadline exceeded during DNS resolution")
+    try:
+        succeeded, value = result_queue.get(timeout=remaining)
+    except queue.Empty as exc:
+        raise TimeoutError("retrieval deadline exceeded during DNS resolution") from exc
+    if not succeeded:
+        if isinstance(value, OSError):
+            raise RetrievalDenied("DNS resolution failed") from value
+        raise RetrievalDenied("DNS resolution failed") from value
+    return _validate_resolved_addresses(value)
+
+
+def _validate_resolved_addresses(records) -> list[str]:
+    return _validate_resolved_addresses(records)
+
+
+def _response_body_socket(response, connection):
+    """Find the socket retained by HTTPResponse after HTTPSConnection releases it."""
+    sock = getattr(connection, "sock", None)
+    if sock is not None:
+        return sock
+    fp = getattr(response, "fp", None)
+    raw = getattr(fp, "raw", None)
+    sock = getattr(raw, "_sock", None)
+    if sock is None:
+        sock = getattr(fp, "_sock", None)
+    return sock
+
+
 def _resolve_public_addresses(host: str, resolver=socket.getaddrinfo) -> list[str]:
     try:
         records = resolver(host, 443, type=socket.SOCK_STREAM)
@@ -214,7 +260,7 @@ def fetch_source(
         if max_bytes <= 0 or max_bytes > MAX_RESPONSE_BYTES:
             raise RetrievalDenied("response limit is outside the permitted bound")
         deadline = clock() + timeout
-        addresses = _resolve_public_addresses(host, resolver=resolver)
+        addresses = _resolve_public_addresses_before_deadline(host, resolver, deadline, clock)
         remaining = deadline - clock()
         if remaining <= 0:
             raise TimeoutError("retrieval deadline exceeded")
@@ -262,9 +308,10 @@ def fetch_source(
                 remaining = deadline - clock()
                 if remaining <= 0:
                     raise TimeoutError("retrieval deadline exceeded")
-                sock = getattr(connection, "sock", None)
-                if sock is not None:
-                    sock.settimeout(remaining)
+                sock = _response_body_socket(response, connection)
+                if sock is None:
+                    raise RetrievalDenied("HTTP response socket is unavailable for deadline-bounded reads")
+                sock.settimeout(remaining)
                 read_chunk = getattr(response, "read1", None)
                 if not callable(read_chunk):
                     raise RetrievalDenied("HTTP response does not support deadline-bounded reads")
