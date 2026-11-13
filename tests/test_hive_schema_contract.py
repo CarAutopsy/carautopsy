@@ -117,6 +117,15 @@ class HiveSchemaContractTests(unittest.TestCase):
         ]
         self.assert_valid(self.record)
 
+    def test_offer_country_and_currency_are_optional_but_not_nullable(self):
+        """Allow omitted offer metadata but reject null for non-nullable strings."""
+        self.record["offers"] = [{}]
+        self.assert_valid(self.record)
+        for field in ("country", "currency"):
+            with self.subTest(field=field):
+                self.record["offers"] = [{field: None}]
+                self.assert_invalid(self.record)
+
     def test_claim_evidence_binding_count_is_bounded(self):
         self.record["provenance"]["claim_evidence"] = [{
             "claim_path": f"performance.value_{index}",
