@@ -85,7 +85,10 @@ def retrieve_approved_evidence(
             # into a rejected RetrievalResult, while the robots check raises the
             # explicit SourcePolicyDenied type. Do not catch arbitrary exceptions
             # here: programming errors and broken injected fetchers must fail red.
-            check_source_access(url, config=config, fetcher=fetcher, today=today)
+            try:
+                check_source_access(url, config=config, fetcher=fetcher, today=today)
+            except SourcePolicyDenied as exc:
+                raise EvidenceRetrievalRejected("source access policy rejected retrieval") from exc
             result = fetcher(
                 url,
                 approved_hosts=hosts,
