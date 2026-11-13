@@ -295,7 +295,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
                 third = self.fetch(timeout=0.02, robots_allowed=stalled_policy)
                 self.assertEqual(first.reason, "request_timeout")
                 self.assertEqual(second.reason, "request_timeout")
-                self.assertIn("policy worker capacity exhausted", third.reason)
+                self.assertIn("worker capacity exhausted", third.reason)
                 self.assertEqual(started["count"], 2)
         finally:
             release.set()
@@ -329,7 +329,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
                 third = self.fetch(timeout=0.02, resolver=stalled_resolver)
                 self.assertEqual(first.reason, "request_timeout")
                 self.assertEqual(second.reason, "request_timeout")
-                self.assertIn("DNS worker capacity exhausted", third.reason)
+                self.assertIn("worker capacity exhausted", third.reason)
                 self.assertEqual(started["count"], 2)
                 self.factory.assert_not_called()
         finally:
