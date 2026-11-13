@@ -1,5 +1,6 @@
 """Security regression tests for the fail-closed Hive source retriever."""
 import socket
+import ssl
 import threading
 import time
 import unittest
@@ -279,7 +280,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
 
         def drip_bytes():
             try:
-                for byte in b"HTTP/1.1 200 OK\\r\\nContent-Type: text/html\\r\\n":
+                for byte in b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n":
                     server.sendall(bytes([byte]))
                     time.sleep(0.02)
             except OSError:
@@ -310,6 +311,40 @@ class HiveSourceRetrievalTests(unittest.TestCase):
             connection_factory=factory,
         )
         self.assertEqual([item["outcome"] for item in results], ["retrieved_unverified"] * 2)
+
+    def test_tls_handshake_observes_shared_deadline(self):
+        from scripts.hive_source_retrieval import _PinnedHTTPSConnection
+
+        class StalledTLS:
+            def __init__(self):
+                self.closed = False
+                self.blocking = None
+
+            def setblocking(self, value):
+                self.blocking = value
+
+            def do_handshake(self):
+                raise ssl.SSLWantReadError()
+
+            def pending(self):
+                return 0
+
+            def close(self):
+                self.closed = True
+
+        connection = _PinnedHTTPSConnection("oem.example", "8.8.8.8", 5.0)
+        connection._retrieval_deadline = 10.0
+        connection._retrieval_clock = lambda: 0.0
+        raw_socket = Mock()
+        tls_socket = StalledTLS()
+        with patch("scripts.hive_source_retrieval.socket.create_connection", return_value=raw_socket), \\
+             patch.object(connection, "_context") as context, \\
+             patch("scripts.hive_source_retrieval.select.select", return_value=([], [], [])) as wait:
+            context.wrap_socket.return_value = tls_socket
+            with self.assertRaises(socket.timeout):
+                connection.connect()
+        wait.assert_called_once_with([tls_socket], [], [], 10.0)
+        self.assertTrue(tls_socket.closed)
 
     def test_pinned_transport_dials_validated_ip_and_keeps_hostname_for_tls(self):
         from scripts.hive_source_retrieval import _PinnedHTTPSConnection
