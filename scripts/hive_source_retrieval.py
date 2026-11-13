@@ -154,6 +154,33 @@ def _is_placeholder_identifier(url: str) -> bool:
 
 
 
+def _check_robots_policy_before_deadline(url: str, policy, deadline: float, clock) -> None:
+    """Run the policy callback without allowing it to exceed the retrieval deadline."""
+    result_queue = queue.Queue(maxsize=1)
+
+    def check():
+        try:
+            result_queue.put((True, policy(url)))
+        except BaseException as exc:
+            result_queue.put((False, exc))
+
+    # Policy callbacks may perform network I/O and cannot be safely cancelled.
+    # A timed-out daemon worker is left to finish, but its result is discarded.
+    worker = threading.Thread(target=check, name="hive-robots-policy", daemon=True)
+    worker.start()
+    remaining = deadline - clock()
+    if remaining <= 0:
+        raise TimeoutError("retrieval deadline exceeded during robots/terms policy check")
+    try:
+        succeeded, value = result_queue.get(timeout=remaining)
+    except queue.Empty as exc:
+        raise TimeoutError("retrieval deadline exceeded during robots/terms policy check") from exc
+    if not succeeded:
+        raise RetrievalDenied("robots/terms policy check failed") from value
+    if value is not True:
+        raise RetrievalDenied("robots/terms policy did not permit this URL")
+
+
 def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: float, clock) -> list[str]:
     """Run blocking system DNS in a daemon worker and stop waiting at the shared deadline."""
     result_queue = queue.Queue(maxsize=1)
@@ -377,19 +404,14 @@ def fetch_source(
         host, path = _parse_source_url(url, approved_hosts)
         if _is_placeholder_identifier(url):
             raise RetrievalDenied("source URL contains a placeholder identifier")
-        if robots_allowed is None:
-            raise RetrievalDenied("robots/terms policy callback is required")
-        try:
-            permitted = robots_allowed(url)
-        except Exception as exc:
-            raise RetrievalDenied("robots/terms policy check failed") from exc
-        if permitted is not True:
-            raise RetrievalDenied("robots/terms policy did not permit this URL")
         if timeout <= 0 or timeout > 30:
             raise RetrievalDenied("timeout must be greater than 0 and at most 30 seconds")
         if max_bytes <= 0 or max_bytes > MAX_RESPONSE_BYTES:
             raise RetrievalDenied("response limit is outside the permitted bound")
         deadline = clock() + timeout
+        if robots_allowed is None:
+            raise RetrievalDenied("robots/terms policy callback is required")
+        _check_robots_policy_before_deadline(url, robots_allowed, deadline, clock)
         addresses = _resolve_public_addresses_before_deadline(host, resolver, deadline, clock)
         remaining = deadline - clock()
         if remaining <= 0:
