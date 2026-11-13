@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from scripts.hive_evidence import EvidenceRetrievalRejected, retrieve_approved_evidence
+from scripts.hive_source_extract import ExtractionRejected
 
 
 URL = "https://oem.example/specs/model.html"
@@ -97,7 +98,35 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
                 content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
             )
         with self.assertRaises(EvidenceRetrievalRejected):
-            retrieve_approved_evidence(variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher, extractor=Mock(side_effect=ValueError("bad")), today=date(2026, 11, 11))
+            retrieve_approved_evidence(variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher, extractor=Mock(side_effect=ExtractionRejected("bad")), today=date(2026, 11, 11))
+
+    def test_unexpected_target_fetcher_exception_propagates(self):
+        def fetcher(url, **kwargs):
+            if url == ROBOTS_URL:
+                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\\nAllow: /\\n")
+            raise RuntimeError("unexpected fetcher defect")
+
+        with self.assertRaisesRegex(RuntimeError, "unexpected fetcher defect"):
+            retrieve_approved_evidence(
+                variant_id="synthetic.model-x", config=CONFIG,
+                fetcher=fetcher, today=date(2026, 11, 11),
+            )
+
+    def test_unexpected_extractor_exception_propagates(self):
+        def fetcher(url, **kwargs):
+            if url == ROBOTS_URL:
+                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\\nAllow: /\\n")
+            return SimpleNamespace(
+                outcome="retrieved_unverified", body=b"data",
+                content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
+            )
+
+        with self.assertRaisesRegex(RuntimeError, "unexpected extractor defect"):
+            retrieve_approved_evidence(
+                variant_id="synthetic.model-x", config=CONFIG, fetcher=fetcher,
+                extractor=Mock(side_effect=RuntimeError("unexpected extractor defect")),
+                today=date(2026, 11, 11),
+            )
 
     def test_duplicate_seed_urls_are_rejected(self):
         entry = dict(CONFIG["source_policies"][0], approved_urls=[{"url": URL, "variant_ids": ["synthetic.model-x"]}, {"url": URL, "variant_ids": ["synthetic.model-x"]}])
