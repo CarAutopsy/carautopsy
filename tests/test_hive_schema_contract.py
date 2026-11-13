@@ -95,6 +95,28 @@ class HiveSchemaContractTests(unittest.TestCase):
         del self.record["provenance"]["claim_evidence"][0]["quote"]
         self.assert_invalid(self.record)
 
+    def test_claim_evidence_can_reference_offer_price_fields(self):
+        """Accept claim paths for externally sourced offer and price values."""
+        self.record["offers"] = [{
+            "list_price_minor": 3499000,
+            "purchase_price_excl_vat_eur": 2800.0,
+        }]
+        self.record["provenance"]["claim_evidence"] = [
+            {
+                "claim_path": "offers[0].list_price_minor",
+                "source_id": "dealer-1",
+                "locator": "offer page",
+                "quote": "List price EUR 34,990",
+            },
+            {
+                "claim_path": "offers[0].purchase_price_excl_vat_eur",
+                "source_id": "dealer-1",
+                "locator": "offer page",
+                "quote": "Purchase price excluding VAT EUR 2,800",
+            },
+        ]
+        self.assert_valid(self.record)
+
     def test_claim_evidence_binding_count_is_bounded(self):
         self.record["provenance"]["claim_evidence"] = [{
             "claim_path": f"performance.value_{index}",
