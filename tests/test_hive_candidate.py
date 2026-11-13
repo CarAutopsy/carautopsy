@@ -51,7 +51,7 @@ class HiveCandidateGateTests(unittest.TestCase):
         self.assertNotIn("hive", result["extensions"])
         self.assertEqual(result["extensions"]["other"], "keep")
 
-    def test_every_non_null_technical_claim_requires_an_exact_evidence_span(self):
+    def test_every_non_null_decision_claim_requires_an_exact_evidence_span(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {"power_w": 110000}
         candidate["provenance"]["claim_evidence"] = [{
@@ -64,10 +64,31 @@ class HiveCandidateGateTests(unittest.TestCase):
         result = validate_candidate(candidate, self.task, evidence)
         self.assertEqual(result["performance"]["power_w"], 110000)
 
-    def test_non_null_technical_claim_without_binding_is_rejected(self):
+    def test_non_null_decision_claim_without_binding_is_rejected(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {"power_w": 110000}
         with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
+            validate_candidate(candidate, self.task, self.evidence)
+
+    def test_non_reserved_identity_fields_require_claim_evidence(self):
+        for field, value in (
+            ("powertrain", "BEV"),
+            ("model_year_from", 2025),
+            ("model_year_to", 2026),
+            ("doors", 5),
+            ("seats", 5),
+            ("vehicle_class", "M1"),
+        ):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(self.candidate)
+                candidate["identity"][field] = value
+                with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
+                    validate_candidate(candidate, self.task, self.evidence)
+
+    def test_blank_non_reserved_identity_string_is_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["identity"]["powertrain"] = ""
+        with self.assertRaisesRegex(CandidateRejected, "blank decision-relevant claim value"):
             validate_candidate(candidate, self.task, self.evidence)
 
     def test_claim_binding_requires_exact_quote_and_locator(self):
@@ -140,13 +161,13 @@ class HiveCandidateGateTests(unittest.TestCase):
         with self.assertRaisesRegex(CandidateRejected, "duplicate source_id"):
             validate_candidate(candidate, self.task, self.evidence)
 
-    def test_technical_claim_count_is_bounded(self):
+    def test_decision_claim_count_is_bounded(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {f"spec_{index}": index for index in range(201)}
-        with self.assertRaisesRegex(CandidateRejected, "too many technical claims"):
+        with self.assertRaisesRegex(CandidateRejected, "too many decision-relevant claims"):
             validate_candidate(candidate, self.task, self.evidence)
 
-    def test_offer_metadata_is_exempt_but_offer_price_requires_a_binding(self):
+    def test_offer_country_currency_and_price_require_bindings_but_offer_id_does_not(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["offers"] = [{
             "offer_id": "at-base-2024",
@@ -154,19 +175,48 @@ class HiveCandidateGateTests(unittest.TestCase):
             "currency": "EUR",
             "list_price_minor": 4299000,
         }]
-        candidate["provenance"]["claim_evidence"] = [{
-            "claim_path": "offers[0].list_price_minor",
-            "source_id": "oem-1",
-            "locator": "document",
-            "quote": "List price: EUR 42,990.",
-        }]
+        evidence_text = (
+            "[document]\\nCountry: Austria (AT).\\nCurrency: EUR.\\nList price: EUR 42,990."
+        )
+        candidate["provenance"]["claim_evidence"] = [
+            {
+                "claim_path": "offers[0].country",
+                "source_id": "oem-1",
+                "locator": "document",
+                "quote": "Country: Austria (AT).",
+            },
+            {
+                "claim_path": "offers[0].currency",
+                "source_id": "oem-1",
+                "locator": "document",
+                "quote": "Currency: EUR.",
+            },
+            {
+                "claim_path": "offers[0].list_price_minor",
+                "source_id": "oem-1",
+                "locator": "document",
+                "quote": "List price: EUR 42,990.",
+            },
+        ]
         evidence = [dict(
             self.evidence[0],
-            text="[document]\\nList price: EUR 42,990.",
-            locator_texts={"document": "List price: EUR 42,990."},
+            text=evidence_text,
+            locator_texts={"document": evidence_text.split("\\n", 1)[1]},
         )]
         result = validate_candidate(candidate, self.task, evidence)
         self.assertEqual(result["offers"][0]["list_price_minor"], 4299000)
+
+        candidate["provenance"]["claim_evidence"].pop(1)
+        with self.assertRaisesRegex(CandidateRejected, "offers\\[0\\]\\.currency"):
+            validate_candidate(candidate, self.task, evidence)
+
+    def test_blank_offer_country_and_currency_are_rejected(self):
+        for field, value in (("country", "  "), ("currency", "   ")):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(self.candidate)
+                candidate["offers"] = [{field: value}]
+                with self.assertRaisesRegex(CandidateRejected, "blank decision-relevant claim value"):
+                    validate_candidate(candidate, self.task, self.evidence)
 
     def test_claim_bindings_are_bounded_before_per_binding_validation(self):
         candidate = copy.deepcopy(self.candidate)
@@ -358,7 +408,7 @@ class HiveCandidateGateTests(unittest.TestCase):
     def test_colliding_dotted_claim_paths_are_rejected(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {"x.y": 1, "x": {"y": 2}}
-        with self.assertRaisesRegex(CandidateRejected, "ambiguous duplicate technical claim path"):
+        with self.assertRaisesRegex(CandidateRejected, "ambiguous duplicate decision claim path"):
             validate_candidate(candidate, self.task, self.evidence)
 
 

@@ -20,8 +20,8 @@ MAX_RETRIEVED_AT_CHARS = 64
 MAX_TOTAL_EVIDENCE_JSON_CHARS = 140_000
 MAX_CANDIDATE_JSON_CHARS = 1_000_000
 MAX_CANDIDATE_DEPTH = 64
-TECHNICAL_CLAIM_ROOTS = ("identity", "performance", "energy", "dimensions", "emissions", "offers", "warranty", "registration")
-NON_CLAIM_OFFER_FIELDS = {"offer_id", "country", "currency"}
+CLAIM_ROOTS = ("identity", "performance", "energy", "dimensions", "emissions", "offers", "warranty", "registration")
+NON_CLAIM_OFFER_FIELDS = {"offer_id"}
 NON_CLAIM_IDENTITY_FIELDS = {"make", "model"}
 MAX_CLAIM_QUOTE_CHARS = 2_000
 MAX_CLAIM_BINDINGS = 200
@@ -157,8 +157,8 @@ def validate_evidence_bundle(evidence: Any) -> list[dict[str, str]]:
     return normalized
 
 
-def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
-    """Return paths for non-null canonical technical/registration/price claim values."""
+def _decision_claim_paths(candidate: dict[str, Any]) -> set[str]:
+    """Return non-null decision-relevant claim paths requiring source evidence."""
     paths: set[str] = set()
 
     def walk(value: Any, path: str) -> None:
@@ -172,19 +172,27 @@ def _technical_claim_paths(candidate: dict[str, Any]) -> set[str]:
         elif isinstance(value, list):
             for index, child in enumerate(value):
                 walk(child, f"{path}[{index}]")
-        elif value is not None and (not isinstance(value, str) or value.strip()):
+        elif isinstance(value, str):
+            if not value.strip():
+                raise CandidateRejected(f"blank decision-relevant claim value: {path}")
             if path in paths:
-                raise CandidateRejected(f"ambiguous duplicate technical claim path: {path}")
+                raise CandidateRejected(f"ambiguous duplicate decision claim path: {path}")
             paths.add(path)
             if len(paths) > MAX_CLAIM_BINDINGS:
-                raise CandidateRejected("candidate contains too many technical claims")
+                raise CandidateRejected("candidate contains too many decision-relevant claims")
+        elif value is not None:
+            if path in paths:
+                raise CandidateRejected(f"ambiguous duplicate decision claim path: {path}")
+            paths.add(path)
+            if len(paths) > MAX_CLAIM_BINDINGS:
+                raise CandidateRejected("candidate contains too many decision-relevant claims")
 
-    for root in TECHNICAL_CLAIM_ROOTS:
+    for root in CLAIM_ROOTS:
         if root in candidate:
             walk(candidate[root], root)
 
     # This established extension is consumed directly by TCO calculations.
-    # Keep unrelated extension metadata outside the technical-claim evidence gate.
+    # Keep unrelated extension metadata outside the decision-claim evidence gate.
     extensions = candidate.get("extensions")
     if isinstance(extensions, dict):
         fuel = extensions.get("fuel_consumption_l_100km")
@@ -199,8 +207,8 @@ def _validate_claim_evidence(
     evidence: list[dict[str, str]],
     provenance: dict[str, Any],
 ) -> None:
-    """Require each non-null technical claim to cite an exact supplied text span."""
-    required_paths = _technical_claim_paths(candidate)
+    """Require each non-null decision-relevant claim to cite an exact supplied text span."""
+    required_paths = _decision_claim_paths(candidate)
     bindings = provenance.get("claim_evidence")
     if bindings is not None:
         if not isinstance(bindings, list):
@@ -212,7 +220,7 @@ def _validate_claim_evidence(
             raise CandidateRejected("claim evidence was supplied without any claim paths")
         return
     if not isinstance(bindings, list) or not bindings:
-        raise CandidateRejected("every non-null technical claim requires claim_evidence")
+        raise CandidateRejected("every non-null decision-relevant claim requires claim_evidence")
     evidence_by_id = {item["source_id"]: item for item in evidence}
     locator_text_cache = {source_id: item.get("locator_texts", {}) for source_id, item in evidence_by_id.items()}
     declared_ids = {
@@ -248,7 +256,7 @@ def _validate_claim_evidence(
         covered.add(claim_path)
     missing = sorted(required_paths - covered)
     if missing:
-        raise CandidateRejected("technical claims lack evidence bindings: " + ", ".join(missing[:10]))
+        raise CandidateRejected("decision-relevant claims lack evidence bindings: " + ", ".join(missing[:10]))
 
 
 def validate_candidate(
