@@ -103,7 +103,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
     def test_unexpected_target_fetcher_exception_propagates(self):
         def fetcher(url, **kwargs):
             if url == ROBOTS_URL:
-                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\\nAllow: /\\n")
+                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
             raise RuntimeError("unexpected fetcher defect")
 
         with self.assertRaisesRegex(RuntimeError, "unexpected fetcher defect"):
@@ -115,7 +115,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
     def test_unexpected_extractor_exception_propagates(self):
         def fetcher(url, **kwargs):
             if url == ROBOTS_URL:
-                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\\nAllow: /\\n")
+                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
             return SimpleNamespace(
                 outcome="retrieved_unverified", body=b"data",
                 content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
