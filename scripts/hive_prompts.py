@@ -78,7 +78,7 @@ Assess only the supplied candidate against the supplied repository schema and th
 same source excerpts supplied to the researcher. A URL by itself is not evidence.
 Check whether every non-null externally sourced, decision-relevant claim has a
 claim_evidence entry whose quote is an exact span at the stated locator in the named
-supplied source. This includes offer country, currency, and price fields as well as
+supplied source. This includes offer country, offer currency, and offer price fields as well as
 technical and registration claims. Only variant_id, identity.make, and identity.model
 are task-supplied identity values exempt from external evidence; all other non-null
 identity fields require evidence.
