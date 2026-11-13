@@ -352,9 +352,11 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         connection._retrieval_clock = lambda: 0.0
         raw_socket = Mock()
         tls_socket = StalledTLS()
-        with patch("scripts.hive_source_retrieval.socket.create_connection", return_value=raw_socket), \\
-             patch.object(connection, "_context") as context, \\
-             patch("scripts.hive_source_retrieval.select.select", return_value=([], [], [])) as wait:
+        with (
+            patch("scripts.hive_source_retrieval.socket.create_connection", return_value=raw_socket),
+            patch.object(connection, "_context") as context,
+            patch("scripts.hive_source_retrieval.select.select", return_value=([], [], [])) as wait,
+        ):
             context.wrap_socket.return_value = tls_socket
             with self.assertRaises(socket.timeout):
                 connection.connect()
