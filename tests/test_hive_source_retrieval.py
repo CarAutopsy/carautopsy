@@ -1,4 +1,5 @@
 """Security regression tests for the fail-closed Hive source retriever."""
+import http.client
 import socket
 import ssl
 import threading
@@ -27,7 +28,7 @@ class FakeResponse:
         self.headers = headers or {"Content-Type": "text/html", "Content-Length": str(len(body))}
         self.body = body
         self.socket = FakeSocket()
-        self.fp = SimpleNamespace(raw=SimpleNamespace(_sock=self.socket))
+        self.fp = SimpleNamespace(raw=SimpleNamespace(deadline_socket=self.socket))
 
     def getheader(self, name, default=None):
         return self.headers.get(name, default)
@@ -311,6 +312,31 @@ class HiveSourceRetrievalTests(unittest.TestCase):
             connection_factory=factory,
         )
         self.assertEqual([item["outcome"] for item in results], ["retrieved_unverified"] * 2)
+
+    def test_real_http_response_reads_body_after_connection_close(self):
+        from scripts.hive_source_retrieval import _DeadlineSocket
+
+        client, server = socket.socketpair()
+        wrapped = _DeadlineSocket(client, time.monotonic() + 1.0, time.monotonic)
+        response = http.client.HTTPResponse(wrapped)
+        try:
+            server.sendall(
+                b"HTTP/1.1 200 OK\\r\\n"
+                b"Content-Type: text/plain\\r\\n"
+                b"Content-Length: 12\\r\\n"
+                b"Connection: close\\r\\n"
+                b"\\r\\n"
+                b"hello world!"
+            )
+            response.begin()
+            wrapped.close()  # HTTPConnection.getresponse() closes this when will_close.
+            self.assertEqual(response.read1(64), b"hello world!")
+            self.assertTrue(response.isclosed())
+        finally:
+            response.close()
+            wrapped.close()
+            server.close()
+        self.assertEqual(client.fileno(), -1)
 
     def test_response_reader_keeps_socket_alive_after_connection_close(self):
         from scripts.hive_source_retrieval import _DeadlineSocket
