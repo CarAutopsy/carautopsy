@@ -155,7 +155,7 @@ class HiveCandidateGateTests(unittest.TestCase):
         with self.assertRaisesRegex(CandidateRejected, "duplicate source_id"):
             validate_candidate(candidate, self.task, self.evidence)
 
-    def test_technical_claim_count_is_bounded(self):
+    def test_decision_claim_count_is_bounded(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {f"spec_{index}": index for index in range(201)}
         with self.assertRaisesRegex(CandidateRejected, "too many decision-relevant claims"):
