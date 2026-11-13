@@ -85,6 +85,12 @@ class HiveCandidateGateTests(unittest.TestCase):
                 with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
                     validate_candidate(candidate, self.task, self.evidence)
 
+    def test_blank_non_reserved_identity_string_is_rejected(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["identity"]["powertrain"] = ""
+        with self.assertRaisesRegex(CandidateRejected, "blank decision-relevant claim value"):
+            validate_candidate(candidate, self.task, self.evidence)
+
     def test_claim_binding_requires_exact_quote_and_locator(self):
         for field, value, expected in (
             ("quote", "Peak power is 110 kW.", "exact span at the stated locator"),
