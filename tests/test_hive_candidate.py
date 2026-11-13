@@ -394,7 +394,7 @@ class HiveCandidateGateTests(unittest.TestCase):
     def test_colliding_dotted_claim_paths_are_rejected(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {"x.y": 1, "x": {"y": 2}}
-        with self.assertRaisesRegex(CandidateRejected, "ambiguous duplicate technical claim path"):
+        with self.assertRaisesRegex(CandidateRejected, "ambiguous duplicate decision claim path"):
             validate_candidate(candidate, self.task, self.evidence)
 
 
