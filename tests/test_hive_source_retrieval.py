@@ -252,6 +252,15 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "request_timeout")
 
 
+    def test_robots_policy_is_bounded_by_total_deadline(self):
+        def stalled_policy(url):
+            time.sleep(0.1)
+            return True
+        result = self.fetch(timeout=0.01, robots_allowed=stalled_policy)
+        self.assertEqual(result.reason, "request_timeout")
+        self.resolver.assert_not_called()
+        self.factory.assert_not_called()
+
     def test_dns_resolution_is_bounded_by_total_deadline(self):
         def stalled_resolver(*args, **kwargs):
             time.sleep(0.1)
