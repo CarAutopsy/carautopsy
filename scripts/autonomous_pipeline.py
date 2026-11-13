@@ -505,7 +505,7 @@ if RESEARCH_ONLY:
         sys.exit(exc.exit_code)
     except Exception:
         print(
-            "HIVE_RESEARCH_PAUSED: owner-approved policy, robots, retrieval, "
+            "HIVE_RESEARCH_PREFLIGHT_FAILED: owner-approved policy, robots, retrieval, "
             "or extraction preflight failed; no proposal checkout or Hive state "
             "overlay was performed",
             file=sys.stderr,
