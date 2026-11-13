@@ -3,7 +3,8 @@ name: Autonomous Pipeline (Hive Research + TCO)
 on:
   # Run every 15 minutes while observing initial autonomous research runs.
   schedule:
-    - cron: '*/15 * * * *'
+    # Offset from quarter-hour boundaries to reduce GitHub scheduler contention.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       run_mode:
@@ -35,6 +36,20 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - name: Publish automation heartbeat
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_MODE: ${{ inputs.run_mode || 'scheduled-research' }}
+        run: |
+          {
+            echo "## Autonomous pipeline heartbeat"
+            echo "- Status: **STARTED**"
+            echo "- Trigger: \`$EVENT_NAME\`"
+            echo "- Mode: \`$RUN_MODE\`"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Run: [#$GITHUB_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
+            echo "- Started (UTC): $(date -u +'%Y-%m-%d %H:%M:%S')"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Install deps
         run: pip install -r requirements.txt
       - name: Require PR automation token
@@ -56,7 +71,34 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
           HIVE_RESEARCH_BATCH_SIZE: ${{ vars.HIVE_RESEARCH_BATCH_SIZE }}
-        run: python scripts/autonomous_pipeline.py --research-only
+        run: |
+          set +e
+          python scripts/autonomous_pipeline.py --research-only 2>&1 | tee "$RUNNER_TEMP/hive-research.log"
+          pipeline_status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$pipeline_status" -eq 2 ] && grep -qF "HIVE_RESEARCH_PAUSED:" "$RUNNER_TEMP/hive-research.log"; then
+            pause_message="$(grep -F "HIVE_RESEARCH_PAUSED:" "$RUNNER_TEMP/hive-research.log" | tail -n 1)"
+            {
+              echo "### Research outcome"
+              echo "**PAUSED — expected security gate**"
+              echo "- $pause_message"
+              echo "- No provider call or research queue dispatch was performed."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "Research is intentionally paused by the owner-controlled security gate."
+            exit 0
+          fi
+
+          if [ "$pipeline_status" -ne 0 ]; then
+            echo "### Research outcome" >> "$GITHUB_STEP_SUMMARY"
+            echo "**FAILED — unexpected pipeline error (exit $pipeline_status)**" >> "$GITHUB_STEP_SUMMARY"
+            exit "$pipeline_status"
+          fi
+
+          {
+            echo "### Research outcome"
+            echo "**COMPLETED**"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Provider smoke test only
         if: github.event_name == 'workflow_dispatch' && inputs.run_mode == 'provider-smoke-test'
         env:
