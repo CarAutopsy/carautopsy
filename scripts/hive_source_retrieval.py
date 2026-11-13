@@ -234,7 +234,7 @@ class _DeadlineSocketReader(io.RawIOBase):
             try:
                 super().close()
             finally:
-                self.deadline_socket.close()
+                self.deadline_socket._reader_closed()
 
 
 class _DeadlineSocket:
@@ -244,6 +244,19 @@ class _DeadlineSocket:
         self._socket = sock
         self._deadline = deadline
         self._clock = clock
+        self._io_refs = 0
+        self._closed = False
+        self._socket_closed = False
+
+    def _reader_closed(self):
+        self._io_refs = max(0, self._io_refs - 1)
+        if self._closed and self._io_refs == 0:
+            self._close_socket()
+
+    def _close_socket(self):
+        if not self._socket_closed:
+            self._socket_closed = True
+            self._socket.close()
 
     def _apply_deadline(self):
         remaining = self._deadline - self._clock()
@@ -263,11 +276,16 @@ class _DeadlineSocket:
     def makefile(self, mode="r", buffering=None, **kwargs):
         if mode not in ("rb", "r"):
             return self._socket.makefile(mode, buffering, **kwargs)
+        if self._closed:
+            raise OSError("cannot create a file from a closed deadline socket")
+        self._io_refs += 1
         reader = _DeadlineSocketReader(self)
         return io.BufferedReader(reader, buffer_size=buffering or io.DEFAULT_BUFFER_SIZE)
 
     def close(self):
-        return self._socket.close()
+        self._closed = True
+        if self._io_refs == 0:
+            self._close_socket()
 
     def __getattr__(self, name):
         return getattr(self._socket, name)
