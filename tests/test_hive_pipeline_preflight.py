@@ -167,7 +167,8 @@ class PipelinePreflightFailureTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
-            self.assertIn("HIVE_RESEARCH_PAUSED:", result.stderr)
+            self.assertIn("HIVE_RESEARCH_PREFLIGHT_FAILED:", result.stderr)
+            self.assertNotIn("HIVE_RESEARCH_PAUSED:", result.stderr)
             self.assertTrue(retrieval_marker.exists(), "the synthetic retrieval failure was not reached")
             self.assertFalse(provider_marker.exists(), "a provider was called after retrieval failed")
             self.assertEqual(
