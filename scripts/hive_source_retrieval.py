@@ -11,6 +11,7 @@ import io
 import ipaddress
 import queue
 import re
+import select
 import socket
 import threading
 import ssl
@@ -293,11 +294,46 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
         self._pinned_ip = pinned_ip
 
     def connect(self):
-        raw = socket.create_connection((self._pinned_ip, 443), self.timeout, self.source_address)
-        wrapped = self._context.wrap_socket(raw, server_hostname=self.host)
         deadline = getattr(self, "_retrieval_deadline", None)
         clock = getattr(self, "_retrieval_clock", time.monotonic)
-        self.sock = _DeadlineSocket(wrapped, deadline, clock) if deadline is not None else wrapped
+        remaining = deadline - clock() if deadline is not None else self.timeout
+        if remaining <= 0:
+            raise socket.timeout("retrieval deadline exceeded before TCP connect")
+        raw = socket.create_connection((self._pinned_ip, 443), remaining, self.source_address)
+        if deadline is None:
+            self.sock = self._context.wrap_socket(raw, server_hostname=self.host)
+            return
+
+        wrapped = self._context.wrap_socket(
+            raw, server_hostname=self.host, do_handshake_on_connect=False
+        )
+        try:
+            wrapped.setblocking(False)
+            while True:
+                remaining = deadline - clock()
+                if remaining <= 0:
+                    raise socket.timeout("retrieval deadline exceeded during TLS handshake")
+                try:
+                    wrapped.do_handshake()
+                    break
+                except ssl.SSLWantReadError:
+                    if wrapped.pending():
+                        continue
+                    readable, _, _ = select.select([wrapped], [], [], remaining)
+                    if not readable:
+                        raise socket.timeout("retrieval deadline exceeded during TLS handshake")
+                except ssl.SSLWantWriteError:
+                    _, writable, _ = select.select([], [wrapped], [], remaining)
+                    if not writable:
+                        raise socket.timeout("retrieval deadline exceeded during TLS handshake")
+            remaining = deadline - clock()
+            if remaining <= 0:
+                raise socket.timeout("retrieval deadline exceeded after TLS handshake")
+            wrapped.settimeout(remaining)
+            self.sock = _DeadlineSocket(wrapped, deadline, clock)
+        except BaseException:
+            wrapped.close()
+            raise
 
 
 def fetch_source(
