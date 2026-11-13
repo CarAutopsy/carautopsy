@@ -28,14 +28,6 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          persist-credentials: true
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
       - name: Publish automation heartbeat
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -50,6 +42,14 @@ jobs:
             echo "- Run: [#$GITHUB_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
             echo "- Started (UTC): $(date -u +'%Y-%m-%d %H:%M:%S')"
           } >> "$GITHUB_STEP_SUMMARY"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - name: Install deps
         run: pip install -r requirements.txt
       - name: Require PR automation token
