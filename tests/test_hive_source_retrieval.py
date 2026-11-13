@@ -321,11 +321,11 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         response = http.client.HTTPResponse(wrapped)
         try:
             server.sendall(
-                b"HTTP/1.1 200 OK\\r\\n"
-                b"Content-Type: text/plain\\r\\n"
-                b"Content-Length: 12\\r\\n"
-                b"Connection: close\\r\\n"
-                b"\\r\\n"
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: text/plain\r\n"
+                b"Content-Length: 12\r\n"
+                b"Connection: close\r\n"
+                b"\r\n"
                 b"hello world!"
             )
             response.begin()
