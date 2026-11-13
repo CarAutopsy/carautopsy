@@ -7,6 +7,7 @@ robots/terms policy callback. Empty allowlists and missing policy callbacks deny
 from __future__ import annotations
 
 import http.client
+import io
 import ipaddress
 import queue
 import re
@@ -179,20 +180,89 @@ def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: flo
 
 
 def _validate_resolved_addresses(records) -> list[str]:
-    return _validate_resolved_addresses(records)
+    """Validate every DNS answer and return unique public IPs only."""
+    addresses = []
+    for record in records:
+        try:
+            address = record[4][0].split("%", 1)[0]
+            parsed = ipaddress.ip_address(address)
+        except (IndexError, KeyError, TypeError, ValueError, AttributeError) as exc:
+            raise RetrievalDenied("DNS returned an invalid address record") from exc
+        if not parsed.is_global:
+            raise RetrievalDenied("DNS returned a non-public destination address")
+        if address not in addresses:
+            addresses.append(address)
+    if not addresses:
+        raise RetrievalDenied("DNS returned no usable addresses")
+    return addresses
 
 
 def _response_body_socket(response, connection):
-    """Find the socket retained by HTTPResponse after HTTPSConnection releases it."""
+    """Find the deadline-aware socket retained by HTTPResponse."""
     sock = getattr(connection, "sock", None)
     if sock is not None:
         return sock
     fp = getattr(response, "fp", None)
     raw = getattr(fp, "raw", None)
-    sock = getattr(raw, "_sock", None)
+    sock = getattr(raw, "deadline_socket", None)
+    if sock is None:
+        sock = getattr(raw, "_sock", None)
     if sock is None:
         sock = getattr(fp, "_sock", None)
     return sock
+
+
+class _DeadlineSocketReader(io.RawIOBase):
+    """Raw reader that reapplies the absolute deadline before every receive."""
+
+    def __init__(self, deadline_socket):
+        super().__init__()
+        self.deadline_socket = deadline_socket
+
+    def readable(self):
+        return True
+
+    def readinto(self, buffer):
+        if self.closed:
+            raise ValueError("I/O operation on closed reader")
+        self.deadline_socket._apply_deadline()
+        return self.deadline_socket._socket.recv_into(buffer)
+
+
+class _DeadlineSocket:
+    """Socket facade enforcing one absolute deadline inside HTTPResponse reads."""
+
+    def __init__(self, sock, deadline, clock):
+        self._socket = sock
+        self._deadline = deadline
+        self._clock = clock
+
+    def _apply_deadline(self):
+        remaining = self._deadline - self._clock()
+        if remaining <= 0:
+            raise socket.timeout("retrieval deadline exceeded")
+        self._socket.settimeout(remaining)
+
+    def settimeout(self, _timeout):
+        self._apply_deadline()
+
+    def sendall(self, data, flags=0):
+        self._apply_deadline()
+        if flags:
+            return self._socket.sendall(data, flags)
+        return self._socket.sendall(data)
+
+    def makefile(self, mode="r", buffering=None, **kwargs):
+        if mode not in ("rb", "r"):
+            return self._socket.makefile(mode, buffering, **kwargs)
+        reader = _DeadlineSocketReader(self)
+        return io.BufferedReader(reader, buffer_size=buffering or io.DEFAULT_BUFFER_SIZE)
+
+    def close(self):
+        return self._socket.close()
+
+    def __getattr__(self, name):
+        return getattr(self._socket, name)
 
 
 def _resolve_public_addresses(host: str, resolver=socket.getaddrinfo) -> list[str]:
@@ -224,7 +294,10 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
 
     def connect(self):
         raw = socket.create_connection((self._pinned_ip, 443), self.timeout, self.source_address)
-        self.sock = self._context.wrap_socket(raw, server_hostname=self.host)
+        wrapped = self._context.wrap_socket(raw, server_hostname=self.host)
+        deadline = getattr(self, "_retrieval_deadline", None)
+        clock = getattr(self, "_retrieval_clock", time.monotonic)
+        self.sock = _DeadlineSocket(wrapped, deadline, clock) if deadline is not None else wrapped
 
 
 def fetch_source(
@@ -267,7 +340,15 @@ def fetch_source(
         pinned_ip = addresses[0]
         factory = connection_factory or _PinnedHTTPSConnection
         connection = factory(host, pinned_ip, min(timeout, remaining))
+        connection._retrieval_deadline = deadline
+        connection._retrieval_clock = clock
         try:
+            remaining = deadline - clock()
+            if remaining <= 0:
+                raise TimeoutError("retrieval deadline exceeded before request")
+            sock = getattr(connection, "sock", None)
+            if sock is not None:
+                sock.settimeout(remaining)
             connection.request("GET", path, headers={
                 "Host": host,
                 "User-Agent": "CarAutopsy-Research-Bot/1.0 (+https://github.com/CarAutopsy/carautopsy)",
@@ -308,6 +389,8 @@ def fetch_source(
                 remaining = deadline - clock()
                 if remaining <= 0:
                     raise TimeoutError("retrieval deadline exceeded")
+                if response.isclosed():
+                    break
                 sock = _response_body_socket(response, connection)
                 if sock is None:
                     raise RetrievalDenied("HTTP response socket is unavailable for deadline-bounded reads")
