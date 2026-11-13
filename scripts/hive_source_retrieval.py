@@ -24,6 +24,13 @@ from urllib.parse import unquote, urlsplit, urlunsplit
 MAX_URL_CHARS = 2_048
 MAX_RESPONSE_BYTES = 2_000_000
 DEFAULT_TIMEOUT_SECONDS = 8.0
+
+# Timed-out system calls cannot be cancelled safely. Bound their outstanding
+# workers so repeated stalls cannot exhaust the process with daemon threads.
+MAX_OUTSTANDING_POLICY_WORKERS = 4
+MAX_OUTSTANDING_DNS_WORKERS = 4
+_POLICY_WORKER_SLOTS = threading.BoundedSemaphore(MAX_OUTSTANDING_POLICY_WORKERS)
+_DNS_WORKER_SLOTS = threading.BoundedSemaphore(MAX_OUTSTANDING_DNS_WORKERS)
 ALLOWED_CONTENT_TYPES = {"text/html", "text/plain", "application/pdf"}
 
 
@@ -68,6 +75,26 @@ def _safe_url_for_record(url: str) -> str:
 
 class RetrievalDenied(ValueError):
     """Raised for invalid policy/configuration before any outbound request."""
+
+def _start_bounded_worker(slots, name: str, target: Callable[[], None]) -> None:
+    """Start a daemon worker only when a bounded outstanding slot is available.
+
+    The slot belongs to the worker, not the waiting caller: a timed-out caller
+    cannot release capacity while its uncancellable callback is still running.
+    """
+    if not slots.acquire(blocking=False):
+        raise RetrievalDenied(f"{name} worker capacity exhausted")
+    def run():
+        try:
+            target()
+        finally:
+            slots.release()
+    worker = threading.Thread(target=run, name=name, daemon=True)
+    try:
+        worker.start()
+    except BaseException as exc:
+        slots.release()
+        raise RetrievalDenied(f"{name} worker could not start") from exc
 
 
 def _normalise_allowlist(approved_hosts: Iterable[str]) -> set[str]:
@@ -165,12 +192,12 @@ def _check_robots_policy_before_deadline(url: str, policy, deadline: float, cloc
             result_queue.put((False, exc))
 
     # Policy callbacks may perform network I/O and cannot be safely cancelled.
-    # A timed-out daemon worker is left to finish, but its result is discarded.
-    worker = threading.Thread(target=check, name="hive-robots-policy", daemon=True)
-    worker.start()
+    # Capacity stays occupied until the callback actually exits, even if this
+    # request times out and discards its result.
     remaining = deadline - clock()
     if remaining <= 0:
         raise TimeoutError("retrieval deadline exceeded during robots/terms policy check")
+    _start_bounded_worker(_POLICY_WORKER_SLOTS, "hive-robots-policy", check)
     try:
         succeeded, value = result_queue.get(timeout=remaining)
     except queue.Empty as exc:
@@ -191,13 +218,12 @@ def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: flo
         except BaseException as exc:
             result_queue.put((False, exc))
 
-    # getaddrinfo cannot be cancelled safely. A timed-out daemon worker may finish
-    # later; its result is discarded. Keep this trade-off visible for future pooling.
-    worker = threading.Thread(target=resolve, name="hive-dns-resolution", daemon=True)
-    worker.start()
+    # getaddrinfo cannot be cancelled safely. Capacity remains occupied until
+    # the resolver exits, even when this request has stopped waiting.
     remaining = deadline - clock()
     if remaining <= 0:
         raise TimeoutError("retrieval deadline exceeded during DNS resolution")
+    _start_bounded_worker(_DNS_WORKER_SLOTS, "hive-dns-resolution", resolve)
     try:
         succeeded, value = result_queue.get(timeout=remaining)
     except queue.Empty as exc:
