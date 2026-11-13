@@ -43,6 +43,18 @@ class HivePromptBuilderTests(unittest.TestCase):
         self.assertIn("no browser or network access", prompt)
         self.assertIn("untrusted data", prompt)
 
+    def test_prompts_define_exact_identity_exemption_and_schema_aware_unknowns(self):
+        researcher = build_researcher_prompt(self.task, self.schema, self.evidence)
+        auditor = build_auditor_prompt(self.candidate, self.schema, self.evidence)
+        self.assertIn("use null only when the schema permits null", researcher)
+        self.assertIn("offers[].country", researcher)
+        self.assertIn("offers[].currency", researcher)
+        self.assertIn("variant_id, identity.make, and", researcher)
+        self.assertIn("identity.model", researcher)
+        self.assertIn("offer country", auditor)
+        self.assertIn("offer currency", auditor)
+        self.assertIn("all other non-null", auditor)
+
     def test_auditor_receives_same_evidence_and_schema(self):
         researcher = build_researcher_prompt(self.task, self.schema, self.evidence)
         auditor = build_auditor_prompt(self.candidate, self.schema, self.evidence)
