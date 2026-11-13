@@ -204,6 +204,14 @@ class HiveCandidateGateTests(unittest.TestCase):
         with self.assertRaisesRegex(CandidateRejected, "offers\\[0\\]\\.currency"):
             validate_candidate(candidate, self.task, evidence)
 
+    def test_blank_offer_country_and_currency_are_rejected(self):
+        for field, value in (("country", "  "), ("currency", "   ")):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(self.candidate)
+                candidate["offers"] = [{field: value}]
+                with self.assertRaisesRegex(CandidateRejected, "blank decision-relevant claim value"):
+                    validate_candidate(candidate, self.task, self.evidence)
+
     def test_claim_bindings_are_bounded_before_per_binding_validation(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["performance"] = {"power_w": 110000}
