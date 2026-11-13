@@ -13,8 +13,8 @@ The prompt suite in `tests/test_hive_prompts.py` covers quotes, newlines, Unicod
 ## Remaining live-integration and retrieval tests
 Before live research can resume, prove in the actual orchestration path that candidate parsing and validation occur before paid auditor calls; rejected candidates make zero paid calls; both independent auditors receive the same validated candidate/evidence bundle; and retries/restarts cannot bypass the gate. Use mocks and temporary repositories, not live paid calls. Also prove missing retrieval causes zero researcher/auditor/fallback calls, no checkout/commit/push/PR/state mutation, unchanged counters and a clear operational pause. Keep smoke-test/full-TCO routing unchanged. These integration and retrieval/security requirements remain under Issue #37.
 
-## Orchestration tests still required
-Use provider mocks and temporary repositories, never live paid calls. Missing retrieval must make zero researcher/auditor/fallback calls, leave file hashes and retry counters unchanged, perform no checkout/commit/push/PR/state writes, and exit nonzero with a clear operational reason. Malformed/unsupported candidates never reach paid auditors. Smoke-test/full-TCO routing and publication guard stay unchanged. Extract callable functions to avoid executing the module during import.
+## Evidence limits
+Offline helper tests do not prove that the autonomous pipeline invokes the helpers before paid auditors, that retries cannot bypass validation, or that source retrieval is safe. No live provider calls, source retrieval, OEM access, or factual vehicle verification are performed by these unit tests. Hive remains paused pending the separate Issue #37 integration and security acceptance work.
 
 ## CI and audit evidence
 Run python -m unittest discover -s tests -v and python -m compileall -q scripts tests. Record actual results against a full commit SHA; unexecuted tests are NOT_VERIFIED. Schema tests are not provenance verification or end-to-end proof. Independent reviewer must inspect final diff before merge.
