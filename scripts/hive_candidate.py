@@ -172,7 +172,15 @@ def _decision_claim_paths(candidate: dict[str, Any]) -> set[str]:
         elif isinstance(value, list):
             for index, child in enumerate(value):
                 walk(child, f"{path}[{index}]")
-        elif value is not None and (not isinstance(value, str) or value.strip()):
+        elif isinstance(value, str):
+            if not value.strip():
+                raise CandidateRejected(f"blank decision-relevant claim value: {path}")
+            if path in paths:
+                raise CandidateRejected(f"ambiguous duplicate decision claim path: {path}")
+            paths.add(path)
+            if len(paths) > MAX_CLAIM_BINDINGS:
+                raise CandidateRejected("candidate contains too many decision-relevant claims")
+        elif value is not None:
             if path in paths:
                 raise CandidateRejected(f"ambiguous duplicate decision claim path: {path}")
             paths.add(path)
