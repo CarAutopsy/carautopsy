@@ -9,7 +9,7 @@ from hive_state import load_state, reconcile_with_pr, save_state, proposal_state
 from hive_research_gate import ResearchPaused, require_verified_retrieval
 from hive_orchestration import OrchestrationRejected, collect_reserved_batch, run_hive_research_and_audit
 from hive_source_policy import SourcePolicyDenied, load_policy, require_variant_coverage
-from hive_evidence import retrieve_approved_evidence
+from hive_evidence import EvidenceRetrievalRejected, retrieve_approved_evidence
 from hive_candidate import validate_evidence_bundle
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 
@@ -500,9 +500,9 @@ if RESEARCH_ONLY:
             if not evidence:
                 raise SourcePolicyDenied("approved source retrieval produced no bounded evidence")
             HIVE_PREFETCHED_EVIDENCE[variant_id] = validate_evidence_bundle(evidence)
-    except ResearchPaused as exc:
+    except (ResearchPaused, SourcePolicyDenied, EvidenceRetrievalRejected) as exc:
         print(f"HIVE_RESEARCH_PAUSED: {exc}", file=sys.stderr)
-        sys.exit(exc.exit_code)
+        sys.exit(getattr(exc, "exit_code", 2))
     except Exception:
         print(
             "HIVE_RESEARCH_PREFLIGHT_FAILED: owner-approved policy, robots, retrieval, "
