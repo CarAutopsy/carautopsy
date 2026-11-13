@@ -198,6 +198,9 @@ def _check_robots_policy_before_deadline(url: str, policy, deadline: float, cloc
     if remaining <= 0:
         raise TimeoutError("retrieval deadline exceeded during robots/terms policy check")
     _start_bounded_worker(_POLICY_WORKER_SLOTS, "hive-robots-policy", check)
+    remaining = deadline - clock()
+    if remaining <= 0:
+        raise TimeoutError("retrieval deadline exceeded during robots/terms policy check")
     try:
         succeeded, value = result_queue.get(timeout=remaining)
     except queue.Empty as exc:
@@ -224,6 +227,9 @@ def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: flo
     if remaining <= 0:
         raise TimeoutError("retrieval deadline exceeded during DNS resolution")
     _start_bounded_worker(_DNS_WORKER_SLOTS, "hive-dns-resolution", resolve)
+    remaining = deadline - clock()
+    if remaining <= 0:
+        raise TimeoutError("retrieval deadline exceeded during DNS resolution")
     try:
         succeeded, value = result_queue.get(timeout=remaining)
     except queue.Empty as exc:
