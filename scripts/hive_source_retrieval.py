@@ -164,6 +164,8 @@ def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: flo
         except BaseException as exc:
             result_queue.put((False, exc))
 
+    # getaddrinfo cannot be cancelled safely. A timed-out daemon worker may finish
+    # later; its result is discarded. Keep this trade-off visible for future pooling.
     worker = threading.Thread(target=resolve, name="hive-dns-resolution", daemon=True)
     worker.start()
     remaining = deadline - clock()
@@ -174,8 +176,6 @@ def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: flo
     except queue.Empty as exc:
         raise TimeoutError("retrieval deadline exceeded during DNS resolution") from exc
     if not succeeded:
-        if isinstance(value, OSError):
-            raise RetrievalDenied("DNS resolution failed") from value
         raise RetrievalDenied("DNS resolution failed") from value
     return _validate_resolved_addresses(value)
 
@@ -205,12 +205,7 @@ def _response_body_socket(response, connection):
         return sock
     fp = getattr(response, "fp", None)
     raw = getattr(fp, "raw", None)
-    sock = getattr(raw, "deadline_socket", None)
-    if sock is None:
-        sock = getattr(raw, "_sock", None)
-    if sock is None:
-        sock = getattr(fp, "_sock", None)
-    return sock
+    return getattr(raw, "deadline_socket", None)
 
 
 class _DeadlineSocketReader(io.RawIOBase):
@@ -265,6 +260,7 @@ class _DeadlineSocket:
         self._socket.settimeout(remaining)
 
     def settimeout(self, _timeout):
+        """Preserve the absolute retrieval deadline instead of accepting a relative reset."""
         self._apply_deadline()
 
     def sendall(self, data, flags=0):
