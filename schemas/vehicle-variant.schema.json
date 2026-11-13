@@ -261,7 +261,7 @@
         },
         "claim_evidence": {
           "type": "array",
-          "description": "Claim-level evidence spans consumed by scripts/hive_candidate.py. The schema validates span shape and count only; the helper enforces claim coverage for non-null decision-relevant fields under its configured claim roots, excluding identity.make, identity.model and offers[].offer_id; variant_id is checked separately against the reserved task. The helper is not yet wired into the live research pipeline; see Issue #37.",
+          "description": "Claim-level evidence spans consumed by scripts/hive_candidate.py. The schema validates span shape and count only; the helper enforces claim coverage for non-null decision-relevant fields under its configured claim roots, excluding identity.make, identity.model and offers[].offer_id; variant_id is checked separately against the reserved task. The orchestration path invokes the helper before auditor calls, but production execution remains disabled by the research-readiness pause; see Issue #37.",
           "items": {
             "type": "object",
             "required": [
