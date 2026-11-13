@@ -1,6 +1,6 @@
 # Hive source retrieval: security boundary and integration contract
 
-**Status:** source policy, retrieval, extraction, evidence, candidate validation, and pipeline orchestration are implemented on `main`; production retrieval remains deliberately disabled pending independent audits, owner-reviewed sources, and explicit owner authorization.
+**Status:** source policy, retrieval, extraction, evidence, candidate validation, and pipeline orchestration are implemented on `main`; production retrieval remains deliberately disabled pending owner review, AI cross-review, owner-reviewed sources, exact-head validation, and explicit owner authorization.
 
 ## Fail-closed policy
 
@@ -25,7 +25,7 @@
 
 A successful HTTP response is recorded as `retrieved_unverified`. This means only that bytes were fetched from an allowed endpoint. It does not establish that the source supports any candidate claim. The returned response body is transient; `safe_record()` excludes it from durable diagnostics. Candidate provenance and claim-level support must still pass the deterministic candidate gate and two independent vendor audits.
 
-The deterministic claim-evidence gate proves that each required claim is bound to a quote and locator present in the supplied source text. It does **not** independently prove that the quote is semantically relevant or factually supports the claim. Independent auditors must assess that question, and the required external security review remains outstanding.
+The deterministic claim-evidence gate proves that each required claim is bound to a quote and locator present in the supplied source text. It does **not** independently prove that the quote is semantically relevant or factually supports the claim. The two independent vendor auditors assess candidate-level semantic support; the owner-led security review and five-service AI cross-review assess the retrieval system's security and residual risks. These review layers serve different purposes.
 
 ## Integrated but disabled
 
@@ -38,10 +38,10 @@ The following components are wired into the research-only path in `scripts/auton
 - `scripts/hive_candidate.py` and `scripts/hive_prompts.py`: schema, reserved identity, evidence, claim-quote/locator, prompt-injection-boundary, and exact verdict validation.
 - `scripts/hive_orchestration.py`: preflight and cache evidence before proposal checkout/state overlay; require two independent auditor vendors to return exact standalone PASS tokens.
 
-The production path remains unreachable because `VERIFIED_RETRIEVAL_AVAILABLE = False` and the research pause remains active. The owner-approved source manifest is empty. Do not enable paid research or live retrieval until the independent audits, owner source review, exact-head validation, and explicit owner authorization are complete.
+The production path remains unreachable because `VERIFIED_RETRIEVAL_AVAILABLE = False` and the research pause remains active. The owner-approved source manifest is empty. Do not enable paid research or live retrieval until the owner review, five-service AI cross-review, source review, exact-head validation, and explicit owner authorization are complete.
 
 ## Tests and limits
 
 `tests/test_hive_source_retrieval.py` covers invalid schemes and hosts, empty allowlist, credentials, ports, IP literals, placeholders, private and mixed DNS answers, DNS failure, redirects, content types, declared and streamed size limits, required robots policy, bounded timeout, safe diagnostics, and the pinned-IP/original-host TLS seam. Other Hive tests cover source-policy parsing, extraction limits, candidate/evidence validation, orchestration ordering, and failure/recovery state invariants.
 
-Tests use mocks, synthetic documents, and local repositories. They do not establish live OEM permission, source authenticity, factual claim support, or production readiness. Full exact-head CI/security validation and independent external review remain mandatory.
+Tests use mocks, synthetic documents, and local repositories. They do not establish OEM source permission, source authenticity, factual claim support, or production readiness. Exact-head CI/security validation and the owner-led review process remain mandatory.
