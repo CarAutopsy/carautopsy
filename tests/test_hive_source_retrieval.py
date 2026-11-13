@@ -1,5 +1,7 @@
 """Security regression tests for the fail-closed Hive source retriever."""
+import time
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from scripts.hive_source_retrieval import fetch_source, validate_candidate_sources, _parse_source_url, _is_placeholder_identifier
@@ -8,11 +10,21 @@ HOSTS = {"oem.example"}
 URL = "https://oem.example/specs/model.html"
 
 
+class FakeSocket:
+    def __init__(self):
+        self.timeouts = []
+
+    def settimeout(self, value):
+        self.timeouts.append(value)
+
+
 class FakeResponse:
     def __init__(self, status=200, headers=None, body=b"source text"):
         self.status = status
         self.headers = headers or {"Content-Type": "text/html", "Content-Length": str(len(body))}
         self.body = body
+        self.socket = FakeSocket()
+        self.fp = SimpleNamespace(raw=SimpleNamespace(_sock=self.socket))
 
     def getheader(self, name, default=None):
         return self.headers.get(name, default)
@@ -32,11 +44,13 @@ class FakeConnection:
         self.response = response
         self.request_args = None
         self.closed = False
+        self.sock = FakeSocket()
 
     def request(self, method, path, headers):
         self.request_args = (method, path, headers)
 
     def getresponse(self):
+        self.sock = None  # http.client may release this reference after headers
         return self.response
 
     def close(self):
@@ -226,6 +240,21 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.connection.response = response
         result = self.fetch(timeout=1.0, clock=lambda: now["value"])
         self.assertEqual(result.reason, "request_timeout")
+
+
+    def test_dns_resolution_is_bounded_by_total_deadline(self):
+        def stalled_resolver(*args, **kwargs):
+            time.sleep(0.1)
+            return [(None, None, None, None, ("8.8.8.8", 443))]
+        result = self.fetch(timeout=0.01, resolver=stalled_resolver)
+        self.assertEqual(result.reason, "request_timeout")
+        self.factory.assert_not_called()
+
+    def test_response_socket_is_used_after_connection_socket_is_released(self):
+        result = self.fetch()
+        self.assertEqual(result.outcome, "retrieved_unverified")
+        self.assertTrue(self.connection.response.socket.timeouts)
+        self.assertTrue(all(value > 0 for value in self.connection.response.socket.timeouts))
 
     def test_candidate_source_batch_materializes_one_shot_allowlist(self):
         urls = [URL, "https://oem.example/specs/second.html"]
