@@ -43,6 +43,9 @@ class FakeResponse:
     def isclosed(self):
         return not self.body
 
+    def close(self):
+        self.closed = True
+
 
 class FakeConnection:
     def __init__(self, response):
