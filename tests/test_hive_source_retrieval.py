@@ -269,6 +269,76 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "request_timeout")
         self.factory.assert_not_called()
 
+
+    def test_stalled_policy_workers_are_capped_until_callbacks_exit(self):
+        from scripts import hive_source_retrieval as retrieval
+
+        slots = threading.BoundedSemaphore(2)
+        release = threading.Event()
+        both_started = threading.Event()
+        started = {"count": 0}
+        lock = threading.Lock()
+
+        def stalled_policy(url):
+            with lock:
+                started["count"] += 1
+                if started["count"] == 2:
+                    both_started.set()
+            release.wait()
+            return True
+
+        try:
+            with patch.object(retrieval, "_POLICY_WORKER_SLOTS", slots):
+                first = self.fetch(timeout=0.02, robots_allowed=stalled_policy)
+                second = self.fetch(timeout=0.02, robots_allowed=stalled_policy)
+                self.assertTrue(both_started.wait(1), "both policy workers did not start")
+                third = self.fetch(timeout=0.02, robots_allowed=stalled_policy)
+                self.assertEqual(first.reason, "request_timeout")
+                self.assertEqual(second.reason, "request_timeout")
+                self.assertIn("worker capacity exhausted", third.reason)
+                self.assertEqual(started["count"], 2)
+        finally:
+            release.set()
+        self.assertTrue(slots.acquire(timeout=1))
+        self.assertTrue(slots.acquire(timeout=1))
+        slots.release()
+        slots.release()
+
+    def test_stalled_dns_workers_are_capped_until_resolvers_exit(self):
+        from scripts import hive_source_retrieval as retrieval
+
+        slots = threading.BoundedSemaphore(2)
+        release = threading.Event()
+        both_started = threading.Event()
+        started = {"count": 0}
+        lock = threading.Lock()
+
+        def stalled_resolver(*args, **kwargs):
+            with lock:
+                started["count"] += 1
+                if started["count"] == 2:
+                    both_started.set()
+            release.wait()
+            return [(None, None, None, None, ("8.8.8.8", 443))]
+
+        try:
+            with patch.object(retrieval, "_DNS_WORKER_SLOTS", slots):
+                first = self.fetch(timeout=0.02, resolver=stalled_resolver)
+                second = self.fetch(timeout=0.02, resolver=stalled_resolver)
+                self.assertTrue(both_started.wait(1), "both DNS workers did not start")
+                third = self.fetch(timeout=0.02, resolver=stalled_resolver)
+                self.assertEqual(first.reason, "request_timeout")
+                self.assertEqual(second.reason, "request_timeout")
+                self.assertIn("worker capacity exhausted", third.reason)
+                self.assertEqual(started["count"], 2)
+                self.factory.assert_not_called()
+        finally:
+            release.set()
+        self.assertTrue(slots.acquire(timeout=1))
+        self.assertTrue(slots.acquire(timeout=1))
+        slots.release()
+        slots.release()
+
     def test_response_socket_is_used_after_connection_socket_is_released(self):
         result = self.fetch()
         self.assertEqual(result.outcome, "retrieved_unverified")
