@@ -229,6 +229,13 @@ class _DeadlineSocketReader(io.RawIOBase):
         self.deadline_socket._apply_deadline()
         return self.deadline_socket._socket.recv_into(buffer)
 
+    def close(self):
+        if not self.closed:
+            try:
+                super().close()
+            finally:
+                self.deadline_socket.close()
+
 
 class _DeadlineSocket:
     """Socket facade enforcing one absolute deadline inside HTTPResponse reads."""
@@ -378,6 +385,7 @@ def fetch_source(
         connection = factory(host, pinned_ip, min(timeout, remaining))
         connection._retrieval_deadline = deadline
         connection._retrieval_clock = clock
+        response = None
         try:
             remaining = deadline - clock()
             if remaining <= 0:
@@ -448,6 +456,8 @@ def fetch_source(
                 datetime.now(timezone.utc).isoformat(), status, content_type, b"".join(chunks), pinned_ip,
             )
         finally:
+            if response is not None:
+                response.close()
             connection.close()
     except RetrievalDenied as exc:
         return RetrievalResult(url if isinstance(url, str) else "", "rejected", str(exc))
