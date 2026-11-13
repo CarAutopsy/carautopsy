@@ -1,6 +1,6 @@
 # Hive prompt and candidate-gate overhaul
 
-Status: PARTIALLY IMPLEMENTED. Offline prompt builders and deterministic candidate-validation helpers exist and are unit-tested (Issue #44). Live pipeline integration and approved source retrieval remain separate, incomplete work; Hive research remains paused.
+Status: IMPLEMENTED AND WIRED, PRODUCTION PAUSED. Prompt builders, deterministic candidate validation, source policy/retrieval/extraction, and orchestration helpers are implemented and wired into the research-only path. Production execution remains deliberately disabled pending owner review, AI cross-review, source approval, exact-head validation, and explicit owner authorization.
 
 ## Objective
 Align research drafts with schemas/vehicle-variant.schema.json, validate deterministically before paid audits, and stop fabricated retrieval claims. This document does not authorize automatic merge or paid calls.
@@ -21,10 +21,13 @@ The offline helper in `scripts/hive_candidate.py` is implemented and unit-tested
 
 For claim coverage, the helper requires an exact `claim_evidence` binding for every non-null value under `identity`, `performance`, `energy`, `dimensions`, `emissions`, `offers`, `warranty` and `registration`, plus `extensions.fuel_consumption_l_100km.real_world` when present. The only identity exclusions are the reserved `identity.make` and `identity.model`; `variant_id` is checked separately against the reserved task. The only offer-field exclusion is `offers[].offer_id`. Offer country and currency, as well as both offer-price fields, require evidence when non-null. Each binding must point to a supplied and declared source, a locator present in that source, and an exact quote at that locator.
 
-The schema validates the shape and size of evidence-binding objects; it does not itself enforce claim coverage. The helper does. Neither schema nor helper establishes source authenticity or semantic truth. Critically, the helper is not yet wired into the live research pipeline; Issue #37 tracks that integration and the separate retrieval/security requirements. Do not describe helper unit tests as proof that live paid-auditor calls are gated.
+The schema validates the shape and size of evidence-binding objects; it does not itself enforce claim coverage. The helper enforces the configured claim paths, and the orchestration path calls it before the two auditors. The production path is wired but unreachable while `VERIFIED_RETRIEVAL_AVAILABLE = False`, the approved-source manifest remains empty, and the research pause is active. Neither schema nor helper establishes source authenticity or semantic truth. Mocked orchestration tests do not prove live OEM permission or factual claim support.
 
-## Temporary no-retrieval behavior
-Retrieval is NOT implemented by this design. A future runtime patch must stop research-only invocations before provider calls, proposal checkout, queue mutation, counter updates or state writes when retrieval is unavailable. Clearly label this as a deliberate pause, not a provider failure. Keep smoke-test and full-TCO routing unchanged. Do not deploy a prompt-only change that repeatedly buys all-null drafts.
+## Production readiness and pause
+
+Source policy, DNS-pinned retrieval, bounded extraction, evidence construction, candidate validation and orchestration are implemented and wired into the research-only path. Production execution remains deliberately disabled: `VERIFIED_RETRIEVAL_AVAILABLE = False`, `data-connectors/approved-source-hosts.json` remains empty, and the Hive research pause is active. When readiness is false, the pipeline stops before researcher/auditor provider calls and before durable queue/ledger/branch/PR mutations.
+
+This is a deliberate operational pause, not a provider failure. Do not populate the source manifest, enable paid research, or activate retrieval until the owner-led security review, five-service AI cross-review, owner review of exact source URLs and automated-access terms, exact-head CI/security validation, and explicit owner authorization are complete. Keep smoke-test and full-TCO routing unchanged.
 
 ## Implemented offline components
 - Researcher and auditor prompt builders in `scripts/hive_prompts.py`.
@@ -33,10 +36,11 @@ Retrieval is NOT implemented by this design. A future runtime patch must stop re
 - Exact auditor verdict parsing and associated regression coverage.
 
 ## Remaining follow-ups
-- Integrate the existing candidate/evidence helper into the live pipeline before any paid auditor call; preserve zero-call behavior on rejection and prevent retry/restart bypass (Issue #37).
-- Keep the research pause active until the owner-controlled source policy, retrieval, extraction, claim support, and security reviews are complete (Issue #37).
-- Continue to test no-retrieval behavior, provider/format failure classification, state races and legacy entry points independently.
+- Complete the owner-led security review and five-service AI cross-review of the integrated retrieval and orchestration path (Issue #37).
+- Review and approve each exact source URL, source relevance, robots.txt behavior and automated-access terms before adding any source manifest entry.
+- Reconcile any remaining integration, retry/restart, provider/format classification, state-race and legacy-entry-point findings under their respective issues.
 - Preserve two independent vendor PASS verdicts and owner human review; deterministic validation does not replace either.
+- Keep production retrieval and paid research disabled until the owner explicitly authorizes activation.
 
 ## Known schema limits
 Sparse records and additional properties are currently allowed. Source objects need not contain a URL. Powertrain is not enumerated. The `energy` object has no defined properties; energy-consumption values are currently unvalidated and are excluded from the canonical researcher contract. The schema alone cannot validate source authenticity, evidence coverage, task identity or TCO readiness. Do not claim otherwise.
