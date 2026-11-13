@@ -70,6 +70,21 @@ class HiveCandidateGateTests(unittest.TestCase):
         with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
             validate_candidate(candidate, self.task, self.evidence)
 
+    def test_non_reserved_identity_fields_require_claim_evidence(self):
+        for field, value in (
+            ("powertrain", "BEV"),
+            ("model_year_from", 2025),
+            ("model_year_to", 2026),
+            ("doors", 5),
+            ("seats", 5),
+            ("vehicle_class", "M1"),
+        ):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(self.candidate)
+                candidate["identity"][field] = value
+                with self.assertRaisesRegex(CandidateRejected, "requires claim_evidence"):
+                    validate_candidate(candidate, self.task, self.evidence)
+
     def test_claim_binding_requires_exact_quote_and_locator(self):
         for field, value, expected in (
             ("quote", "Peak power is 110 kW.", "exact span at the stated locator"),
