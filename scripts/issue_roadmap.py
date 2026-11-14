@@ -55,7 +55,7 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
 
     number = issue.get("number")
     title = issue.get("title")
-    state = issue.get("state", "open")
+    state = issue.get("state")
     if isinstance(number, bool) or not isinstance(number, int) or number < 1:
         raise IssueClassificationError("issue number must be a positive integer")
     if not isinstance(title, str) or not title.strip():
@@ -75,8 +75,20 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
         classification = "closed"
         reason = "Closed issues do not create new roadmap proposals."
     else:
+        unknown_roadmap_labels = sorted(
+            label
+            for label in labels
+            if label.startswith("roadmap:") and label not in _LABEL_CLASSIFICATIONS
+        )
         matches = sorted(label for label in labels if label in _LABEL_CLASSIFICATIONS)
-        if len(matches) == 1:
+        if unknown_roadmap_labels:
+            classification = "needs-owner-triage"
+            reason = (
+                "Unknown roadmap namespace label(s) require owner review: "
+                + ", ".join(unknown_roadmap_labels)
+                + "."
+            )
+        elif len(matches) == 1:
             classification = _LABEL_CLASSIFICATIONS[matches[0]]
             reason = f"Classified by maintainer label: {matches[0]}."
         elif len(matches) > 1:
@@ -113,6 +125,27 @@ def build_issue_proposals(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not isinstance(issues, list):
         raise IssueClassificationError("issues must be a list")
 
-    results = [classify_issue(issue) for issue in issues]
-    proposals = [item["proposal"] for item in results if item["proposal"] is not None]
-    return sorted(proposals, key=lambda item: item["issue_number"])
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for snapshot in issues:
+        result = classify_issue(snapshot)
+        grouped.setdefault(result["issue_number"], []).append(result)
+
+    proposals = []
+    for number in sorted(grouped):
+        snapshots = grouped[number]
+        # Collapse identical normalized snapshots; conflicting versions fail closed.
+        canonical = {
+            (
+                item["issue_url"],
+                item["title"],
+                item["classification"],
+                tuple(item["labels"]),
+            )
+            for item in snapshots
+        }
+        if len(canonical) != 1:
+            continue
+        proposal = snapshots[0]["proposal"]
+        if proposal is not None:
+            proposals.append(proposal)
+    return proposals
