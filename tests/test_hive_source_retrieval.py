@@ -148,6 +148,52 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertTrue(first.closed)
         self.assertIsNone(second.request_args)
 
+    def test_blackholed_first_address_gets_bounded_budget_then_falls_back(self):
+        resolver = Mock(return_value=[
+            (None, None, None, None, ("8.8.8.8", 443)),
+            (None, None, None, None, ("1.1.1.1", 443)),
+        ])
+        now = {"value": 0.0}
+        first = FakeConnection(FakeResponse())
+
+        def first_address_times_out():
+            # With two addresses and an eight-second total budget, the first
+            # attempt is limited to four seconds, leaving four for the second.
+            now["value"] = 4.0
+            raise socket.timeout("first address blackholed")
+
+        first.connect = first_address_times_out
+        second = FakeConnection(FakeResponse())
+        factory = Mock(side_effect=[first, second])
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", factory):
+            result = fetch_source(
+                URL, approved_hosts=HOSTS, resolver=resolver,
+                clock=lambda: now["value"],
+            )
+        self.assertEqual(result.outcome, "retrieved_unverified")
+        self.assertEqual(result.resolved_ip, "1.1.1.1")
+        self.assertEqual(factory.call_count, 2)
+        self.assertTrue(first.closed)
+        self.assertIsNone(first.request_args)
+        self.assertEqual(second.request_args[0:2], ("GET", "/specs/model.html"))
+
+    def test_non_identity_tls_handshake_failure_falls_back(self):
+        resolver = Mock(return_value=[
+            (None, None, None, None, ("8.8.8.8", 443)),
+            (None, None, None, None, ("1.1.1.1", 443)),
+        ])
+        first = FakeConnection(FakeResponse())
+        first.connect_error = ssl.SSLEOFError("TLS handshake closed by peer")
+        second = FakeConnection(FakeResponse())
+        factory = Mock(side_effect=[first, second])
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", factory):
+            result = fetch_source(URL, approved_hosts=HOSTS, resolver=resolver, clock=lambda: 0.0)
+        self.assertEqual(result.outcome, "retrieved_unverified")
+        self.assertEqual(result.resolved_ip, "1.1.1.1")
+        self.assertEqual(factory.call_count, 2)
+        self.assertTrue(first.closed)
+        self.assertIsNone(first.request_args)
+
     def test_tls_verification_failure_does_not_fall_back_to_another_ip(self):
         resolver = Mock(return_value=[
             (None, None, None, None, ("8.8.8.8", 443)),
