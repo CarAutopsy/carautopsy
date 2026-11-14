@@ -225,7 +225,8 @@ def check_source_access(
 
     The injected fetcher must be the project's DNS-pinned fetch_source implementation.
     The robots.txt request is the sole policy-bootstrap request and uses the same
-    approved-host, pinned-IP, HTTPS-only, no-redirect transport.
+    approved-host, pinned-IP, HTTPS-only, no-redirect transport. The target document
+    must not be fetched until this function returns successfully.
     """
     if not isinstance(url, str) or len(url) > 2048:
         raise SourcePolicyDenied("source URL is missing or too long")
@@ -239,13 +240,9 @@ def check_source_access(
         raise SourcePolicyDenied("source URL is not in the owner-reviewed exact URL list")
 
     robots_url = urlunsplit(("https", host, "/robots.txt", "", ""))
-    # This callback is intentionally limited to fetching robots.txt itself. It does
-    # not authorize the target URL; the parsed robots policy below makes that decision.
-    result = fetcher(
-        robots_url,
-        approved_hosts=config["approved_hosts"],
-        robots_allowed=lambda requested: requested == robots_url,
-    )
+    # Fetch only the robots bootstrap document. No policy callback is passed to
+    # the transport; the parsed rules below decide whether the target URL is allowed.
+    result = fetcher(robots_url, approved_hosts=config["approved_hosts"])
     if getattr(result, "outcome", None) != "retrieved_unverified" or not isinstance(getattr(result, "body", None), bytes):
         raise SourcePolicyDenied("robots.txt could not be retrieved safely")
     try:

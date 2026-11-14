@@ -1,8 +1,9 @@
-"""Fail-closed HTTPS source retrieval with DNS-pinned connections.
+"""Fail-closed HTTPS transport with DNS-pinned connections.
 
 HTTP success is recorded as retrieved_unverified; it never proves claim support.
-The caller must supply a review-controlled exact-host allowlist and an explicit
-robots/terms policy callback. Empty allowlists and missing policy callbacks deny.
+The caller must supply a review-controlled exact-host allowlist. Robots/terms
+policy is enforced by the evidence adapter before target fetch; this transport
+does not accept or execute policy callbacks.
 """
 from __future__ import annotations
 
@@ -25,11 +26,9 @@ MAX_URL_CHARS = 2_048
 MAX_RESPONSE_BYTES = 2_000_000
 DEFAULT_TIMEOUT_SECONDS = 8.0
 
-# Timed-out system calls cannot be cancelled safely. Bound their outstanding
+# Timed-out DNS system calls cannot be cancelled safely. Bound their outstanding
 # workers so repeated stalls cannot exhaust the process with daemon threads.
-MAX_OUTSTANDING_POLICY_WORKERS = 4
 MAX_OUTSTANDING_DNS_WORKERS = 4
-_POLICY_WORKER_SLOTS = threading.BoundedSemaphore(MAX_OUTSTANDING_POLICY_WORKERS)
 _DNS_WORKER_SLOTS = threading.BoundedSemaphore(MAX_OUTSTANDING_DNS_WORKERS)
 ALLOWED_CONTENT_TYPES = {"text/html", "text/plain", "application/pdf"}
 
@@ -179,36 +178,6 @@ def _is_placeholder_identifier(url: str) -> bool:
             return True
     return False
 
-
-
-def _check_robots_policy_before_deadline(url: str, policy, deadline: float, clock) -> None:
-    """Run the policy callback without allowing it to exceed the retrieval deadline."""
-    result_queue = queue.Queue(maxsize=1)
-
-    def check():
-        try:
-            result_queue.put((True, policy(url)))
-        except BaseException as exc:
-            result_queue.put((False, exc))
-
-    # Policy callbacks may perform network I/O and cannot be safely cancelled.
-    # Capacity stays occupied until the callback actually exits, even if this
-    # request times out and discards its result.
-    remaining = deadline - clock()
-    if remaining <= 0:
-        raise TimeoutError("retrieval deadline exceeded during robots/terms policy check")
-    _start_bounded_worker(_POLICY_WORKER_SLOTS, "hive-robots-policy", check)
-    remaining = deadline - clock()
-    if remaining <= 0:
-        raise TimeoutError("retrieval deadline exceeded during robots/terms policy check")
-    try:
-        succeeded, value = result_queue.get(timeout=remaining)
-    except queue.Empty as exc:
-        raise TimeoutError("retrieval deadline exceeded during robots/terms policy check") from exc
-    if not succeeded:
-        raise RetrievalDenied("robots/terms policy check failed") from value
-    if value is not True:
-        raise RetrievalDenied("robots/terms policy did not permit this URL")
 
 
 def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: float, clock) -> list[str]:
@@ -420,7 +389,6 @@ def fetch_source(
     url: str,
     *,
     approved_hosts: Iterable[str],
-    robots_allowed: Callable[[str], bool] | None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
     max_bytes: int = MAX_RESPONSE_BYTES,
     resolver=socket.getaddrinfo,
@@ -428,9 +396,10 @@ def fetch_source(
 ) -> RetrievalResult:
     """Fetch one approved HTTPS URL without redirects, proxies or DNS re-resolution.
 
-    The caller must complete the owner-controlled robots/terms policy check before
-    invoking this transport. This public API exposes no connection-factory override;
-    all requests use the DNS-pinned HTTPS implementation below.
+    This is a transport primitive, not a policy authorization. Production research
+    must call it through the evidence adapter, which completes the owner-controlled
+    exact-URL/terms/robots precheck before requesting the target document. The
+    transport deliberately accepts no policy callback or connection-factory override.
     """
     try:
         host, path = _parse_source_url(url, approved_hosts)
@@ -441,9 +410,6 @@ def fetch_source(
         if max_bytes <= 0 or max_bytes > MAX_RESPONSE_BYTES:
             raise RetrievalDenied("response limit is outside the permitted bound")
         deadline = clock() + timeout
-        if robots_allowed is None:
-            raise RetrievalDenied("robots/terms policy callback is required")
-        _check_robots_policy_before_deadline(url, robots_allowed, deadline, clock)
         addresses = _resolve_public_addresses_before_deadline(host, resolver, deadline, clock)
         remaining = deadline - clock()
         if remaining <= 0:

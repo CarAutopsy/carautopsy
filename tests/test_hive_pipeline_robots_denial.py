@@ -54,11 +54,11 @@ hive_source_policy.load_policy = lambda: POLICY
 import hive_evidence
 real_check_source_access = hive_source_policy.check_source_access
 
-def synthetic_robots_fetcher(url, *, approved_hosts, robots_allowed, **kwargs):
+def synthetic_robots_fetcher(url, *, approved_hosts, **kwargs):
     marker = os.environ.get("HIVE_ROBOTS_REQUEST_MARKER")
     if marker:
         Path(marker).write_text(url, encoding="utf-8")
-    if url != ROBOTS_URL or robots_allowed(url) is not True:
+    if url != ROBOTS_URL:
         raise AssertionError("test attempted a non-robots policy request")
     return SimpleNamespace(
         outcome="retrieved_unverified",

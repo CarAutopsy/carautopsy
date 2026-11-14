@@ -53,13 +53,11 @@ hive_source_policy.require_variant_coverage = lambda config, variant_ids: None
 
 # The production policy parser is retained. Both policy bootstrap and target
 # document requests are intercepted at the transport boundary.
-def synthetic_fetcher(url, *, approved_hosts, robots_allowed, **kwargs):
+def synthetic_fetcher(url, *, approved_hosts, **kwargs):
     if url == ROBOTS_URL:
         marker = os.environ.get("HIVE_ROBOTS_REQUEST_MARKER")
         if marker:
             Path(marker).write_text(url, encoding="utf-8")
-        if robots_allowed(url) is not True:
-            raise AssertionError("robots bootstrap was not authorized")
         return SimpleNamespace(
             outcome="retrieved_unverified",
             body=b"User-agent: *\nAllow: /\n",
@@ -68,8 +66,6 @@ def synthetic_fetcher(url, *, approved_hosts, robots_allowed, **kwargs):
         marker = os.environ.get("HIVE_TARGET_REQUEST_MARKER")
         if marker:
             Path(marker).write_text(url + "|network_or_tls_failure", encoding="utf-8")
-        if robots_allowed(url) is not True:
-            raise AssertionError("target fetch was not authorized after robots allow")
         return SimpleNamespace(
             outcome="rejected",
             reason="network_or_tls_failure",

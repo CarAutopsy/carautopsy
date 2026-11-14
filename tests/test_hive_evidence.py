@@ -33,7 +33,7 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
             calls.append(url)
             if url == ROBOTS_URL:
                 return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
-            self.assertTrue(kwargs["robots_allowed"](url))
+            self.assertNotIn("robots_allowed", kwargs)
             return SimpleNamespace(
                 outcome="retrieved_unverified", body=b"official source bytes",
                 content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
