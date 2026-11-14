@@ -12,7 +12,7 @@
 
 - HTTPS only; reject credentials, IP-literal URLs, non-standard ports, malformed URLs and control characters.
 - Exact hostname match against the review-controlled allowlist.
-- Resolve every A/AAAA answer and reject the hostname if any answer is not globally routable.
+- Bound DNS responses to at most 32 A/AAAA answer records; reject oversized answer sets and reject the hostname if any returned address is not globally routable.
 - Connect the TCP socket to the selected validated IP. TLS SNI and certificate hostname verification continue to use the original hostname.
 - No environment proxy, automatic redirect, or second DNS resolution is used by the pinned connection.
 - Reject all redirects in this first implementation; no redirect target is ever requested.
