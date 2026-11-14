@@ -66,8 +66,11 @@ def _safe_url_for_record(url: str) -> str:
         if ":" in host and not host.startswith("["):
             host = f"[{host}]"
         netloc = host + (f":{port}" if port is not None else "")
-        query = "[redacted]" if parsed.query else ""
-        return urlunsplit((parsed.scheme, netloc, parsed.path, query, ""))
+        # URL paths can contain VINs, serial numbers, document IDs, or
+        # account-specific tokens. Diagnostics need host-level provenance,
+        # not the requested resource identifier; omit path and query entirely.
+        safe_path = "/" if parsed.path in ("", "/") else "/[redacted]"
+        return urlunsplit((parsed.scheme, netloc, safe_path, "", ""))
     except (TypeError, ValueError):
         return "[invalid-url]"
 
