@@ -17,7 +17,6 @@ _LABEL_CLASSIFICATIONS = {
     "roadmap:duplicate": "duplicate",
     "roadmap:triage": "needs-owner-triage",
 }
-_NON_ACTIONABLE_STATES = {"closed", "not_planned", "completed"}
 
 
 class IssueClassificationError(ValueError):
@@ -60,7 +59,7 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
         raise IssueClassificationError("issue number must be a positive integer")
     if not isinstance(title, str) or not title.strip():
         raise IssueClassificationError("issue title must be a non-empty string")
-    if state not in {"open", "closed"}:
+    if not isinstance(state, str) or state not in {"open", "closed"}:
         raise IssueClassificationError("issue state must be open or closed")
 
     labels = _issue_labels(issue)
