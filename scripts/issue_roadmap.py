@@ -111,7 +111,6 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
                 "Owner must supply dependencies and acceptance criteria before approval."
             ],
             "owner_input_required": True,
-            "status": "proposed",
             "requires_owner_approval": True,
         }
 
