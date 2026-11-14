@@ -110,6 +110,7 @@ def test_issue_body_is_not_interpreted_and_input_is_not_mutated():
         issue(number=True),
         issue(title="  "),
         issue(state="merged"),
+        issue(state=["open"]),
         {key: value for key, value in issue().items() if key != "state"},
         issue(labels="roadmap:candidate"),
         issue(labels=[None]),
