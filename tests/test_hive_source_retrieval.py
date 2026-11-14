@@ -104,13 +104,9 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertTrue(self.connection.closed)
 
     def test_connection_falls_back_to_next_fully_validated_ip_before_request(self):
-        resolver = Mock(return_value=[
-            (None, None, None, None, ("203.0.113.10", 443)),
-            (None, None, None, None, ("8.8.8.8", 443)),
-        ])
         # Use globally routable test addresses; documentation-only ranges are
         # intentionally not accepted by ipaddress.is_global.
-        resolver.return_value = [
+        resolver = Mock(return_value=[
             (None, None, None, None, ("8.8.8.8", 443)),
             (None, None, None, None, ("1.1.1.1", 443)),
         ]
@@ -124,7 +120,33 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.resolved_ip, "1.1.1.1")
         self.assertEqual(factory.call_count, 2)
         self.assertTrue(first.closed)
+        self.assertIsNone(first.request_args)
         self.assertEqual(second.request_args[0:2], ("GET", "/specs/model.html"))
+
+    def test_connection_fallback_never_resets_the_shared_deadline(self):
+        resolver = Mock(return_value=[
+            (None, None, None, None, ("8.8.8.8", 443)),
+            (None, None, None, None, ("1.1.1.1", 443)),
+        ])
+        now = {"value": 0.0}
+        first = FakeConnection(FakeResponse())
+
+        def exhaust_deadline():
+            now["value"] = 8.0
+            raise ConnectionRefusedError("first connection consumed deadline")
+
+        first.connect = exhaust_deadline
+        second = FakeConnection(FakeResponse())
+        factory = Mock(side_effect=[first, second])
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", factory):
+            result = fetch_source(
+                URL, approved_hosts=HOSTS, resolver=resolver,
+                clock=lambda: now["value"],
+            )
+        self.assertEqual(result.reason, "request_timeout")
+        self.assertEqual(factory.call_count, 1)
+        self.assertTrue(first.closed)
+        self.assertIsNone(second.request_args)
 
     def test_tls_verification_failure_does_not_fall_back_to_another_ip(self):
         resolver = Mock(return_value=[
