@@ -60,6 +60,21 @@ def test_unknown_label_fails_closed_to_owner_triage():
     assert result["proposal"] is None
 
 
+def test_unknown_roadmap_namespace_label_overrides_candidate():
+    result = classify_issue(
+        issue(labels=[{"name": "roadmap:candidate"}, {"name": "roadmap:future-state"}])
+    )
+    assert result["classification"] == "needs-owner-triage"
+    assert result["proposal"] is None
+
+
+def test_unrelated_labels_do_not_block_candidate():
+    result = classify_issue(
+        issue(labels=[{"name": "roadmap:candidate"}, {"name": "bug"}])
+    )
+    assert result["classification"] == "actionable"
+
+
 def test_conflicting_classification_labels_fail_closed():
     result = classify_issue(
         issue(labels=[{"name": "roadmap:candidate"}, {"name": "roadmap:blocked"}])
@@ -95,6 +110,7 @@ def test_issue_body_is_not_interpreted_and_input_is_not_mutated():
         issue(number=True),
         issue(title="  "),
         issue(state="merged"),
+        {key: value for key, value in issue().items() if key != "state"},
         issue(labels="roadmap:candidate"),
         issue(labels=[None]),
         issue(labels=[{"name": ""}]),
@@ -122,6 +138,23 @@ def test_proposal_batch_is_sorted_and_deterministic():
             issue(number=7, labels=[{"name": "roadmap:blocked"}]),
         ]
     )
+
+
+def test_identical_duplicate_issue_snapshots_collapse_to_one_proposal():
+    snapshot = issue()
+    assert len(build_issue_proposals([snapshot, copy.deepcopy(snapshot)])) == 1
+
+
+@pytest.mark.parametrize(
+    "conflicting",
+    [
+        issue(title="Different title"),
+        issue(labels=[{"name": "roadmap:blocked"}]),
+        issue(state="closed"),
+    ],
+)
+def test_conflicting_duplicate_issue_snapshots_fail_closed(conflicting):
+    assert build_issue_proposals([issue(), conflicting]) == []
 
 
 def test_non_list_proposal_input_is_rejected():
