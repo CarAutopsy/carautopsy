@@ -105,6 +105,13 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
             "issue_url": issue_url,
             "title": title.strip(),
             "status": "proposed",
+            "dependencies": [],
+            "acceptance_criteria": [],
+            "owner_actions": [
+                "Owner must supply dependencies and acceptance criteria before approval."
+            ],
+            "owner_input_required": True,
+            "status": "proposed",
             "requires_owner_approval": True,
         }
 
@@ -143,6 +150,19 @@ def build_issue_proposals(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
             for item in snapshots
         }
         if len(canonical) != 1:
+            proposals.append(
+                {
+                    "task_key": f"issue-{number}",
+                    "issue_number": number,
+                    "issue_url": None,
+                    "title": f"Conflicting snapshots for issue #{number}",
+                    "classification": "needs-owner-triage",
+                    "reason": "Conflicting issue snapshots require owner review.",
+                    "proposal": None,
+                    "status": "needs-owner-triage",
+                    "requires_owner_approval": True,
+                }
+            )
             continue
         proposal = snapshots[0]["proposal"]
         if proposal is not None:
