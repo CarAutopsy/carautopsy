@@ -417,24 +417,35 @@ def fetch_source(
         connection = None
         pinned_ip = None
         last_connect_error = None
-        for candidate_ip in addresses:
+        for address_index, candidate_ip in enumerate(addresses):
             remaining = deadline - clock()
             if remaining <= 0:
                 raise TimeoutError("retrieval deadline exceeded while connecting to validated addresses")
-            candidate = _PinnedHTTPSConnection(host, candidate_ip, remaining)
-            candidate._retrieval_deadline = deadline
+            # Reserve a bounded share for each remaining address. A blackholed
+            # endpoint cannot consume the entire request deadline before later
+            # validated addresses receive an attempt.
+            remaining_addresses = len(addresses) - address_index
+            attempt_deadline = min(deadline, clock() + remaining / remaining_addresses)
+            candidate = _PinnedHTTPSConnection(host, candidate_ip, max(0.001, attempt_deadline - clock()))
+            candidate._retrieval_deadline = attempt_deadline
             candidate._retrieval_clock = clock
             try:
-                # Establish TCP and TLS before sending the request. Only a
-                # pre-request connection failure may advance to another IP.
+                # Establish TCP and TLS before sending the request. Only
+                # certificate/identity verification failures are terminal.
                 candidate.connect()
-            except ssl.SSLError:
+            except ssl.SSLCertVerificationError:
                 candidate.close()
                 raise
-            except OSError as exc:
+            except (ssl.SSLError, OSError) as exc:
                 candidate.close()
                 last_connect_error = exc
                 continue
+            # The per-address budget applies only to connection setup. Once
+            # connected, all HTTP I/O returns to the original shared deadline.
+            candidate._retrieval_deadline = deadline
+            candidate_socket = getattr(candidate, "sock", None)
+            if isinstance(candidate_socket, _DeadlineSocket):
+                candidate_socket._deadline = deadline
             connection = candidate
             pinned_ip = candidate_ip
             break
