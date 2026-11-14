@@ -53,6 +53,7 @@ class FakeConnection:
     def __init__(self, response):
         self.response = response
         self.request_args = None
+        self.request_calls = 0
         self.closed = False
         self.sock = FakeSocket()
 
@@ -63,6 +64,7 @@ class FakeConnection:
         self.connected = True
 
     def request(self, method, path, headers):
+        self.request_calls += 1
         self.request_args = (method, path, headers)
 
     def getresponse(self):
@@ -311,6 +313,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
                 self.assertEqual(result.reason, "redirect_not_followed")
                 self.assertEqual(factory.call_count, 1)
                 self.assertEqual(connection.request_args[0], "GET")
+                self.assertEqual(connection.request_calls, 1)
                 self.assertTrue(connection.closed)
 
     def test_redirect_response_issues_exactly_one_http_request(self):
@@ -321,6 +324,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "redirect_not_followed")
         self.assertEqual(self.factory.call_count, 1)
         self.assertIsNotNone(self.connection.request_args)
+        self.assertEqual(self.connection.request_calls, 1)
 
     def test_unsupported_content_type_is_rejected(self):
         self.connection.response = FakeResponse(headers={"Content-Type": "application/json"})
