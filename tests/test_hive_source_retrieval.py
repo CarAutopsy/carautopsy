@@ -109,7 +109,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         resolver = Mock(return_value=[
             (None, None, None, None, ("8.8.8.8", 443)),
             (None, None, None, None, ("1.1.1.1", 443)),
-        ]
+        ])
         first = FakeConnection(FakeResponse())
         first.connect_error = ConnectionRefusedError("first address unreachable")
         second = FakeConnection(FakeResponse())
