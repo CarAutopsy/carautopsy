@@ -222,7 +222,14 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertNotIn("alice", record["url"])
         self.assertNotIn("supersecret", record["url"])
         self.assertNotIn("private", record["url"])
-        self.assertEqual(record["url"], "https://oem.example/spec?[redacted]")
+        self.assertEqual(record["url"], "https://oem.example/[redacted]?[redacted]")
+
+    def test_safe_record_redacts_sensitive_path_segments(self):
+        result = self.fetch("https://oem.example/vehicles/VIN-SECRET-123/config/000987654")
+        record = result.safe_record()
+        self.assertEqual(record["url"], "https://oem.example/[redacted]")
+        self.assertNotIn("VIN-SECRET-123", record["url"])
+        self.assertNotIn("000987654", record["url"])
 
     def test_declared_content_length_mismatch_is_rejected(self):
         self.connection.response = FakeResponse(
