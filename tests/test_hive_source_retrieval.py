@@ -56,6 +56,12 @@ class FakeConnection:
         self.closed = False
         self.sock = FakeSocket()
 
+    def connect(self):
+        error = getattr(self, "connect_error", None)
+        if error is not None:
+            raise error
+        self.connected = True
+
     def request(self, method, path, headers):
         self.request_args = (method, path, headers)
 
@@ -96,6 +102,46 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertIn("https://github.com/CarAutopsy/carautopsy", user_agent)
         self.assertNotIn("@", user_agent)
         self.assertTrue(self.connection.closed)
+
+    def test_connection_falls_back_to_next_fully_validated_ip_before_request(self):
+        resolver = Mock(return_value=[
+            (None, None, None, None, ("203.0.113.10", 443)),
+            (None, None, None, None, ("8.8.8.8", 443)),
+        ])
+        # Use globally routable test addresses; documentation-only ranges are
+        # intentionally not accepted by ipaddress.is_global.
+        resolver.return_value = [
+            (None, None, None, None, ("8.8.8.8", 443)),
+            (None, None, None, None, ("1.1.1.1", 443)),
+        ]
+        first = FakeConnection(FakeResponse())
+        first.connect_error = ConnectionRefusedError("first address unreachable")
+        second = FakeConnection(FakeResponse())
+        factory = Mock(side_effect=[first, second])
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", factory):
+            result = fetch_source(URL, approved_hosts=HOSTS, resolver=resolver, clock=lambda: 0.0)
+        self.assertEqual(result.outcome, "retrieved_unverified")
+        self.assertEqual(result.resolved_ip, "1.1.1.1")
+        self.assertEqual(factory.call_count, 2)
+        self.assertTrue(first.closed)
+        self.assertEqual(second.request_args[0:2], ("GET", "/specs/model.html"))
+
+    def test_tls_verification_failure_does_not_fall_back_to_another_ip(self):
+        resolver = Mock(return_value=[
+            (None, None, None, None, ("8.8.8.8", 443)),
+            (None, None, None, None, ("1.1.1.1", 443)),
+        ])
+        first = FakeConnection(FakeResponse())
+        first.connect_error = ssl.SSLCertVerificationError("certificate mismatch")
+        second = FakeConnection(FakeResponse())
+        factory = Mock(side_effect=[first, second])
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", factory):
+            result = fetch_source(URL, approved_hosts=HOSTS, resolver=resolver, clock=lambda: 0.0)
+        self.assertEqual(result.outcome, "rejected")
+        self.assertEqual(result.reason, "network_or_tls_failure")
+        self.assertEqual(factory.call_count, 1)
+        self.assertTrue(first.closed)
+        self.assertIsNone(second.request_args)
 
     def test_http_scheme_is_rejected_before_dns_or_network(self):
         result = self.fetch("http://oem.example/specs")
