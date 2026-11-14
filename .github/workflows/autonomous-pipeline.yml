@@ -74,8 +74,16 @@ jobs:
         run: |
           set +e
           python scripts/autonomous_pipeline.py --research-only 2>&1 | tee "$RUNNER_TEMP/hive-research.log"
-          pipeline_status=${PIPESTATUS[0]}
+          pipeline_statuses=( "${PIPESTATUS[@]}" )
+          pipeline_status=${pipeline_statuses[0]}
+          tee_status=${pipeline_statuses[1]}
           set -e
+
+          if [ "$tee_status" -ne 0 ]; then
+            echo "### Research outcome" >> "$GITHUB_STEP_SUMMARY"
+            echo "**FAILED — could not capture the research outcome log (tee exit $tee_status)**" >> "$GITHUB_STEP_SUMMARY"
+            exit "$tee_status"
+          fi
 
           if [ "$pipeline_status" -eq 2 ] && grep -qF "HIVE_RESEARCH_PAUSED:" "$RUNNER_TEMP/hive-research.log"; then
             pause_message="$(grep -F "HIVE_RESEARCH_PAUSED:" "$RUNNER_TEMP/hive-research.log" | tail -n 1)"
