@@ -72,12 +72,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.resolver = Mock(return_value=[(None, None, None, None, ("8.8.8.8", 443))])
         self.connection = FakeConnection(FakeResponse())
         self.factory = Mock(return_value=self.connection)
-        self.transport_patch = patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", self.factory)
-        self.transport_patch.start()
         self.robots = Mock(return_value=True)
-
-    def tearDown(self):
-        self.transport_patch.stop()
 
     def fetch(self, url=URL, **overrides):
         options = {
@@ -85,7 +80,8 @@ class HiveSourceRetrievalTests(unittest.TestCase):
             "resolver": self.resolver,
         }
         options.update(overrides)
-        return fetch_source(url, **options)
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", self.factory):
+            return fetch_source(url, **options)
 
     def test_valid_approved_source_is_only_retrieved_unverified(self):
         result = self.fetch(clock=lambda: 0.0)
