@@ -77,10 +77,11 @@ class HiveSourceRetrievalTests(unittest.TestCase):
     def fetch(self, url=URL, **overrides):
         options = {
             "approved_hosts": HOSTS, "robots_allowed": self.robots,
-            "resolver": self.resolver, "connection_factory": self.factory,
+            "resolver": self.resolver,
         }
         options.update(overrides)
-        return fetch_source(url, **options)
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", self.factory):
+            return fetch_source(url, **options)
 
     def test_valid_approved_source_is_only_retrieved_unverified(self):
         result = self.fetch(clock=lambda: 0.0)
@@ -383,13 +384,13 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         urls = [URL, "https://oem.example/specs/second.html"]
         def factory(host, pinned_ip, timeout):
             return FakeConnection(FakeResponse())
-        results = validate_candidate_sources(
-            urls,
-            approved_hosts=(host for host in HOSTS),
-            robots_allowed=self.robots,
-            resolver=self.resolver,
-            connection_factory=factory,
-        )
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", side_effect=factory):
+            results = validate_candidate_sources(
+                urls,
+                approved_hosts=(host for host in HOSTS),
+                robots_allowed=self.robots,
+                resolver=self.resolver,
+            )
         self.assertEqual([item["outcome"] for item in results], ["retrieved_unverified"] * 2)
 
     def test_real_http_response_reads_body_after_connection_close(self):

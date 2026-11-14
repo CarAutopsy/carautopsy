@@ -424,13 +424,13 @@ def fetch_source(
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
     max_bytes: int = MAX_RESPONSE_BYTES,
     resolver=socket.getaddrinfo,
-    connection_factory=None,
     clock=time.monotonic,
 ) -> RetrievalResult:
     """Fetch one approved HTTPS URL without redirects, proxies or DNS re-resolution.
 
-    robots_allowed must be an owner-controlled policy check that returns True only
-    when robots.txt and source terms permit this exact URL. It must itself fail closed.
+    The caller must complete the owner-controlled robots/terms policy check before
+    invoking this transport. This public API exposes no connection-factory override;
+    all requests use the DNS-pinned HTTPS implementation below.
     """
     try:
         host, path = _parse_source_url(url, approved_hosts)
@@ -449,8 +449,7 @@ def fetch_source(
         if remaining <= 0:
             raise TimeoutError("retrieval deadline exceeded")
         pinned_ip = addresses[0]
-        factory = connection_factory or _PinnedHTTPSConnection
-        connection = factory(host, pinned_ip, min(timeout, remaining))
+        connection = _PinnedHTTPSConnection(host, pinned_ip, min(timeout, remaining))
         connection._retrieval_deadline = deadline
         connection._retrieval_clock = clock
         response = None
