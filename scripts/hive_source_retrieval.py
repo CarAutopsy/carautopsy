@@ -1,8 +1,9 @@
-"""Fail-closed HTTPS source retrieval with DNS-pinned connections.
+"""Fail-closed HTTPS transport with DNS-pinned connections.
 
 HTTP success is recorded as retrieved_unverified; it never proves claim support.
-The caller must supply a review-controlled exact-host allowlist and an explicit
-robots/terms policy callback. Empty allowlists and missing policy callbacks deny.
+The caller must supply a review-controlled exact-host allowlist. Robots/terms
+policy is enforced by the evidence adapter before target fetch; this transport
+does not accept or execute policy callbacks.
 """
 from __future__ import annotations
 
