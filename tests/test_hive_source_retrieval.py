@@ -172,6 +172,16 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertIn("non-public", result.reason)
         self.factory.assert_not_called()
 
+    def test_dns_answer_count_above_limit_is_rejected_before_connect(self):
+        from scripts.hive_source_retrieval import MAX_DNS_ANSWERS
+
+        record = (None, None, None, None, ("8.8.8.8", 443))
+        resolver = Mock(return_value=[record] * (MAX_DNS_ANSWERS + 1))
+        result = self.fetch(resolver=resolver)
+        self.assertEqual(result.outcome, "rejected")
+        self.assertIn("answer count", result.reason)
+        self.factory.assert_not_called()
+
     def test_dns_failure_is_rejected(self):
         resolver = Mock(side_effect=OSError("dns down"))
         result = self.fetch(resolver=resolver)
