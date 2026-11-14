@@ -53,6 +53,7 @@ class FakeConnection:
     def __init__(self, response):
         self.response = response
         self.request_args = None
+        self.request_calls = 0
         self.closed = False
         self.sock = FakeSocket()
 
@@ -63,6 +64,7 @@ class FakeConnection:
         self.connected = True
 
     def request(self, method, path, headers):
+        self.request_calls += 1
         self.request_args = (method, path, headers)
 
     def getresponse(self):
@@ -292,10 +294,40 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "DNS resolution failed")
 
     def test_redirect_is_never_followed(self):
-        self.connection.response = FakeResponse(status=302, headers={"Location": "http://127.0.0.1/"})
+        for status in range(300, 400):
+            with self.subTest(status=status):
+                self.resolver.reset_mock()
+                connection = FakeConnection(
+                    FakeResponse(status=status, headers={"Location": "http://127.0.0.1/"})
+                )
+                factory = Mock(return_value=connection)
+                with patch(
+                    "scripts.hive_source_retrieval._PinnedHTTPSConnection", factory
+                ):
+                    result = fetch_source(
+                        URL,
+                        approved_hosts=HOSTS,
+                        resolver=self.resolver,
+                        clock=lambda: 0.0,
+                    )
+                self.assertEqual(result.outcome, "rejected")
+                self.assertEqual(result.reason, "redirect_not_followed")
+                self.assertEqual(factory.call_count, 1)
+                self.assertEqual(connection.request_args[0], "GET")
+                self.assertEqual(connection.request_calls, 1)
+                self.resolver.assert_called_once()
+                self.assertTrue(connection.closed)
+
+    def test_redirect_response_issues_exactly_one_http_request(self):
+        self.connection.response = FakeResponse(
+            status=302, headers={"Location": "https://attacker.example/second-hop"}
+        )
         result = self.fetch()
         self.assertEqual(result.reason, "redirect_not_followed")
         self.assertEqual(self.factory.call_count, 1)
+        self.assertIsNotNone(self.connection.request_args)
+        self.assertEqual(self.connection.request_calls, 1)
+        self.resolver.assert_called_once()
 
     def test_unsupported_content_type_is_rejected(self):
         self.connection.response = FakeResponse(headers={"Content-Type": "application/json"})
