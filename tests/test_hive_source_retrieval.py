@@ -294,8 +294,9 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "DNS resolution failed")
 
     def test_redirect_is_never_followed(self):
-        for status in (301, 302, 307, 308):
+        for status in range(300, 400):
             with self.subTest(status=status):
+                self.resolver.reset_mock()
                 connection = FakeConnection(
                     FakeResponse(status=status, headers={"Location": "http://127.0.0.1/"})
                 )
@@ -314,6 +315,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
                 self.assertEqual(factory.call_count, 1)
                 self.assertEqual(connection.request_args[0], "GET")
                 self.assertEqual(connection.request_calls, 1)
+                self.resolver.assert_called_once()
                 self.assertTrue(connection.closed)
 
     def test_redirect_response_issues_exactly_one_http_request(self):
@@ -325,6 +327,7 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(self.factory.call_count, 1)
         self.assertIsNotNone(self.connection.request_args)
         self.assertEqual(self.connection.request_calls, 1)
+        self.resolver.assert_called_once()
 
     def test_unsupported_content_type_is_rejected(self):
         self.connection.response = FakeResponse(headers={"Content-Type": "application/json"})
