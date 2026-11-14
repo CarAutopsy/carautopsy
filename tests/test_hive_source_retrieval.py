@@ -330,13 +330,20 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertNotIn("body", record)
         self.assertEqual(record["outcome"], "retrieved_unverified")
 
-    def test_safe_record_redacts_url_credentials_and_query_values(self):
-        result = self.fetch("https://alice:supersecret@oem.example/spec?token=private")
+    def test_safe_record_redacts_credentials_path_query_and_fragment(self):
+        result = self.fetch(
+            "https://alice:supersecret@oem.example/vehicles/VIN-SECRET-123456?"
+            "token=private&account=customer-42#section-secret"
+        )
         record = result.safe_record()
-        self.assertNotIn("alice", record["url"])
-        self.assertNotIn("supersecret", record["url"])
-        self.assertNotIn("private", record["url"])
-        self.assertEqual(record["url"], "https://oem.example/spec?[redacted]")
+        for secret in ("alice", "supersecret", "VIN-SECRET-123456", "private",
+                       "customer-42", "section-secret", "token", "account"):
+            self.assertNotIn(secret, record["url"])
+        self.assertEqual(record["url"], "https://oem.example/[redacted]")
+
+    def test_safe_record_preserves_only_root_path_when_no_resource_path_exists(self):
+        result = self.fetch("https://oem.example/")
+        self.assertEqual(result.safe_record()["url"], "https://oem.example/")
 
     def test_declared_content_length_mismatch_is_rejected(self):
         self.connection.response = FakeResponse(
