@@ -72,11 +72,10 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.resolver = Mock(return_value=[(None, None, None, None, ("8.8.8.8", 443))])
         self.connection = FakeConnection(FakeResponse())
         self.factory = Mock(return_value=self.connection)
-        self.robots = Mock(return_value=True)
 
     def fetch(self, url=URL, **overrides):
         options = {
-            "approved_hosts": HOSTS, "robots_allowed": self.robots,
+            "approved_hosts": HOSTS,
             "resolver": self.resolver,
         }
         options.update(overrides)
@@ -201,17 +200,9 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         result = self.fetch(max_bytes=1000)
         self.assertEqual(result.reason, "response_too_large")
 
-    def test_robots_policy_is_mandatory_and_fail_closed(self):
-        result = self.fetch(robots_allowed=None)
-        self.assertIn("callback is required", result.reason)
-        self.resolver.assert_not_called()
-        result = self.fetch(robots_allowed=Mock(return_value=False))
-        self.assertIn("did not permit", result.reason)
-        self.resolver.assert_not_called()
-
-    def test_robots_policy_exception_is_fail_closed(self):
-        result = self.fetch(robots_allowed=Mock(side_effect=RuntimeError("policy error")))
-        self.assertEqual(result.reason, "robots/terms policy check failed")
+    def test_transport_api_rejects_caller_supplied_policy_callbacks(self):
+        with self.assertRaises(TypeError):
+            self.fetch(robots_allowed=lambda _url: True)
         self.resolver.assert_not_called()
 
     def test_timeout_is_bounded(self):
@@ -253,15 +244,6 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "request_timeout")
 
 
-    def test_robots_policy_is_bounded_by_total_deadline(self):
-        def stalled_policy(url):
-            time.sleep(0.1)
-            return True
-        result = self.fetch(timeout=0.01, robots_allowed=stalled_policy)
-        self.assertEqual(result.reason, "request_timeout")
-        self.resolver.assert_not_called()
-        self.factory.assert_not_called()
-
     def test_dns_resolution_is_bounded_by_total_deadline(self):
         def stalled_resolver(*args, **kwargs):
             time.sleep(0.1)
@@ -270,40 +252,6 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.assertEqual(result.reason, "request_timeout")
         self.factory.assert_not_called()
 
-
-    def test_stalled_policy_workers_are_capped_until_callbacks_exit(self):
-        from scripts import hive_source_retrieval as retrieval
-
-        slots = threading.BoundedSemaphore(2)
-        release = threading.Event()
-        both_started = threading.Event()
-        started = {"count": 0}
-        lock = threading.Lock()
-
-        def stalled_policy(url):
-            with lock:
-                started["count"] += 1
-                if started["count"] == 2:
-                    both_started.set()
-            release.wait()
-            return True
-
-        try:
-            with patch.object(retrieval, "_POLICY_WORKER_SLOTS", slots):
-                first = self.fetch(timeout=0.02, robots_allowed=stalled_policy)
-                second = self.fetch(timeout=0.02, robots_allowed=stalled_policy)
-                self.assertTrue(both_started.wait(1), "both policy workers did not start")
-                third = self.fetch(timeout=0.02, robots_allowed=stalled_policy)
-                self.assertEqual(first.reason, "request_timeout")
-                self.assertEqual(second.reason, "request_timeout")
-                self.assertIn("worker capacity exhausted", third.reason)
-                self.assertEqual(started["count"], 2)
-        finally:
-            release.set()
-        self.assertTrue(slots.acquire(timeout=1))
-        self.assertTrue(slots.acquire(timeout=1))
-        slots.release()
-        slots.release()
 
     def test_stalled_dns_workers_are_capped_until_resolvers_exit(self):
         from scripts import hive_source_retrieval as retrieval
@@ -388,7 +336,6 @@ class HiveSourceRetrievalTests(unittest.TestCase):
             results = validate_candidate_sources(
                 urls,
                 approved_hosts=(host for host in HOSTS),
-                robots_allowed=self.robots,
                 resolver=self.resolver,
             )
         self.assertEqual([item["outcome"] for item in results], ["retrieved_unverified"] * 2)
