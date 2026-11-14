@@ -23,7 +23,7 @@
 
 ## Evidence semantics
 
-A successful HTTP response is recorded as `retrieved_unverified`. This means only that bytes were fetched from an allowed endpoint. It does not establish that the source supports any candidate claim. The returned response body is transient; `safe_record()` excludes it from durable diagnostics. Candidate provenance and claim-level support must still pass the deterministic candidate gate and two independent vendor audits.
+A successful HTTP response is recorded as `retrieved_unverified`. This means only that bytes were fetched from an allowed endpoint. It does not establish that the source supports any candidate claim. The returned response body is transient; `safe_record()` excludes it from durable diagnostics. Diagnostic URLs retain only the scheme, hostname, and optional port. Credentials, every non-root path, query string (including parameter names), and fragment are omitted or redacted because resource paths may contain VINs, serial numbers, document IDs, or account-specific tokens. Candidate provenance and claim-level support must still pass the deterministic candidate gate and two independent vendor audits.
 
 The deterministic claim-evidence gate proves that each required claim is bound to a quote and locator present in the supplied source text. It does **not** independently prove that the quote is semantically relevant or factually supports the claim. The two independent vendor auditors assess candidate-level semantic support; the owner-led security review and five-service AI cross-review assess the retrieval system's security and residual risks. These review layers serve different purposes.
 
