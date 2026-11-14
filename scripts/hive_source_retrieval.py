@@ -414,10 +414,34 @@ def fetch_source(
         remaining = deadline - clock()
         if remaining <= 0:
             raise TimeoutError("retrieval deadline exceeded")
-        pinned_ip = addresses[0]
-        connection = _PinnedHTTPSConnection(host, pinned_ip, min(timeout, remaining))
-        connection._retrieval_deadline = deadline
-        connection._retrieval_clock = clock
+        connection = None
+        pinned_ip = None
+        last_connect_error = None
+        for candidate_ip in addresses:
+            remaining = deadline - clock()
+            if remaining <= 0:
+                raise TimeoutError("retrieval deadline exceeded while connecting to validated addresses")
+            candidate = _PinnedHTTPSConnection(host, candidate_ip, remaining)
+            candidate._retrieval_deadline = deadline
+            candidate._retrieval_clock = clock
+            try:
+                # Establish TCP and TLS before sending the request. Only a
+                # pre-request connection failure may advance to another IP.
+                candidate.connect()
+            except ssl.SSLError:
+                candidate.close()
+                raise
+            except OSError as exc:
+                candidate.close()
+                last_connect_error = exc
+                continue
+            connection = candidate
+            pinned_ip = candidate_ip
+            break
+        if connection is None:
+            if last_connect_error is not None:
+                raise last_connect_error
+            raise RetrievalDenied("no validated DNS address could be connected")
         response = None
         try:
             remaining = deadline - clock()
