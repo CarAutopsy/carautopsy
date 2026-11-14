@@ -72,12 +72,17 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         self.resolver = Mock(return_value=[(None, None, None, None, ("8.8.8.8", 443))])
         self.connection = FakeConnection(FakeResponse())
         self.factory = Mock(return_value=self.connection)
+        self.transport_patch = patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", self.factory)
+        self.transport_patch.start()
         self.robots = Mock(return_value=True)
+
+    def tearDown(self):
+        self.transport_patch.stop()
 
     def fetch(self, url=URL, **overrides):
         options = {
             "approved_hosts": HOSTS, "robots_allowed": self.robots,
-            "resolver": self.resolver, "connection_factory": self.factory,
+            "resolver": self.resolver,
         }
         options.update(overrides)
         return fetch_source(url, **options)
@@ -383,13 +388,13 @@ class HiveSourceRetrievalTests(unittest.TestCase):
         urls = [URL, "https://oem.example/specs/second.html"]
         def factory(host, pinned_ip, timeout):
             return FakeConnection(FakeResponse())
-        results = validate_candidate_sources(
-            urls,
-            approved_hosts=(host for host in HOSTS),
-            robots_allowed=self.robots,
-            resolver=self.resolver,
-            connection_factory=factory,
-        )
+        with patch("scripts.hive_source_retrieval._PinnedHTTPSConnection", side_effect=factory):
+            results = validate_candidate_sources(
+                urls,
+                approved_hosts=(host for host in HOSTS),
+                robots_allowed=self.robots,
+                resolver=self.resolver,
+            )
         self.assertEqual([item["outcome"] for item in results], ["retrieved_unverified"] * 2)
 
     def test_real_http_response_reads_body_after_connection_close(self):
