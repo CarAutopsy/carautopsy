@@ -89,11 +89,9 @@ def retrieve_approved_evidence(
                 check_source_access(url, config=config, fetcher=fetcher, today=today)
             except SourcePolicyDenied as exc:
                 raise EvidenceRetrievalRejected("source access policy rejected retrieval") from exc
-            result = fetcher(
-                url,
-                approved_hosts=hosts,
-                robots_allowed=lambda requested: requested == url,
-            )
+            # Policy precheck above is the only production authorization path.
+            # The transport accepts no caller-controlled robots callback.
+            result = fetcher(url, approved_hosts=hosts)
             if getattr(result, "outcome", None) != "retrieved_unverified":
                 raise EvidenceRetrievalRejected("approved source was not retrieved successfully")
             body = getattr(result, "body", None)
