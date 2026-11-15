@@ -18,6 +18,7 @@
 - Reject all redirects in this first implementation; no redirect target is ever requested.
 - Identify the crawler with a project-owned GitHub repository URL; do not embed a maintainer personal email in outbound headers.
 - Bound timeout to 30 seconds maximum and response bytes to 2 MB maximum; enforce both declared and streamed sizes.
+- HTTP response headers are parsed by Python's `http.client.HTTPResponse`, which enforces the runtime parser limits of 65,536 bytes per status/header line (`_MAXLINE`) and 100 header lines (`_MAXHEADERS`, including the terminating blank line). This bounds header parsing, but permits a theoretical aggregate header block of roughly 6.25 MiB. These are standard-library implementation defaults, not application-specific tighter limits; verify them on every supported Python upgrade and reassess before enabling live retrieval.
 - Accept only HTML, plain text and PDF content types. The extraction layer must never treat binary PDF bytes as prompt text.
 - Reject known placeholder KBA numeric filenames and all-zero configurator identifiers.
 
