@@ -184,7 +184,7 @@ if RESEARCH_ONLY:
     taxes = defaults = inspections = None
     analyze = None
 else:
-    from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
+    from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config, publication_artifact_is_current, publication_metadata
     from validate_tco_readiness import validate_catalog_readiness
     taxes, defaults, inspections = load_country_config(ROOT)
     # Both full-pipeline and standalone publication share the same fail-closed
@@ -653,7 +653,7 @@ payload = {
         "ice_avg_monthly_eur": round(sum(r["monthly_eur"] for r in others) / len(others), 2) if others else None,
     },
     "envelope": {
-        "engine_version": "0.5.0", "country_pack": "AT@1.2.0-draft",
+        **publication_metadata(taxes),
         "assumptions_version": "AT-defaults@1.0.0",
         "generated_utc": datetime.now(timezone.utc).isoformat(), "currency": "EUR",
         "horizon_years": defaults.get("horizon_years_default", 5),
@@ -668,8 +668,8 @@ changed = True
 if out.exists():
     try:
         old = json.loads(out.read_text(encoding="utf-8"))
-        changed = json.dumps(old.get("results"), sort_keys=True) != json.dumps(results, sort_keys=True)
-    except Exception:
+        changed = not publication_artifact_is_current(old, payload)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
         changed = True
 
 if changed:
