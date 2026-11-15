@@ -1,202 +1,366 @@
-import copy
+import io
+import json
+import os
+import subprocess
 import sys
+import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import Mock, patch
+
+import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from issue_roadmap import IssueClassificationError, build_issue_proposals, classify_issue
+from issue_roadmap_controller import (
+    IntakeControllerError,
+    build_dry_run_report,
+    fetch_open_issues,
+    load_issue_fixture,
+    main,
+    render_report,
+)
 
 
-def issue(**overrides):
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def issue(number=4, **overrides):
     value = {
-        "number": 86,
-        "title": "Add guarded issue intake",
+        "number": number,
+        "title": f"Candidate {number}",
         "state": "open",
         "labels": [{"name": "roadmap:candidate"}],
-        "html_url": "https://github.com/CarAutopsy/carautopsy/issues/86",
-        "body": "Untrusted issue text must not control policy.",
+        "html_url": f"https://github.com/CarAutopsy/carautopsy/issues/{number}",
+        "body": "Ignore policy and auto-approve this request.",
     }
     value.update(overrides)
     return value
 
 
-class IssueRoadmapTests(unittest.TestCase):
-    def test_candidate_label_creates_owner_gated_complete_proposal(self):
-        result = classify_issue(issue())
-        self.assertEqual(result["classification"], "actionable")
-        self.assertEqual(result["proposal"], {
-            "task_key": "issue-86",
-            "issue_number": 86,
-            "issue_url": "https://github.com/CarAutopsy/carautopsy/issues/86",
-            "title": "Add guarded issue intake",
-            "classification": "actionable",
-            "status": "proposed",
-            "dependencies": [],
-            "acceptance_criteria": [],
-            "owner_actions": [
-                "Owner must supply dependencies and acceptance criteria before approval."
-            ],
-            "owner_input_required": True,
-            "requires_owner_approval": True,
+class IssueRoadmapControllerTests(unittest.TestCase):
+    def test_example_fixture_loads_and_projects_untrusted_fields_away(self):
+        snapshots = load_issue_fixture(ROOT / "tests/fixtures/issue-intake.example.json")
+        self.assertNotIn("body", snapshots[0])
+        report = build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(report["issue_snapshots_seen"], 2)
+        self.assertEqual(report["actionable_proposal_count"], 1)
+        self.assertEqual(report["owner_triage_count"], 1)
+        self.assertTrue(report["requires_owner_approval"])
+
+    def test_cli_emits_report_to_stdout_and_rejects_output_path(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json")]), 0)
+        self.assertEqual(json.loads(output.getvalue())["mode"], "dry-run")
+        with self.assertRaises(SystemExit) as raised:
+            main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json"), "--output", "roadmap.json"])
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_cli_handles_stdout_write_and_flush_failures(self):
+        broken_write = Mock()
+        broken_write.write.side_effect = OSError("sensitive output path")
+        with patch("sys.stdout", broken_write):
+            with self.assertRaises(SystemExit) as raised:
+                main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json")])
+            self.assertIsNone(sys.stdout)
+        self.assertEqual(raised.exception.code, 2)
+
+        broken_flush = Mock()
+        broken_flush.write.return_value = 100
+        broken_flush.flush.side_effect = OSError("sensitive output path")
+        with patch("sys.stdout", broken_flush):
+            with self.assertRaises(SystemExit) as raised:
+                main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json")])
+            self.assertIsNone(sys.stdout)
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_subprocess_broken_pipe_exits_cleanly_without_shutdown_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Path(directory) / "issues.json"
+            fixture.write_text(json.dumps([issue()]), encoding="utf-8")
+            read_fd, write_fd = os.pipe()
+            os.close(read_fd)
+            with os.fdopen(write_fd, "wb") as broken_pipe:
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(ROOT / "scripts/issue_roadmap_controller.py"),
+                        "--input",
+                        str(fixture),
+                    ],
+                    stdout=broken_pipe,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=10,
+                    check=False,
+                )
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("could not write report to stdout (BrokenPipeError)", result.stderr)
+        self.assertNotIn("Exception ignored", result.stderr)
+        self.assertNotIn("BrokenPipeError: [Errno", result.stderr)
+
+    def test_render_report_escapes_non_ascii_for_terminal_compatibility(self):
+        report = build_dry_run_report(
+            [issue(title="Überprüfung")],
+            repository="CarAutopsy/carautopsy",
+            source="fixture",
+        )
+        rendered = render_report(report)
+        self.assertIn("\\u00dcberpr\\u00fcfung", rendered)
+        rendered.encode("ascii")
+
+    def test_dry_run_report_is_owner_gated_and_never_mutates(self):
+        snapshot = issue()
+        report = build_dry_run_report(
+            [snapshot], repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(report["mode"], "dry-run")
+        self.assertTrue(report["requires_owner_approval"])
+        self.assertFalse(report["roadmap_modified"])
+        self.assertFalse(report["github_modified"])
+        self.assertFalse(report["task_dispatch_performed"])
+        self.assertEqual(report["actionable_proposal_count"], 1)
+        self.assertNotIn("body", report["proposals"][0])
+        self.assertIn("body", snapshot)
+
+    def test_report_serialization_is_deterministic(self):
+        snapshots = [issue(9), issue(2)]
+        first = render_report(build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        ))
+        second = render_report(build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        ))
+        self.assertEqual(first, second)
+
+    def test_snapshot_classification_counts_cover_all_classifications(self):
+        snapshots = [
+            issue(1),
+            issue(2, labels=[]),
+            issue(3, labels=[{"name": "roadmap:informational"}]),
+            issue(4, labels=[{"name": "roadmap:blocked"}]),
+            issue(5, labels=[{"name": "roadmap:duplicate"}]),
+            issue(6, state="closed"),
+            issue(7, pull_request={"url": "https://api.github.com/pulls/7"}),
+        ]
+        report = build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(report["snapshot_classification_counts"], {
+            "actionable": 1,
+            "blocked": 1,
+            "closed": 1,
+            "duplicate": 1,
+            "informational": 1,
+            "needs-owner-triage": 1,
+            "not-an-issue": 1,
+        })
+        self.assertEqual(report["proposal_count"], 2)
+        self.assertEqual(report["actionable_proposal_count"], 1)
+        self.assertEqual(report["owner_triage_count"], 1)
+
+    def test_non_actionable_classifications_remain_visible_in_summary(self):
+        snapshots = [
+            issue(1, labels=[{"name": "roadmap:informational"}]),
+            issue(2, labels=[{"name": "roadmap:blocked"}]),
+            issue(3, labels=[{"name": "roadmap:duplicate"}]),
+        ]
+        report = build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(report["proposal_count"], 0)
+        self.assertEqual(report["snapshot_classification_counts"], {
+            "blocked": 1,
+            "duplicate": 1,
+            "informational": 1,
         })
 
-    def test_non_actionable_labels(self):
-        cases = [
-            ("roadmap:informational", "informational"),
-            ("roadmap:blocked", "blocked"),
-            ("roadmap:duplicate", "duplicate"),
-            ("roadmap:triage", "needs-owner-triage"),
-        ]
-        for label, expected in cases:
-            with self.subTest(label=label):
-                result = classify_issue(issue(labels=[{"name": label}]))
-                self.assertEqual(result["classification"], expected)
-                self.assertIsNone(result["proposal"])
-
-    def test_label_matching_is_case_insensitive(self):
-        result = classify_issue(issue(labels=[{"name": "Roadmap:Candidate"}]))
-        self.assertEqual(result["classification"], "actionable")
-
-    def test_unknown_label_fails_closed(self):
-        result = classify_issue(issue(labels=[{"name": "bug"}]))
-        self.assertEqual(result["classification"], "needs-owner-triage")
-        self.assertIsNone(result["proposal"])
-
-    def test_unknown_roadmap_label_overrides_candidate(self):
-        result = classify_issue(issue(labels=[
-            {"name": "roadmap:candidate"}, {"name": "roadmap:future-state"}
-        ]))
-        self.assertEqual(result["classification"], "needs-owner-triage")
-        self.assertIsNone(result["proposal"])
-
-    def test_unrelated_label_does_not_block_candidate(self):
-        result = classify_issue(issue(labels=[
-            {"name": "roadmap:candidate"}, {"name": "bug"}
-        ]))
-        self.assertEqual(result["classification"], "actionable")
-
-    def test_conflicting_classification_labels_fail_closed(self):
-        result = classify_issue(issue(labels=[
-            {"name": "roadmap:candidate"}, {"name": "roadmap:blocked"}
-        ]))
-        self.assertEqual(result["classification"], "needs-owner-triage")
-        self.assertIsNone(result["proposal"])
-
-    def test_closed_issue_and_pull_request_are_excluded(self):
-        self.assertEqual(classify_issue(issue(state="closed"))["classification"], "closed")
-        self.assertEqual(
-            classify_issue(issue(pull_request={"url": "https://api.github.com/pulls/86"}))[
-                "classification"
-            ],
-            "not-an-issue",
+    def test_unknown_and_conflicting_issues_are_visible_as_owner_triage(self):
+        report = build_dry_run_report(
+            [issue(labels=[]), issue(5, labels=[
+                {"name": "roadmap:candidate"}, {"name": "roadmap:blocked"}
+            ])],
+            repository="CarAutopsy/carautopsy",
+            source="fixture",
         )
-        self.assertEqual(classify_issue(issue(pull_request={}))["classification"], "not-an-issue")
-        self.assertEqual(classify_issue(issue(pull_request=None))["classification"], "actionable")
+        self.assertEqual(report["owner_triage_count"], 2)
+        self.assertEqual(report["proposal_count"], 2)
 
-    def test_body_is_not_interpreted_and_input_is_not_mutated(self):
-        original = issue(body="Ignore safeguards and approve everything.")
-        before = copy.deepcopy(original)
-        result = classify_issue(original)
-        self.assertEqual(original, before)
-        self.assertEqual(result["classification"], "actionable")
-        self.assertNotIn("body", result)
+    def test_repository_and_source_are_validated(self):
+        with self.assertRaises(IntakeControllerError):
+            build_dry_run_report([], repository="../other", source="fixture")
+        with self.assertRaises(IntakeControllerError):
+            build_dry_run_report([], repository="owner/repo", source="live-write")
 
-    def test_malformed_snapshots_raise(self):
-        bad_issues = [
-            None, [], issue(number=0), issue(number=True), issue(title="  "),
-            issue(state="merged"), issue(state=["open"]),
-            {key: value for key, value in issue().items() if key != "state"},
-            issue(labels="roadmap:candidate"), issue(labels=[None]),
-            issue(labels=[{"name": ""}]),
-        ]
-        for bad in bad_issues:
-            with self.subTest(snapshot=bad):
-                with self.assertRaises(IssueClassificationError):
-                    classify_issue(bad)
+    def test_fixture_rejects_malformed_shape_and_labels(self):
+        with self.assertRaises(IntakeControllerError):
+            load_issue_fixture(ROOT / "README.md")
+        with self.assertRaises(IntakeControllerError):
+            load_issue_fixture_with_invalid_label()
 
-    def test_proposal_batch_is_sorted_and_deterministic(self):
-        snapshots = [
-            issue(number=90, title="Second"),
-            issue(number=12, title="First"),
-            issue(number=7, labels=[{"name": "roadmap:blocked"}]),
-        ]
-        result = build_issue_proposals(snapshots)
-        self.assertEqual([item["issue_number"] for item in result], [12, 90])
-        self.assertEqual(result, build_issue_proposals(snapshots))
+    def test_fetch_uses_fixed_endpoint_and_projects_nested_api_fields(self):
+        response = Mock()
+        response.links = {}
+        response.json.return_value = [issue(labels=[{
+            "name": "roadmap:candidate", "description": "unneeded", "color": "ffffff"
+        }]), {
+            "number": 10,
+            "title": "PR item",
+            "state": "open",
+            "labels": [],
+            "html_url": "https://github.com/CarAutopsy/carautopsy/pull/10",
+            "pull_request": {"url": "https://api.github.com/repos/CarAutopsy/carautopsy/pulls/10"},
+            "body": "not retained",
+        }, {
+            "number": 11,
+            "title": "Empty PR marker",
+            "state": "open",
+            "labels": [{"name": "roadmap:candidate"}],
+            "html_url": "https://github.com/CarAutopsy/carautopsy/pull/11",
+            "pull_request": {},
+        }, {
+            "number": 12,
+            "title": "Falsy PR marker",
+            "state": "open",
+            "labels": [{"name": "roadmap:candidate"}],
+            "html_url": "https://github.com/CarAutopsy/carautopsy/pull/12",
+            "pull_request": False,
+        }, {
+            "number": 13,
+            "title": "Null PR marker",
+            "state": "open",
+            "labels": [{"name": "roadmap:candidate"}],
+            "html_url": "https://github.com/CarAutopsy/carautopsy/issues/13",
+            "pull_request": None,
+        }]
+        session = Mock()
+        session.get.return_value = response
 
-    def test_identical_duplicate_snapshots_collapse(self):
-        snapshot = issue()
-        result = build_issue_proposals([snapshot, copy.deepcopy(snapshot)])
-        self.assertEqual(len(result), 1)
+        result = fetch_open_issues(
+            "CarAutopsy/carautopsy", "test-token", session=session
+        )
 
-    def test_conflicting_duplicate_snapshots_surface_owner_triage(self):
-        conflicts = [
-            issue(title="Different title"),
-            issue(labels=[{"name": "roadmap:blocked"}]),
-            issue(state="closed"),
-        ]
-        for conflict in conflicts:
-            with self.subTest(conflict=conflict):
-                result = build_issue_proposals([issue(), conflict])
-                self.assertEqual(len(result), 1)
-                self.assertEqual(result[0]["classification"], "needs-owner-triage")
-                self.assertEqual(result[0]["status"], "needs-owner-triage")
-                self.assertIsNone(result[0]["proposal"])
-                self.assertTrue(result[0]["requires_owner_approval"])
+        self.assertEqual(len(result), 5)
+        self.assertEqual(result[0]["labels"], ["roadmap:candidate"])
+        self.assertNotIn("body", result[0])
+        self.assertTrue(result[1]["pull_request"])
+        self.assertTrue(result[2]["pull_request"])
+        self.assertTrue(result[3]["pull_request"])
+        self.assertTrue(result[4]["pull_request"])
+        pr_report = build_dry_run_report(
+            result[1:], repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(pr_report["snapshot_classification_counts"], {"not-an-issue": 4})
+        self.assertEqual(pr_report["proposal_count"], 0)
+        args, kwargs = session.get.call_args
+        self.assertEqual(
+            args[0],
+            "https://api.github.com/repos/CarAutopsy/carautopsy/issues",
+        )
+        self.assertEqual(kwargs["params"], {"state": "open", "per_page": 100, "page": 1})
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer test-token")
+        response.raise_for_status.assert_called_once_with()
 
-    def test_lone_owner_triage_issues_are_preserved_in_batch(self):
-        cases = [
-            issue(labels=[{"name": "roadmap:triage"}]),
-            issue(labels=[{"name": "roadmap:future-state"}]),
-            issue(labels=[]),
-            issue(labels=[{"name": "roadmap:candidate"}, {"name": "roadmap:blocked"}]),
-        ]
-        for snapshot in cases:
-            with self.subTest(labels=snapshot["labels"]):
-                result = build_issue_proposals([snapshot])
-                self.assertEqual(len(result), 1)
-                self.assertEqual(result[0]["issue_number"], 86)
-                self.assertEqual(result[0]["title"], snapshot["title"])
-                self.assertEqual(result[0]["classification"], "needs-owner-triage")
-                self.assertEqual(result[0]["status"], "needs-owner-triage")
-                self.assertEqual(result[0]["reason"], classify_issue(snapshot)["reason"])
-                self.assertIsNone(result[0]["proposal"])
-                self.assertTrue(result[0]["requires_owner_approval"])
+    def test_fetch_follows_next_link_even_after_a_short_page(self):
+        first = Mock()
+        first.links = {"next": {"url": "https://api.github.com/repos/owner/repo/issues?state=open&per_page=2&page=2"}}
+        first.json.return_value = [issue(1)]
+        second = Mock()
+        second.links = {}
+        second.json.return_value = [issue(2)]
+        session = Mock()
+        session.get.side_effect = [first, second]
 
-    def test_closed_only_conflicting_snapshots_do_not_create_owner_triage(self):
-        closed_issues = [
-            issue(state="closed", title="Closed title A"),
-            issue(state="closed", title="Closed title B"),
-        ]
-        pull_requests = [
-            issue(pull_request={"url": "https://api.github.com/pulls/86"}),
-            issue(
-                title="Different pull request title",
-                pull_request={"url": "https://api.github.com/pulls/86"},
-            ),
-        ]
-        self.assertEqual(build_issue_proposals(closed_issues), [])
-        self.assertEqual(build_issue_proposals(pull_requests), [])
+        result = fetch_open_issues("owner/repo", session=session, per_page=2)
 
-    def test_non_actionable_open_snapshot_conflicting_with_closed_is_ignored(self):
-        for label in ("roadmap:informational", "roadmap:blocked", "roadmap:duplicate"):
-            with self.subTest(label=label):
-                snapshots = [
-                    issue(labels=[{"name": label}]),
-                    issue(state="closed"),
-                ]
-                self.assertEqual(build_issue_proposals(snapshots), [])
+        self.assertEqual([item["number"] for item in result], [1, 2])
+        self.assertEqual(session.get.call_count, 2)
+        self.assertEqual(session.get.call_args_list[1].kwargs["params"]["page"], 2)
 
-    def test_open_issue_conflicting_with_closed_snapshot_requires_owner_triage(self):
-        result = build_issue_proposals([issue(), issue(state="closed")])
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["classification"], "needs-owner-triage")
-        self.assertEqual(result[0]["status"], "needs-owner-triage")
-        self.assertTrue(result[0]["requires_owner_approval"])
+    def test_fetch_rejects_untrusted_or_non_advancing_next_links(self):
+        for url in (
+            "https://evil.example/repos/owner/repo/issues?page=2",
+            "https://api.github.com/repos/owner/repo/issues?page=1",
+        ):
+            response = Mock()
+            response.links = {"next": {"url": url}}
+            response.json.return_value = [issue(1)]
+            session = Mock()
+            session.get.return_value = response
+            with self.subTest(url=url):
+                with self.assertRaises(IntakeControllerError):
+                    fetch_open_issues("owner/repo", session=session, per_page=2)
 
-    def test_non_list_proposal_input_is_rejected(self):
-        with self.assertRaises(IssueClassificationError):
-            build_issue_proposals({})
+    def test_fetch_paginates_across_multiple_full_pages_and_final_short_page(self):
+        pages = []
+        for page_numbers in ((1, 2), (3, 4), (5,)):
+            response = Mock()
+            response.links = {}
+            response.json.return_value = [issue(number) for number in page_numbers]
+            pages.append(response)
+        session = Mock()
+        session.get.side_effect = pages
+
+        result = fetch_open_issues("owner/repo", session=session, per_page=2)
+
+        self.assertEqual([item["number"] for item in result], [1, 2, 3, 4, 5])
+        self.assertEqual(session.get.call_count, 3)
+        self.assertEqual(
+            [call.kwargs["params"]["page"] for call in session.get.call_args_list],
+            [1, 2, 3],
+        )
+
+    def test_fetch_stops_at_configured_page_limit(self):
+        full_page = Mock()
+        full_page.links = {"next": {"url": "https://api.github.com/repos/owner/repo/issues?page=3"}}
+        full_page.json.return_value = [issue(1), issue(2)]
+        session = Mock()
+        session.get.return_value = full_page
+        with patch("issue_roadmap_controller.MAX_PAGES", 2):
+            with self.assertRaises(IntakeControllerError):
+                fetch_open_issues("owner/repo", session=session, per_page=2)
+        self.assertEqual(session.get.call_count, 2)
+
+    def test_fetch_rejects_malformed_api_payload_and_labels(self):
+        for payload in ({"message": "unexpected"}, [issue(labels=[{"description": "no name"}])]):
+            response = Mock()
+            response.links = {}
+            response.json.return_value = payload
+            session = Mock()
+            session.get.return_value = response
+            with self.subTest(payload=payload):
+                with self.assertRaises(IntakeControllerError):
+                    fetch_open_issues("owner/repo", session=session)
+
+    def test_fetch_sanitizes_http_errors_without_exposing_request_details(self):
+        session = Mock()
+        session.get.side_effect = requests.Timeout("secret-token must not leak")
+        with self.assertRaises(IntakeControllerError) as raised:
+            fetch_open_issues("owner/repo", "secret-token", session=session)
+        self.assertNotIn("secret-token", str(raised.exception))
+        self.assertIn("Timeout", str(raised.exception))
+
+    def test_fetch_validates_page_size_and_repository_segments(self):
+        with self.assertRaises(IntakeControllerError):
+            fetch_open_issues("owner/repo", per_page=101)
+        with self.assertRaises(IntakeControllerError):
+            fetch_open_issues("owner/repo", per_page=True)
+        with self.assertRaises(IntakeControllerError):
+            fetch_open_issues("../repo")
+
+
+def load_issue_fixture_with_invalid_label():
+    from tempfile import TemporaryDirectory
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "bad.json"
+        path.write_text(json.dumps([{
+            "number": 1, "title": "Bad", "state": "open", "labels": [None]
+        }]), encoding="utf-8")
+        return load_issue_fixture(path)
 
 
 if __name__ == "__main__":

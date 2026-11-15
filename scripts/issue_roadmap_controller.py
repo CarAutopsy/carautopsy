@@ -15,6 +15,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 import requests
 
@@ -62,10 +63,29 @@ def _project_issue_snapshot(item: Any) -> dict[str, Any]:
         if key in item
     }
     snapshot["labels"] = labels
-    if item.get("pull_request") is not None:
-        # GitHub's non-null PR object is only needed as an exclusion marker.
+    if "pull_request" in item:
+        # Any present marker, including a malformed/falsy one, fails closed.
         snapshot["pull_request"] = True
     return snapshot
+
+
+def _next_page_from_link(link: Any, *, owner: str, repository: str, current_page: int) -> int:
+    """Validate GitHub's next link but continue through our fixed API endpoint."""
+    if not isinstance(link, dict) or not isinstance(link.get("url"), str):
+        raise IntakeControllerError("GitHub returned a malformed pagination link")
+    parsed = urlsplit(link["url"])
+    expected_path = f"/repos/{owner}/{repository}/issues"
+    if parsed.scheme != "https" or parsed.netloc != "api.github.com" or parsed.path != expected_path:
+        raise IntakeControllerError("GitHub returned an unexpected pagination URL")
+    page_values = parse_qs(parsed.query).get("page", [])
+    if len(page_values) != 1 or not page_values[0].isdigit():
+        raise IntakeControllerError("GitHub pagination link has an invalid page number")
+    next_page = int(page_values[0])
+    if next_page <= current_page:
+        raise IntakeControllerError("GitHub pagination link did not advance")
+    if next_page > MAX_PAGES:
+        raise IntakeControllerError(f"GitHub pagination exceeded {MAX_PAGES} pages")
+    return next_page
 
 
 def fetch_open_issues(
@@ -88,7 +108,8 @@ def fetch_open_issues(
         headers["Authorization"] = f"Bearer {token}"
 
     issues: list[dict[str, Any]] = []
-    for page in range(1, MAX_PAGES + 1):
+    page = 1
+    while page <= MAX_PAGES:
         try:
             response = session.get(
                 f"{GITHUB_API}/repos/{owner}/{name}/issues",
@@ -107,12 +128,17 @@ def fetch_open_issues(
 
         if not isinstance(payload, list):
             raise IntakeControllerError("GitHub issues endpoint returned a non-list payload")
-        if not payload:
-            return issues
-
         issues.extend(_project_issue_snapshot(item) for item in payload)
-        if len(payload) < per_page:
+
+        links = getattr(response, "links", {})
+        if not isinstance(links, dict):
+            links = {}
+        next_link = links.get("next")
+        if next_link is None:
             return issues
+        page = _next_page_from_link(
+            next_link, owner=owner, repository=name, current_page=page
+        )
 
     raise IntakeControllerError(f"GitHub pagination exceeded {MAX_PAGES} pages")
 

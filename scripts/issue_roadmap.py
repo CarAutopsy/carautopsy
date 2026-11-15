@@ -55,7 +55,8 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
 
     Explicit maintainer labels are the only signal that can make an issue
     actionable. Unknown, missing, or conflicting labels fail closed to
-    needs-owner-triage. Pull requests are excluded from issue intake.
+    needs-owner-triage. Any present pull_request key excludes the snapshot,
+    including malformed or falsy markers.
     """
     if not isinstance(issue, dict):
         raise IssueClassificationError("issue snapshot must be an object")
@@ -75,7 +76,7 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
     if issue_url is not None and not isinstance(issue_url, str):
         raise IssueClassificationError("issue html_url must be a string when provided")
 
-    if issue.get("pull_request") is not None:
+    if "pull_request" in issue:
         classification = "not-an-issue"
         reason = "GitHub pull requests are excluded from issue intake."
     elif state == "closed":
