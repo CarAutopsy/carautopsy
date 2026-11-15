@@ -158,7 +158,7 @@ def fetch_open_issues(
 def load_issue_fixture(path: str | Path) -> list[dict[str, Any]]:
     try:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, ValueError, RecursionError) as exc:
         raise IntakeControllerError(f"could not read issue fixture ({type(exc).__name__})") from exc
 
     if isinstance(payload, dict):

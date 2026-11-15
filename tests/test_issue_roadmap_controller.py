@@ -201,6 +201,19 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         with self.assertRaises(IntakeControllerError):
             load_issue_fixture_with_invalid_label()
 
+    def test_fixture_contains_json_parser_resource_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.json"
+            invalid_fixtures = (
+                "[" + ("9" * 5000) + "]",
+                "[" * 1500 + "0" + "]" * 1500,
+            )
+            for content in invalid_fixtures:
+                path.write_text(content, encoding="utf-8")
+                with self.subTest(length=len(content)):
+                    with self.assertRaises(IntakeControllerError):
+                        load_issue_fixture(path)
+
     def test_fetch_uses_fixed_endpoint_and_projects_nested_api_fields(self):
         response = Mock()
         response.links = {}
