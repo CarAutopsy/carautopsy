@@ -24,6 +24,7 @@ from urllib.parse import unquote, urlsplit, urlunsplit
 
 MAX_URL_CHARS = 2_048
 MAX_RESPONSE_BYTES = 2_000_000
+MAX_DNS_ANSWERS = 32
 DEFAULT_TIMEOUT_SECONDS = 8.0
 
 # Timed-out DNS system calls cannot be cancelled safely. Bound their outstanding
@@ -211,7 +212,9 @@ def _resolve_public_addresses_before_deadline(host: str, resolver, deadline: flo
 def _validate_resolved_addresses(records) -> list[str]:
     """Validate every DNS answer and return unique public IPs only."""
     addresses = []
-    for record in records:
+    for answer_count, record in enumerate(records, start=1):
+        if answer_count > MAX_DNS_ANSWERS:
+            raise RetrievalDenied("DNS answer count exceeds the permitted limit")
         try:
             address = record[4][0].split("%", 1)[0]
             parsed = ipaddress.ip_address(address)
