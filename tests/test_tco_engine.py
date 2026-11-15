@@ -1,4 +1,5 @@
 import copy
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -31,6 +32,12 @@ class TcoConfigTests(unittest.TestCase):
         else:
             v["extensions"] = {"fuel_consumption_l_100km": {"real_world": 6}}
         return v
+
+    def test_shared_engine_contract_has_valid_freshness_policy(self):
+        contract = json.loads((ROOT / "tco-contract.json").read_text(encoding="utf-8"))
+        self.assertEqual(contract["engine_version"], ENGINE_VERSION)
+        self.assertGreater(contract["max_artifact_age_days"], 0)
+        self.assertGreaterEqual(contract["max_future_skew_minutes"], 0)
 
     def test_publication_metadata_tracks_current_tax_pack(self):
         metadata = publication_metadata(self.t)
