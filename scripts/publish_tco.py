@@ -17,7 +17,7 @@ def load(p):
     with open(p, encoding="utf-8") as f:
         return clean(json.load(f) if p.suffix == ".json" else yaml.safe_load(f))
 
-from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config
+from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config, publication_metadata
 from validate_tco_readiness import validate_catalog_readiness
 
 taxes, defaults, inspections = load_country_config(ROOT)
@@ -52,8 +52,7 @@ payload = {
     "results": results,
     "summary": summary,
     "envelope": {
-        "engine_version": "0.5.0",
-        "country_pack": "AT@1.2.0-draft",
+        **publication_metadata(taxes),
         "assumptions_version": "AT-defaults@1.0.0",
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "currency": "EUR",
