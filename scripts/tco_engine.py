@@ -5,6 +5,23 @@ import math
 from pathlib import Path
 import yaml
 
+ENGINE_VERSION = "0.5.0"
+
+
+def publication_metadata(taxes):
+    """Return the engine and tax-pack identity embedded in every published artifact."""
+    version = taxes.get("version") if isinstance(taxes, dict) else None
+    status = taxes.get("status") if isinstance(taxes, dict) else None
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError("Cannot publish TCO metadata without a country-pack version")
+    if status not in {"draft", "verified"}:
+        raise ValueError("Cannot publish TCO metadata without a recognized country-pack status")
+    return {
+        "engine_version": ENGINE_VERSION,
+        "country_pack": f"AT@{version}",
+        "country_pack_status": status,
+    }
+
 
 def load_country_config(root):
     root = Path(root)
