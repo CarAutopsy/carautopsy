@@ -1,5 +1,7 @@
+import io
 import sys
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -11,6 +13,7 @@ from issue_roadmap_controller import (
     build_dry_run_report,
     fetch_open_issues,
     load_issue_fixture,
+    main,
     render_report,
 )
 
@@ -41,6 +44,15 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(report["actionable_proposal_count"], 1)
         self.assertEqual(report["owner_triage_count"], 1)
         self.assertTrue(report["requires_owner_approval"])
+
+    def test_cli_emits_report_to_stdout_and_rejects_output_path(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json")]), 0)
+        self.assertEqual(json.loads(output.getvalue())["mode"], "dry-run")
+        with self.assertRaises(SystemExit) as raised:
+            main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json"), "--output", "roadmap.json"])
+        self.assertEqual(raised.exception.code, 2)
 
     def test_dry_run_report_is_owner_gated_and_never_mutates(self):
         snapshot = issue()
@@ -87,9 +99,11 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         with self.assertRaises(IntakeControllerError):
             load_issue_fixture(ROOT / "README.md")
 
-    def test_fetch_uses_fixed_endpoint_and_discards_untrusted_body(self):
+    def test_fetch_uses_fixed_endpoint_and_projects_nested_api_fields(self):
         response = Mock()
-        response.json.return_value = [issue(), {
+        response.json.return_value = [issue(labels=[{
+            "name": "roadmap:candidate", "description": "unneeded", "color": "ffffff"
+        }]), {
             "number": 10,
             "title": "PR item",
             "state": "open",
@@ -106,8 +120,10 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         )
 
         self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["labels"], ["roadmap:candidate"])
         self.assertNotIn("body", result[0])
-        self.assertIn("pull_request", result[1])
+        self.assertEqual(result[1]["pull_request"], True)
+        self.assertNotIsInstance(result[1]["pull_request"], dict)
         args, kwargs = session.get.call_args
         self.assertEqual(
             args[0],

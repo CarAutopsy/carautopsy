@@ -1,8 +1,8 @@
 """Read-only GitHub issue intake controller.
 
 This CLI fetches open issue metadata or consumes a fixture, applies the pure
-classifier, and emits a deterministic owner-gated proposal artifact. It never
-writes to GitHub, the roadmap, labels, workflows, or task queues.
+classifier, and emits a deterministic owner-gated proposal artifact to stdout.
+It never writes to GitHub, the roadmap, labels, workflows, or task queues.
 """
 
 from __future__ import annotations
@@ -48,8 +48,8 @@ def fetch_open_issues(
 ) -> list[dict[str, Any]]:
     """Fetch open issue snapshots from the fixed GitHub API endpoint.
 
-    Only metadata used by the classifier is retained. Issue bodies and other
-    untrusted fields are deliberately discarded before classification.
+    Only scalar metadata used by the classifier is retained. Issue bodies,
+    nested label metadata, and the nested pull-request API object are discarded.
     """
     owner, name = _validate_repository(repository)
     if isinstance(per_page, bool) or not isinstance(per_page, int) or not 1 <= per_page <= 100:
@@ -88,13 +88,29 @@ def fetch_open_issues(
         for item in payload:
             if not isinstance(item, dict):
                 raise IntakeControllerError("GitHub issues endpoint returned a malformed item")
-            # Keep the pull_request marker so PRs are safely excluded by the
-            # classifier, but discard bodies and all unrelated API fields.
-            issues.append({
+            raw_labels = item.get("labels", [])
+            if not isinstance(raw_labels, list):
+                raise IntakeControllerError("GitHub issue labels must be a list")
+            labels: list[str] = []
+            for label in raw_labels:
+                name_value = label if isinstance(label, str) else (
+                    label.get("name") if isinstance(label, dict) else None
+                )
+                if not isinstance(name_value, str) or not name_value.strip():
+                    raise IntakeControllerError("GitHub issue contains a malformed label")
+                labels.append(name_value)
+
+            snapshot = {
                 key: item[key]
-                for key in ("number", "title", "state", "labels", "html_url", "pull_request")
+                for key in ("number", "title", "state", "html_url")
                 if key in item
-            })
+            }
+            snapshot["labels"] = labels
+            if "pull_request" in item:
+                # The classifier only needs the marker's presence, not its URL.
+                snapshot["pull_request"] = True
+            issues.append(snapshot)
+
         if len(payload) < per_page:
             return issues
 
@@ -161,7 +177,6 @@ def main(argv: list[str] | None = None) -> int:
         help="fetch open issue metadata from the GitHub API (read-only)",
     )
     parser.add_argument("--repo", default="CarAutopsy/carautopsy", help="GitHub repository owner/name")
-    parser.add_argument("--output", help="write the JSON report to this local path instead of stdout")
     args = parser.parse_args(argv)
 
     try:
@@ -175,11 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         report = build_dry_run_report(
             issues, repository=args.repo, source=source_name
         )
-        rendered = render_report(report)
-        if args.output:
-            Path(args.output).write_text(rendered, encoding="utf-8")
-        else:
-            sys.stdout.write(rendered)
+        sys.stdout.write(render_report(report))
         return 0
     except (IntakeControllerError, IssueClassificationError) as exc:
         parser.exit(2, f"error: {exc}\n")
