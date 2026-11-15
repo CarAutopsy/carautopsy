@@ -36,8 +36,9 @@ def issue(number=4, **overrides):
 
 
 class IssueRoadmapControllerTests(unittest.TestCase):
-    def test_example_fixture_loads_and_generates_owner_gated_report(self):
+    def test_example_fixture_loads_and_projects_untrusted_fields_away(self):
         snapshots = load_issue_fixture(ROOT / "tests/fixtures/issue-intake.example.json")
+        self.assertNotIn("body", snapshots[0])
         report = build_dry_run_report(
             snapshots, repository="CarAutopsy/carautopsy", source="fixture"
         )
@@ -146,9 +147,12 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         with self.assertRaises(IntakeControllerError):
             build_dry_run_report([], repository="owner/repo", source="live-write")
 
-    def test_fixture_rejects_malformed_shape(self):
+    def test_fixture_rejects_malformed_shape_and_labels(self):
         with self.assertRaises(IntakeControllerError):
             load_issue_fixture(ROOT / "README.md")
+        with self.assertRaises(IntakeControllerError):
+            from issue_roadmap_controller import _project_issue_snapshot
+            _project_issue_snapshot({"number": 1, "title": "Bad", "state": "open", "labels": [None]})
 
     def test_fetch_uses_fixed_endpoint_and_projects_nested_api_fields(self):
         response = Mock()

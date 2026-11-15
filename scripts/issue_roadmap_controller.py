@@ -40,6 +40,34 @@ def _validate_repository(repository: str) -> tuple[str, str]:
     return owner, name
 
 
+def _project_issue_snapshot(item: Any) -> dict[str, Any]:
+    """Keep only the primitive metadata required by the classifier."""
+    if not isinstance(item, dict):
+        raise IntakeControllerError("issue snapshot must be an object")
+    raw_labels = item.get("labels", [])
+    if not isinstance(raw_labels, list):
+        raise IntakeControllerError("issue labels must be a list")
+    labels: list[str] = []
+    for label in raw_labels:
+        name_value = label if isinstance(label, str) else (
+            label.get("name") if isinstance(label, dict) else None
+        )
+        if not isinstance(name_value, str) or not name_value.strip():
+            raise IntakeControllerError("issue contains a malformed label")
+        labels.append(name_value)
+
+    snapshot = {
+        key: item[key]
+        for key in ("number", "title", "state", "html_url")
+        if key in item
+    }
+    snapshot["labels"] = labels
+    if "pull_request" in item:
+        # The classifier only needs the marker's presence, not its URL.
+        snapshot["pull_request"] = True
+    return snapshot
+
+
 def fetch_open_issues(
     repository: str,
     token: str | None = None,
@@ -47,11 +75,7 @@ def fetch_open_issues(
     session: Any = requests,
     per_page: int = 100,
 ) -> list[dict[str, Any]]:
-    """Fetch open issue snapshots from the fixed GitHub API endpoint.
-
-    Only scalar metadata used by the classifier is retained. Issue bodies,
-    nested label metadata, and the nested pull-request API object are discarded.
-    """
+    """Fetch open issue snapshots from the fixed GitHub API endpoint."""
     owner, name = _validate_repository(repository)
     if isinstance(per_page, bool) or not isinstance(per_page, int) or not 1 <= per_page <= 100:
         raise IntakeControllerError("per_page must be an integer from 1 to 100")
@@ -86,32 +110,7 @@ def fetch_open_issues(
         if not payload:
             return issues
 
-        for item in payload:
-            if not isinstance(item, dict):
-                raise IntakeControllerError("GitHub issues endpoint returned a malformed item")
-            raw_labels = item.get("labels", [])
-            if not isinstance(raw_labels, list):
-                raise IntakeControllerError("GitHub issue labels must be a list")
-            labels: list[str] = []
-            for label in raw_labels:
-                name_value = label if isinstance(label, str) else (
-                    label.get("name") if isinstance(label, dict) else None
-                )
-                if not isinstance(name_value, str) or not name_value.strip():
-                    raise IntakeControllerError("GitHub issue contains a malformed label")
-                labels.append(name_value)
-
-            snapshot = {
-                key: item[key]
-                for key in ("number", "title", "state", "html_url")
-                if key in item
-            }
-            snapshot["labels"] = labels
-            if "pull_request" in item:
-                # The classifier only needs the marker's presence, not its URL.
-                snapshot["pull_request"] = True
-            issues.append(snapshot)
-
+        issues.extend(_project_issue_snapshot(item) for item in payload)
         if len(payload) < per_page:
             return issues
 
@@ -128,7 +127,7 @@ def load_issue_fixture(path: str | Path) -> list[dict[str, Any]]:
         payload = payload.get("issues")
     if not isinstance(payload, list):
         raise IntakeControllerError("fixture must be a JSON array or an object with an issues array")
-    return payload
+    return [_project_issue_snapshot(item) for item in payload]
 
 
 def build_dry_run_report(
