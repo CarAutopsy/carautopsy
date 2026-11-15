@@ -137,6 +137,47 @@ class IssueRoadmapTests(unittest.TestCase):
                 self.assertIsNone(result[0]["proposal"])
                 self.assertTrue(result[0]["requires_owner_approval"])
 
+    def test_lone_owner_triage_issues_are_preserved_in_batch(self):
+        cases = [
+            issue(labels=[{"name": "roadmap:triage"}]),
+            issue(labels=[{"name": "roadmap:future-state"}]),
+            issue(labels=[]),
+            issue(labels=[{"name": "roadmap:candidate"}, {"name": "roadmap:blocked"}]),
+        ]
+        for snapshot in cases:
+            with self.subTest(labels=snapshot["labels"]):
+                result = build_issue_proposals([snapshot])
+                self.assertEqual(len(result), 1)
+                self.assertEqual(result[0]["issue_number"], 86)
+                self.assertEqual(result[0]["title"], snapshot["title"])
+                self.assertEqual(result[0]["classification"], "needs-owner-triage")
+                self.assertEqual(result[0]["status"], "needs-owner-triage")
+                self.assertEqual(result[0]["reason"], classify_issue(snapshot)["reason"])
+                self.assertIsNone(result[0]["proposal"])
+                self.assertTrue(result[0]["requires_owner_approval"])
+
+    def test_closed_only_conflicting_snapshots_do_not_create_owner_triage(self):
+        closed_issues = [
+            issue(state="closed", title="Closed title A"),
+            issue(state="closed", title="Closed title B"),
+        ]
+        pull_requests = [
+            issue(pull_request={"url": "https://api.github.com/pulls/86"}),
+            issue(
+                title="Different pull request title",
+                pull_request={"url": "https://api.github.com/pulls/86"},
+            ),
+        ]
+        self.assertEqual(build_issue_proposals(closed_issues), [])
+        self.assertEqual(build_issue_proposals(pull_requests), [])
+
+    def test_open_issue_conflicting_with_closed_snapshot_requires_owner_triage(self):
+        result = build_issue_proposals([issue(), issue(state="closed")])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["classification"], "needs-owner-triage")
+        self.assertEqual(result[0]["status"], "needs-owner-triage")
+        self.assertTrue(result[0]["requires_owner_approval"])
+
     def test_non_list_proposal_input_is_rejected(self):
         with self.assertRaises(IssueClassificationError):
             build_issue_proposals({})
