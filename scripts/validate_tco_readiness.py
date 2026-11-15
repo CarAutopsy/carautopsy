@@ -13,7 +13,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "catalog" / "variants"
-NOVA_EXEMPT_POWERTRAINS = {"bev", "fcev"}
+NOVA_EXEMPT_POWERTRAINS = {"bev"}
 SUPPORTED_COMBUSTION_POWERTRAINS = {"ice_petrol", "ice_diesel", "hev", "phev"}
 
 
