@@ -198,6 +198,9 @@ def main(argv: list[str] | None = None) -> int:
             sys.stdout.write(render_report(report))
             sys.stdout.flush()
         except (OSError, UnicodeError) as exc:
+            # Detach the broken stream so interpreter shutdown cannot retry
+            # a buffered flush after the controlled CLI error is reported.
+            sys.stdout = None
             parser.exit(2, f"error: could not write report to stdout ({type(exc).__name__})\n")
         return 0
     except (IntakeControllerError, IssueClassificationError) as exc:
