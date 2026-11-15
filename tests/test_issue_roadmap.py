@@ -29,6 +29,7 @@ class IssueRoadmapTests(unittest.TestCase):
             "issue_number": 86,
             "issue_url": "https://github.com/CarAutopsy/carautopsy/issues/86",
             "title": "Add guarded issue intake",
+            "classification": "actionable",
             "status": "proposed",
             "dependencies": [],
             "acceptance_criteria": [],
