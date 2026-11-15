@@ -50,6 +50,19 @@ class TcoConfigTests(unittest.TestCase):
         for key in ("energy_5y_eur", "maintenance_5y_eur", "insurance_5y_eur", "tyres_5y_eur"):
             self.assertGreater(x[key], base[key])
 
+    def test_wltp_only_fuel_consumption_is_used_without_default(self):
+        v = self.vehicle("ice_petrol")
+        v["extensions"]["fuel_consumption_l_100km"] = {"wltp_combined": 8.0}
+        result = calculate_tco(v, self.t, self.d, self.i, allow_draft=True)
+        expected = 8.0 / 100 * self.d["annual_km_default"] * self.d["fuel"]["petrol_eur_l"] * self.d["horizon_years_default"]
+        self.assertAlmostEqual(result["energy_5y_eur"], round(expected, 2))
+
+    def test_missing_fuel_consumption_does_not_use_a_hard_coded_default(self):
+        v = self.vehicle("ice_petrol")
+        v["extensions"]["fuel_consumption_l_100km"] = {}
+        with self.assertRaisesRegex(ValueError, "finite positive fuel consumption"):
+            calculate_tco(v, self.t, self.d, self.i, allow_draft=True)
+
     def test_ice_assumptions_change_outputs(self):
         v = self.vehicle("ice_petrol")
         base = calculate_tco(v, self.t, self.d, self.i, allow_draft=True)
