@@ -4,7 +4,7 @@ import sys
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import requests
 
@@ -53,6 +53,14 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(json.loads(output.getvalue())["mode"], "dry-run")
         with self.assertRaises(SystemExit) as raised:
             main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json"), "--output", "roadmap.json"])
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_cli_handles_stdout_write_failure_without_traceback_details(self):
+        broken_stdout = Mock()
+        broken_stdout.write.side_effect = OSError("sensitive output path")
+        with patch("sys.stdout", broken_stdout):
+            with self.assertRaises(SystemExit) as raised:
+                main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json")])
         self.assertEqual(raised.exception.code, 2)
 
     def test_dry_run_report_is_owner_gated_and_never_mutates(self):

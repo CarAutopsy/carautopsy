@@ -195,7 +195,10 @@ def main(argv: list[str] | None = None) -> int:
         report = build_dry_run_report(
             issues, repository=args.repo, source=source_name
         )
-        sys.stdout.write(render_report(report))
+        try:
+            sys.stdout.write(render_report(report))
+        except OSError as exc:
+            parser.exit(2, f"error: could not write report to stdout ({type(exc).__name__})\n")
         return 0
     except (IntakeControllerError, IssueClassificationError) as exc:
         parser.exit(2, f"error: {exc}\n")
