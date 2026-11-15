@@ -125,7 +125,8 @@ def validate_variant_readiness(
 
     # Validate year-specific statutory coverage against the exact tax pack used
     # by the publisher. This catches valid-looking records the calculator rejects.
-    if taxes is not None and registration_date is not None and powertrain in SUPPORTED_POWERTRAINS:
+    if (taxes is not None and registration_date is not None
+            and isinstance(powertrain, str) and powertrain in SUPPORTED_POWERTRAINS):
         year = registration_date.year
         nova_exemptions = (taxes.get("nova") or {}).get("exemptions") or []
         if powertrain not in nova_exemptions:
