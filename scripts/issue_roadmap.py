@@ -75,7 +75,7 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
     if issue_url is not None and not isinstance(issue_url, str):
         raise IssueClassificationError("issue html_url must be a string when provided")
 
-    if issue.get("pull_request"):
+    if issue.get("pull_request") is not None:
         classification = "not-an-issue"
         reason = "GitHub pull requests are excluded from issue intake."
     elif state == "closed":

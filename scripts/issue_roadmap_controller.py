@@ -62,8 +62,8 @@ def _project_issue_snapshot(item: Any) -> dict[str, Any]:
         if key in item
     }
     snapshot["labels"] = labels
-    if item.get("pull_request"):
-        # The classifier only needs the marker's presence, not its URL.
+    if item.get("pull_request") is not None:
+        # GitHub's non-null PR object is only needed as an exclusion marker.
         snapshot["pull_request"] = True
     return snapshot
 
@@ -169,6 +169,24 @@ def render_report(report: dict[str, Any]) -> str:
     return json.dumps(report, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
 
 
+def _silence_broken_stdout() -> None:
+    """Redirect fd 1 before detaching a failed stream to prevent shutdown flush errors."""
+    stream = sys.stdout
+    try:
+        if stream is not None:
+            null_fd = os.open(os.devnull, os.O_WRONLY)
+            try:
+                os.dup2(null_fd, stream.fileno())
+            finally:
+                os.close(null_fd)
+    except (OSError, ValueError, AttributeError, TypeError):
+        # Test doubles and non-file streams may not expose a file descriptor.
+        pass
+    # This entry point exits immediately after parser.exit; the descriptor above
+    # ensures a buffered real stdout can be flushed safely during destruction.
+    sys.stdout = None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Generate a read-only, owner-gated GitHub issue roadmap proposal."
@@ -198,9 +216,7 @@ def main(argv: list[str] | None = None) -> int:
             sys.stdout.write(render_report(report))
             sys.stdout.flush()
         except (OSError, UnicodeError) as exc:
-            # Detach the broken stream so interpreter shutdown cannot retry
-            # a buffered flush after the controlled CLI error is reported.
-            sys.stdout = None
+            _silence_broken_stdout()
             parser.exit(2, f"error: could not write report to stdout ({type(exc).__name__})\n")
         return 0
     except (IntakeControllerError, IssueClassificationError) as exc:
