@@ -1,12 +1,13 @@
 import copy
 import json
+from datetime import datetime, timedelta, timezone
 import sys
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from tco_engine import (ENGINE_VERSION, assert_tax_pack_publishable, calculate_tco, load_country_config,
-                        motor_monthly, nova, publication_metadata, validate_config)
+                        motor_monthly, nova, publication_artifact_is_current, publication_metadata, validate_config)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -38,6 +39,47 @@ class TcoConfigTests(unittest.TestCase):
         self.assertEqual(contract["engine_version"], ENGINE_VERSION)
         self.assertGreater(contract["max_artifact_age_days"], 0)
         self.assertGreaterEqual(contract["max_future_skew_minutes"], 0)
+
+    def test_publication_artifact_is_current_only_when_metadata_matches_and_is_fresh(self):
+        now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
+        candidate = {
+            "results": [{"variant_id": "test", "monthly_eur": 100}],
+            "summary": {"variants": 1},
+            "envelope": {
+                **publication_metadata(self.t),
+                "generated_utc": now.isoformat(),
+                "currency": "EUR",
+            },
+        }
+        fresh = copy.deepcopy(candidate)
+        fresh["envelope"]["generated_utc"] = (now - timedelta(days=1)).isoformat()
+        self.assertTrue(publication_artifact_is_current(fresh, candidate, now=now))
+
+        expired = copy.deepcopy(candidate)
+        expired["envelope"]["generated_utc"] = (now - timedelta(days=8)).isoformat()
+        self.assertFalse(publication_artifact_is_current(expired, candidate, now=now))
+
+        wrong_metadata = copy.deepcopy(fresh)
+        wrong_metadata["envelope"]["country_pack_status"] = "verified"
+        self.assertFalse(publication_artifact_is_current(wrong_metadata, candidate, now=now))
+
+        malformed_timestamp = copy.deepcopy(fresh)
+        malformed_timestamp["envelope"]["generated_utc"] = "not-a-date"
+        self.assertFalse(publication_artifact_is_current(malformed_timestamp, candidate, now=now))
+
+    def test_publication_artifact_refreshes_when_results_or_summary_change(self):
+        now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
+        candidate = {
+            "results": [{"variant_id": "test", "monthly_eur": 100}],
+            "summary": {"variants": 1},
+            "envelope": {**publication_metadata(self.t), "generated_utc": now.isoformat()},
+        }
+        changed = copy.deepcopy(candidate)
+        changed["results"][0]["monthly_eur"] = 101
+        self.assertFalse(publication_artifact_is_current(candidate, changed, now=now))
+        changed = copy.deepcopy(candidate)
+        changed["summary"]["variants"] = 2
+        self.assertFalse(publication_artifact_is_current(candidate, changed, now=now))
 
     def test_publication_metadata_tracks_current_tax_pack(self):
         metadata = publication_metadata(self.t)
