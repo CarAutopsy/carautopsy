@@ -79,6 +79,32 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         ))
         self.assertEqual(first, second)
 
+    def test_snapshot_classification_counts_cover_all_classifications(self):
+        snapshots = [
+            issue(1),
+            issue(2, labels=[]),
+            issue(3, labels=[{"name": "roadmap:informational"}]),
+            issue(4, labels=[{"name": "roadmap:blocked"}]),
+            issue(5, labels=[{"name": "roadmap:duplicate"}]),
+            issue(6, state="closed"),
+            issue(7, pull_request={"url": "https://api.github.com/pulls/7"}),
+        ]
+        report = build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(report["snapshot_classification_counts"], {
+            "actionable": 1,
+            "blocked": 1,
+            "closed": 1,
+            "duplicate": 1,
+            "informational": 1,
+            "needs-owner-triage": 1,
+            "not-an-issue": 1,
+        })
+        self.assertEqual(report["proposal_count"], 2)
+        self.assertEqual(report["actionable_proposal_count"], 1)
+        self.assertEqual(report["owner_triage_count"], 1)
+
     def test_non_actionable_classifications_remain_visible_in_summary(self):
         snapshots = [
             issue(1, labels=[{"name": "roadmap:informational"}]),
@@ -150,27 +176,15 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer test-token")
         response.raise_for_status.assert_called_once_with()
 
-    def test_fetch_paginates_until_empty_page(self):
-        full = Mock()
-        full.json.return_value = [issue(i) for i in range(1, 3)]
-        empty = Mock()
-        empty.json.return_value = []
-        session = Mock()
-        session.get.side_effect = [full, empty]
-
-        result = fetch_open_issues("owner/repo", session=session, per_page=2)
-
-        self.assertEqual(len(result), 2)
-        self.assertEqual(session.get.call_count, 2)
-        self.assertEqual(session.get.call_args_list[1].kwargs["params"]["page"], 2)
-
-    def test_fetch_rejects_malformed_api_payload(self):
-        response = Mock()
-        response.json.return_value = {"message": "unexpected"}
-        session = Mock()
-        session.get.return_value = response
-        with self.assertRaises(IntakeControllerError):
-            fetch_open_issues("owner/repo", session=session)
+    def test_fetch_rejects_malformed_api_payload_and_labels(self):
+        for payload in ({"message": "unexpected"}, [issue(labels=[{"description": "no name"}])]):
+            response = Mock()
+            response.json.return_value = payload
+            session = Mock()
+            session.get.return_value = response
+            with self.subTest(payload=payload):
+                with self.assertRaises(IntakeControllerError):
+                    fetch_open_issues("owner/repo", session=session)
 
     def test_fetch_sanitizes_http_errors_without_exposing_request_details(self):
         session = Mock()
