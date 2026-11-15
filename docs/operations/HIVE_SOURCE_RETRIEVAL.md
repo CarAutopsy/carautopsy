@@ -12,7 +12,7 @@
 
 - HTTPS only; reject credentials, IP-literal URLs, non-standard ports, malformed URLs and control characters.
 - Exact hostname match against the review-controlled allowlist.
-- Resolve every A/AAAA answer and reject the hostname if any answer is not globally routable.
+- Bound DNS responses to at most 32 raw A/AAAA answer records (including duplicates); reject oversized answer sets before connection creation, and reject the hostname if any accepted address is not globally routable.
 - Connect only to DNS answers that have all passed public-address validation. Give each remaining validated address a bounded share of the remaining connection-setup budget, so a blackholed address cannot consume the entire request deadline. If TCP setup or a non-identity TLS handshake fails before any HTTP request, try the next validated address in resolver order. Certificate/hostname verification failures are terminal and never trigger address fallback. Once connected, HTTP I/O resumes under the original absolute retrieval deadline; the total deadline is never extended. TLS SNI and certificate hostname verification always use the original hostname; no request is sent until one address completes connection setup.
 - No environment proxy, automatic redirect, or second DNS resolution is used by the pinned connection.
 - Reject all redirects in this first implementation; no redirect target is ever requested.
