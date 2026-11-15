@@ -76,7 +76,7 @@ async function getPublicationIssues(data: Payload): Promise<string[]> {
   const maxDataAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
   const maxFutureSkewMs = futureSkewMinutes * 60 * 1000;
 
-  const version = manifest.match(/^version:\\s*["']?([^"'\\s#]+)["']?\\s*$/m)?.[1];
+  const version = manifest.match(/^version:\s*["']?([^"'\s#]+)["']?\s*$/m)?.[1];
   const status = manifest.match(/^status:\s*([A-Za-z_-]+)\s*$/m)?.[1];
   if (!version || !status) {
     return ["The current Austrian country-pack version or status is invalid; published figures are hidden."];
