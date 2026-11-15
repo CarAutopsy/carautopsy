@@ -40,6 +40,8 @@ if os.environ.get("HIVE_TCO_ROUTE_PROBE") == "1":
     tco.load_country_config = reached_tco_config
     tco.assert_tax_pack_publishable = lambda *args, **kwargs: None
     tco.calculate_tco = lambda *args, **kwargs: None
+    tco.publication_metadata = lambda *args, **kwargs: {}
+    tco.publication_artifact_is_current = lambda *args, **kwargs: False
     sys.modules["tco_engine"] = tco
 """
 
