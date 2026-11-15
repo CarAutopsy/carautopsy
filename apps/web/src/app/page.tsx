@@ -36,10 +36,6 @@ type Payload = {
   envelope: Envelope;
 };
 
-const CURRENT_ENGINE_VERSION = "0.5.0";
-const MAX_DATA_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
-
 const eur = (n: number | null | undefined) =>
   n === null || n === undefined
     ? "—"
@@ -48,23 +44,47 @@ const eur = (n: number | null | undefined) =>
 async function getPublicationIssues(data: Payload): Promise<string[]> {
   const issues: string[] = [];
   const manifestPath = path.resolve(process.cwd(), "..", "..", "country-packs", "AT", "manifest.yaml");
+  const contractPath = path.resolve(process.cwd(), "..", "..", "tco-contract.json");
 
   let manifest: string;
+  let contractRaw: string;
   try {
-    manifest = await fs.readFile(manifestPath, "utf8");
+    [manifest, contractRaw] = await Promise.all([
+      fs.readFile(manifestPath, "utf8"),
+      fs.readFile(contractPath, "utf8"),
+    ]);
   } catch {
-    return ["The current Austrian country-pack manifest could not be read; published figures are hidden."];
+    return ["The current country-pack manifest or TCO contract could not be read; published figures are hidden."];
   }
 
-  const version = manifest.match(/^version:\s*["']?([^"'\s#]+)["']?\s*$/m)?.[1];
+  let contract: { engine_version?: unknown; max_artifact_age_days?: unknown; max_future_skew_minutes?: unknown };
+  try {
+    contract = JSON.parse(contractRaw);
+  } catch {
+    return ["The shared TCO contract is invalid; published figures are hidden."];
+  }
+  const expectedEngineVersion = contract.engine_version;
+  const maxAgeDays = contract.max_artifact_age_days;
+  const futureSkewMinutes = contract.max_future_skew_minutes;
+  if (
+    typeof expectedEngineVersion !== "string" ||
+    typeof maxAgeDays !== "number" || !Number.isFinite(maxAgeDays) || maxAgeDays <= 0 ||
+    typeof futureSkewMinutes !== "number" || !Number.isFinite(futureSkewMinutes) || futureSkewMinutes < 0
+  ) {
+    return ["The shared TCO contract has invalid version or freshness settings; published figures are hidden."];
+  }
+  const maxDataAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+  const maxFutureSkewMs = futureSkewMinutes * 60 * 1000;
+
+  const version = manifest.match(/^version:\\s*["']?([^"'\\s#]+)["']?\\s*$/m)?.[1];
   const status = manifest.match(/^status:\s*([A-Za-z_-]+)\s*$/m)?.[1];
   if (!version || !status) {
     return ["The current Austrian country-pack version or status is invalid; published figures are hidden."];
   }
 
-  if (data.envelope.engine_version !== CURRENT_ENGINE_VERSION) {
+  if (data.envelope.engine_version !== expectedEngineVersion) {
     issues.push(
-      `Artifact engine ${String(data.envelope.engine_version ?? "missing")} does not match current engine ${CURRENT_ENGINE_VERSION}.`
+      `Artifact engine ${String(data.envelope.engine_version ?? "missing")} does not match current engine ${expectedEngineVersion}.`
     );
   }
   const currentCountryPack = `AT@${version}`;
@@ -86,9 +106,9 @@ async function getPublicationIssues(data: Payload): Promise<string[]> {
     issues.push("Artifact generation timestamp is missing or invalid.");
   } else {
     const age = Date.now() - generatedAt;
-    if (age > MAX_DATA_AGE_MS) {
+    if (age > maxDataAgeMs) {
       issues.push("Artifact is older than the seven-day freshness limit.");
-    } else if (age < -MAX_FUTURE_SKEW_MS) {
+    } else if (age < -maxFutureSkewMs) {
       issues.push("Artifact generation timestamp is unexpectedly in the future.");
     }
   }
