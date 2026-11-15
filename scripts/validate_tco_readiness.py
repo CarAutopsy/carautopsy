@@ -81,9 +81,13 @@ def validate_variant_readiness(
     elif vehicle_class != "M1":
         issues.append(f"unsupported identity.vehicle_class: {vehicle_class}")
 
+    raw_registration_date = _value(record, "registration.first_registration_date")
     registration_date = _date_value(record)
     if registration_date is None:
-        issues.append("registration.first_registration_date must be a valid ISO date")
+        if raw_registration_date is None:
+            issues.append("registration.first_registration_date")
+        else:
+            issues.append("registration.first_registration_date must be a valid ISO date")
 
     mass_path = "dimensions.max_permissible_mass_kg"
     if not _finite_number(record, mass_path, positive=True):
@@ -100,13 +104,15 @@ def validate_variant_readiness(
                 issues.append(f"{path} must be a finite positive number")
         if not _consumption_available(record, "energy.consumption_wh_km"):
             issues.append("energy.consumption_wh_km.real_world or wltp_combined must be a finite positive number")
-    elif powertrain in COMBUSTION_POWERTRAINS:
+    elif isinstance(powertrain, str) and powertrain in COMBUSTION_POWERTRAINS:
         for path in ("performance.combustion_engine_power_w",):
             if not _finite_number(record, path, positive=True):
                 issues.append(f"{path} must be a finite positive number")
         co2_path = ("emissions.co2_wltp_weighted_combined_gpkm"
                     if powertrain == "phev" else "emissions.co2_wltp_gpkm")
-        if not _finite_number(record, co2_path):
+        if _value(record, co2_path) is None:
+            issues.append(co2_path)
+        elif not _finite_number(record, co2_path):
             issues.append(f"{co2_path} must be a finite non-negative number")
         if not _consumption_available(record, "extensions.fuel_consumption_l_100km"):
             issues.append("extensions.fuel_consumption_l_100km.real_world or wltp_combined must be a finite positive number")
