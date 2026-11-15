@@ -1,5 +1,5 @@
 """Shared Austrian TCO engine with fail-closed, year-aware M1 tax calculations."""
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 import json
 import math
@@ -26,6 +26,55 @@ def publication_metadata(taxes):
         "country_pack": f"AT@{version}",
         "country_pack_status": status,
     }
+
+
+
+def publication_artifact_is_current(existing, candidate, now=None):
+    """Return True only when the stored artifact is identical and still fresh."""
+    if not isinstance(existing, dict) or not isinstance(candidate, dict):
+        return False
+    if existing.get("results") != candidate.get("results"):
+        return False
+    if existing.get("summary") != candidate.get("summary"):
+        return False
+
+    old_envelope = existing.get("envelope")
+    new_envelope = candidate.get("envelope")
+    if not isinstance(old_envelope, dict) or not isinstance(new_envelope, dict):
+        return False
+    stable_old = {key: value for key, value in old_envelope.items() if key != "generated_utc"}
+    stable_new = {key: value for key, value in new_envelope.items() if key != "generated_utc"}
+    if stable_old != stable_new:
+        return False
+
+    generated = old_envelope.get("generated_utc")
+    if not isinstance(generated, str):
+        return False
+    try:
+        generated_at = datetime.fromisoformat(generated.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if generated_at.tzinfo is None or generated_at.utcoffset() is None:
+        return False
+
+    max_age_days = _ENGINE_CONTRACT.get("max_artifact_age_days")
+    future_skew_minutes = _ENGINE_CONTRACT.get("max_future_skew_minutes")
+    if (
+        isinstance(max_age_days, bool) or not isinstance(max_age_days, (int, float))
+        or not math.isfinite(max_age_days) or max_age_days <= 0
+        or isinstance(future_skew_minutes, bool) or not isinstance(future_skew_minutes, (int, float))
+        or not math.isfinite(future_skew_minutes) or future_skew_minutes < 0
+    ):
+        return False
+
+    current_time = now or datetime.now(timezone.utc)
+    if current_time.tzinfo is None or current_time.utcoffset() is None:
+        raise ValueError("Artifact freshness comparison requires a timezone-aware clock")
+    age_seconds = (current_time - generated_at).total_seconds()
+    return (
+        age_seconds <= max_age_days * 86400
+        and age_seconds >= -future_skew_minutes * 60
+    )
 
 
 def load_country_config(root):
