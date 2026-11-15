@@ -138,6 +138,15 @@ def build_issue_proposals(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
     proposals = []
     for number in sorted(grouped):
         snapshots = grouped[number]
+        # Closed issues and pull requests are outside intake. They must not
+        # create conflict records unless the same number also has an eligible
+        # open-issue snapshot that requires owner attention.
+        if all(
+            item["classification"] in {"closed", "not-an-issue"}
+            for item in snapshots
+        ):
+            continue
+
         # Collapse identical normalized snapshots; conflicting versions fail closed.
         canonical = {
             (
@@ -163,7 +172,24 @@ def build_issue_proposals(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 }
             )
             continue
-        proposal = snapshots[0]["proposal"]
+
+        snapshot = snapshots[0]
+        proposal = snapshot["proposal"]
         if proposal is not None:
             proposals.append(proposal)
+        elif snapshot["classification"] == "needs-owner-triage":
+            # A lone ambiguous open issue still needs to be visible to its owner.
+            proposals.append(
+                {
+                    "task_key": f"issue-{number}",
+                    "issue_number": number,
+                    "issue_url": snapshot["issue_url"],
+                    "title": snapshot["title"],
+                    "classification": "needs-owner-triage",
+                    "reason": snapshot["reason"],
+                    "proposal": None,
+                    "status": "needs-owner-triage",
+                    "requires_owner_approval": True,
+                }
+            )
     return proposals
