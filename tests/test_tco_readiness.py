@@ -54,6 +54,12 @@ class TcoReadinessTests(unittest.TestCase):
         self.assertIn("registration.first_registration_date", issues)
         self.assertIn("performance.combustion_engine_power_w", issues)
 
+    def test_fcev_is_not_tco_supported_even_though_nova_exempt(self):
+        record = vehicle()
+        record["identity"]["powertrain"] = "fcev"
+        issues = validate_variant_readiness(record)
+        self.assertTrue(any(x.startswith("unsupported identity.powertrain") for x in issues))
+
     def test_unsupported_vehicle_class_and_powertrain_fail_readiness(self):
         record = vehicle()
         record["identity"]["vehicle_class"] = "N1"
