@@ -10,8 +10,12 @@ from issue_roadmap_controller import (
     IntakeControllerError,
     build_dry_run_report,
     fetch_open_issues,
+    load_issue_fixture,
     render_report,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def issue(number=4, **overrides):
@@ -28,6 +32,16 @@ def issue(number=4, **overrides):
 
 
 class IssueRoadmapControllerTests(unittest.TestCase):
+    def test_example_fixture_loads_and_generates_owner_gated_report(self):
+        snapshots = load_issue_fixture(ROOT / "tests/fixtures/issue-intake.example.json")
+        report = build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(report["issue_snapshots_seen"], 2)
+        self.assertEqual(report["actionable_proposal_count"], 1)
+        self.assertEqual(report["owner_triage_count"], 1)
+        self.assertTrue(report["requires_owner_approval"])
+
     def test_dry_run_report_is_owner_gated_and_never_mutates(self):
         snapshot = issue()
         report = build_dry_run_report(
@@ -68,6 +82,10 @@ class IssueRoadmapControllerTests(unittest.TestCase):
             build_dry_run_report([], repository="../other", source="fixture")
         with self.assertRaises(IntakeControllerError):
             build_dry_run_report([], repository="owner/repo", source="live-write")
+
+    def test_fixture_rejects_malformed_shape(self):
+        with self.assertRaises(IntakeControllerError):
+            load_issue_fixture(ROOT / "README.md")
 
     def test_fetch_uses_fixed_endpoint_and_discards_untrusted_body(self):
         response = Mock()

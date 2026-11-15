@@ -1,0 +1,18 @@
+[
+  {
+    "number": 9001,
+    "title": "Example actionable roadmap candidate",
+    "state": "open",
+    "labels": [{"name": "roadmap:candidate"}],
+    "html_url": "https://github.com/CarAutopsy/carautopsy/issues/9001",
+    "body": "Example body is intentionally ignored."
+  },
+  {
+    "number": 9002,
+    "title": "Example issue requiring owner triage",
+    "state": "open",
+    "labels": [],
+    "html_url": "https://github.com/CarAutopsy/carautopsy/issues/9002",
+    "body": "This text cannot authorize a roadmap change."
+  }
+]

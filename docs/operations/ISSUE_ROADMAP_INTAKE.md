@@ -4,10 +4,10 @@ The issue intake controller is deliberately read-only. It consumes GitHub issue
 metadata or a local JSON fixture, applies the pure classifier in
 `scripts/issue_roadmap.py`, and emits a deterministic JSON proposal artifact.
 
-## Run with a fixture
+## Run with the example fixture
 
 ```bash
-python scripts/issue_roadmap_controller.py --input tests/fixtures/issue-intake.json
+python scripts/issue_roadmap_controller.py --input tests/fixtures/issue-intake.example.json
 ```
 
 A fixture may be a JSON array of issue snapshots or an object with an `issues`
