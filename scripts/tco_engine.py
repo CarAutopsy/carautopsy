@@ -1,11 +1,16 @@
 """Shared Austrian TCO engine with fail-closed, year-aware M1 tax calculations."""
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
+import json
 import math
 from pathlib import Path
 import yaml
 
-ENGINE_VERSION = "0.5.0"
+_ENGINE_CONTRACT_PATH = Path(__file__).resolve().parents[1] / "tco-contract.json"
+_ENGINE_CONTRACT = json.loads(_ENGINE_CONTRACT_PATH.read_text(encoding="utf-8"))
+ENGINE_VERSION = _ENGINE_CONTRACT.get("engine_version")
+if not isinstance(ENGINE_VERSION, str) or not ENGINE_VERSION.strip():
+    raise ValueError("TCO engine contract is missing a valid engine_version")
 
 
 def publication_metadata(taxes):
