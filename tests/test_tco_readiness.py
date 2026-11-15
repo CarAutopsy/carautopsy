@@ -78,6 +78,48 @@ class TcoReadinessTests(unittest.TestCase):
         self.assertTrue(any("invalid JSON" in issue for f in findings for issue in f["issues"]))
         self.assertTrue(any("identity.powertrain" in issue for f in findings for issue in f["issues"]))
 
+    def test_wltp_only_combustion_consumption_is_ready(self):
+        record = vehicle()
+        record["extensions"]["fuel_consumption_l_100km"] = {"wltp_combined": 8.0}
+        self.assertEqual(validate_variant_readiness(record), [])
+
+    def test_engine_mass_limit_boundary_is_enforced(self):
+        record = vehicle()
+        record["dimensions"]["max_permissible_mass_kg"] = 3500
+        self.assertEqual(validate_variant_readiness(record), [])
+        record["dimensions"]["max_permissible_mass_kg"] = 3500.1
+        self.assertTrue(any("3500 kg" in issue for issue in validate_variant_readiness(record)))
+
+    def test_malformed_nested_identity_is_reported_without_crashing(self):
+        for identity in ("Honda", ["ice_petrol"], {"powertrain": ["ice_petrol"], "vehicle_class": "M1"}):
+            record = vehicle()
+            record["identity"] = identity
+            issues = validate_variant_readiness(record)
+            self.assertTrue(issues)
+
+    def test_invalid_numeric_and_date_inputs_are_reported(self):
+        record = vehicle()
+        record["registration"]["first_registration_date"] = "not-a-date"
+        record["dimensions"]["max_permissible_mass_kg"] = "2000"
+        record["performance"]["combustion_engine_power_w"] = float("nan")
+        record["extensions"]["fuel_consumption_l_100km"]["real_world"] = {"value": 6}
+        issues = validate_variant_readiness(record)
+        self.assertTrue(any("ISO date" in issue for issue in issues))
+        self.assertTrue(any("max_permissible_mass_kg" in issue for issue in issues))
+        self.assertTrue(any("combustion_engine_power_w" in issue for issue in issues))
+        self.assertTrue(any("fuel_consumption" in issue for issue in issues))
+
+    def test_tax_schedule_coverage_is_checked_when_tax_pack_is_supplied(self):
+        from tco_engine import load_country_config
+        taxes, _, _ = load_country_config(ROOT)
+        record = vehicle()
+        record["registration"]["first_registration_date"] = "2028-01-01"
+        self.assertTrue(any("Motor-tax ICE rules unavailable" in issue
+                            for issue in validate_variant_readiness(record, taxes)))
+        record["identity"]["powertrain"] = "phev"
+        record["emissions"]["co2_wltp_weighted_combined_gpkm"] = 30
+        self.assertEqual(validate_variant_readiness(record, taxes), [])
+
     def test_strict_cli_fails_but_advisory_cli_reports(self):
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, "sparse.json").write_text(json.dumps({"variant_id": "sparse"}), encoding="utf-8")
