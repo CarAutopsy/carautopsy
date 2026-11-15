@@ -64,14 +64,22 @@ def fetch_open_issues(
 
     issues: list[dict[str, Any]] = []
     for page in range(1, MAX_PAGES + 1):
-        response = session.get(
-            f"{GITHUB_API}/repos/{owner}/{name}/issues",
-            params={"state": "open", "per_page": per_page, "page": page},
-            headers=headers,
-            timeout=20,
-        )
-        response.raise_for_status()
-        payload = response.json()
+        try:
+            response = session.get(
+                f"{GITHUB_API}/repos/{owner}/{name}/issues",
+                params={"state": "open", "per_page": per_page, "page": page},
+                headers=headers,
+                timeout=20,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            # Do not include exception text: HTTP client errors can contain
+            # request details, and this CLI must never print authorization data.
+            raise IntakeControllerError(
+                f"GitHub issue fetch failed on page {page} ({type(exc).__name__})"
+            ) from exc
+
         if not isinstance(payload, list):
             raise IntakeControllerError("GitHub issues endpoint returned a non-list payload")
         if not payload:
@@ -96,8 +104,8 @@ def fetch_open_issues(
 def load_issue_fixture(path: str | Path) -> list[dict[str, Any]]:
     try:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise IntakeControllerError(f"could not read issue fixture: {exc}") from exc
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise IntakeControllerError(f"could not read issue fixture ({type(exc).__name__})") from exc
 
     if isinstance(payload, dict):
         payload = payload.get("issues")
@@ -116,11 +124,7 @@ def build_dry_run_report(
     if source not in {"fixture", "github-open-issues"}:
         raise IntakeControllerError("unsupported intake source")
 
-    try:
-        proposals = build_issue_proposals(issues)
-    except IssueClassificationError:
-        raise
-
+    proposals = build_issue_proposals(issues)
     actionable = sum(item.get("classification") == "actionable" for item in proposals)
     triage = sum(item.get("classification") == "needs-owner-triage" for item in proposals)
     return {

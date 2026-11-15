@@ -1,8 +1,9 @@
-import json
 import sys
 import unittest
 from pathlib import Path
 from unittest.mock import Mock
+
+import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from issue_roadmap_controller import (
@@ -98,17 +99,15 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer test-token")
         response.raise_for_status.assert_called_once_with()
 
-    def test_fetch_paginates_until_short_page(self):
+    def test_fetch_paginates_until_empty_page(self):
         full = Mock()
         full.json.return_value = [issue(i) for i in range(1, 3)]
-        short = Mock()
-        short.json.return_value = []
+        empty = Mock()
+        empty.json.return_value = []
         session = Mock()
-        session.get.side_effect = [full, short]
+        session.get.side_effect = [full, empty]
 
-        result = fetch_open_issues(
-            "owner/repo", session=session, per_page=2
-        )
+        result = fetch_open_issues("owner/repo", session=session, per_page=2)
 
         self.assertEqual(len(result), 2)
         self.assertEqual(session.get.call_count, 2)
@@ -122,11 +121,21 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         with self.assertRaises(IntakeControllerError):
             fetch_open_issues("owner/repo", session=session)
 
-    def test_fetch_validates_page_size(self):
+    def test_fetch_sanitizes_http_errors_without_exposing_request_details(self):
+        session = Mock()
+        session.get.side_effect = requests.Timeout("secret-token must not leak")
+        with self.assertRaises(IntakeControllerError) as raised:
+            fetch_open_issues("owner/repo", "secret-token", session=session)
+        self.assertNotIn("secret-token", str(raised.exception))
+        self.assertIn("Timeout", str(raised.exception))
+
+    def test_fetch_validates_page_size_and_repository_segments(self):
         with self.assertRaises(IntakeControllerError):
             fetch_open_issues("owner/repo", per_page=101)
         with self.assertRaises(IntakeControllerError):
             fetch_open_issues("owner/repo", per_page=True)
+        with self.assertRaises(IntakeControllerError):
+            fetch_open_issues("../repo")
 
 
 if __name__ == "__main__":
