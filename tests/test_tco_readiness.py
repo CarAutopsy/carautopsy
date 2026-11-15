@@ -120,6 +120,15 @@ class TcoReadinessTests(unittest.TestCase):
         record["emissions"]["co2_wltp_weighted_combined_gpkm"] = 30
         self.assertEqual(validate_variant_readiness(record, taxes), [])
 
+    def test_malformed_powertrain_with_tax_pack_does_not_abort_readiness(self):
+        from tco_engine import load_country_config
+        taxes, _, _ = load_country_config(ROOT)
+        for malformed in (["ice_petrol"], {"type": "ice_petrol"}, None):
+            record = vehicle()
+            record["identity"]["powertrain"] = malformed
+            issues = validate_variant_readiness(record, taxes)
+            self.assertIn("identity.powertrain must be a string", issues)
+
     def test_strict_cli_fails_but_advisory_cli_reports(self):
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, "sparse.json").write_text(json.dumps({"variant_id": "sparse"}), encoding="utf-8")
