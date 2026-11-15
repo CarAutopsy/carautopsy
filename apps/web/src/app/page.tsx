@@ -22,25 +22,103 @@ type Result = {
   data_confidence: string | null;
 };
 
+type Envelope = {
+  engine_version?: unknown;
+  country_pack?: unknown;
+  country_pack_status?: unknown;
+  generated_utc?: unknown;
+  note?: unknown;
+};
+
 type Payload = {
   results: Result[];
   summary: { variants: number; bev_avg_monthly_eur: number | null; ice_avg_monthly_eur: number | null };
-  envelope: Record<string, unknown>;
+  envelope: Envelope;
 };
+
+const CURRENT_ENGINE_VERSION = "0.5.0";
+const MAX_DATA_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
 
 const eur = (n: number | null | undefined) =>
   n === null || n === undefined
     ? "—"
     : "€" + n.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+async function getPublicationIssues(data: Payload): Promise<string[]> {
+  const issues: string[] = [];
+  const manifestPath = path.resolve(process.cwd(), "..", "..", "country-packs", "AT", "manifest.yaml");
+
+  let manifest: string;
+  try {
+    manifest = await fs.readFile(manifestPath, "utf8");
+  } catch {
+    return ["The current Austrian country-pack manifest could not be read; published figures are hidden."];
+  }
+
+  const version = manifest.match(/^version:\s*["']?([^"'\s#]+)["']?\s*$/m)?.[1];
+  const status = manifest.match(/^status:\s*([A-Za-z_-]+)\s*$/m)?.[1];
+  if (!version || !status) {
+    return ["The current Austrian country-pack version or status is invalid; published figures are hidden."];
+  }
+
+  if (data.envelope.engine_version !== CURRENT_ENGINE_VERSION) {
+    issues.push(
+      `Artifact engine ${String(data.envelope.engine_version ?? "missing")} does not match current engine ${CURRENT_ENGINE_VERSION}.`
+    );
+  }
+  const currentCountryPack = `AT@${version}`;
+  if (data.envelope.country_pack !== currentCountryPack) {
+    issues.push(
+      `Artifact country pack ${String(data.envelope.country_pack ?? "missing")} does not match current pack ${currentCountryPack}.`
+    );
+  }
+  if (data.envelope.country_pack_status !== status) {
+    issues.push("Artifact country-pack status does not match the current manifest.");
+  }
+  if (status !== "verified") {
+    issues.push(`The current Austrian tax pack is "${status}"; legal verification is required before TCO figures can be shown.`);
+  }
+
+  const generatedUtc = data.envelope.generated_utc;
+  const generatedAt = typeof generatedUtc === "string" ? Date.parse(generatedUtc) : Number.NaN;
+  if (!Number.isFinite(generatedAt)) {
+    issues.push("Artifact generation timestamp is missing or invalid.");
+  } else {
+    const age = Date.now() - generatedAt;
+    if (age > MAX_DATA_AGE_MS) {
+      issues.push("Artifact is older than the seven-day freshness limit.");
+    } else if (age < -MAX_FUTURE_SKEW_MS) {
+      issues.push("Artifact generation timestamp is unexpectedly in the future.");
+    }
+  }
+
+  return issues;
+}
+
 export default async function Home() {
   let data: Payload | null = null;
+  let loadError = false;
   try {
     const raw = await fs.readFile(path.join(process.cwd(), "public", "data", "autopsies.json"), "utf8");
-    data = JSON.parse(raw) as Payload;
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !Array.isArray((parsed as Payload).results) ||
+      typeof (parsed as Payload).summary !== "object" ||
+      (parsed as Payload).summary === null ||
+      typeof (parsed as Payload).envelope !== "object" ||
+      (parsed as Payload).envelope === null
+    ) {
+      throw new Error("Invalid TCO publication payload");
+    }
+    data = parsed as Payload;
   } catch {
-    data = null;
+    loadError = true;
   }
+
+  const publicationIssues = data ? await getPublicationIssues(data) : [];
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6 md:p-12">
@@ -52,9 +130,24 @@ export default async function Home() {
       </header>
 
       {!data ? (
-        <p className="text-neutral-400">
-          No autopsy data published yet. Run the “Publish TCO Results” workflow, then merge its PR.
-        </p>
+        <section role="alert" className="border border-amber-700/60 bg-amber-950/30 rounded-lg p-5 max-w-3xl">
+          <h2 className="text-lg font-semibold text-amber-200">TCO figures unavailable</h2>
+          <p className="text-sm text-neutral-300 mt-2">
+            {loadError
+              ? "The published data file is missing or invalid. No cost figures are displayed."
+              : "No autopsy data has been published yet. No cost figures are displayed."}
+          </p>
+        </section>
+      ) : publicationIssues.length > 0 ? (
+        <section role="alert" className="border border-amber-700/60 bg-amber-950/30 rounded-lg p-5 max-w-3xl">
+          <h2 className="text-lg font-semibold text-amber-200">Published TCO data is stale or not approved</h2>
+          <p className="text-sm text-neutral-300 mt-2">
+            Saved figures are hidden until the artifact matches the current engine and country pack, the tax pack is legally verified, and the data is fresh.
+          </p>
+          <ul className="list-disc pl-5 mt-3 space-y-1 text-sm text-amber-100">
+            {publicationIssues.map((issue) => <li key={issue}>{issue}</li>)}
+          </ul>
+        </section>
       ) : (
         <>
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
@@ -117,7 +210,7 @@ export default async function Home() {
           <footer className="mt-12 text-xs text-neutral-600 max-w-3xl">
             <p>
               Engine {String(data.envelope.engine_version)} · country pack {String(data.envelope.country_pack)} ·
-              generated {String(data.envelope.generated_utc)} · {String(data.envelope.note)}
+              generated {String(data.envelope.generated_utc)} · {String(data.envelope.note ?? "")}
             </p>
           </footer>
         </>
