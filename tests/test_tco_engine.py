@@ -4,7 +4,8 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config, motor_monthly, nova, validate_config
+from tco_engine import (ENGINE_VERSION, assert_tax_pack_publishable, calculate_tco, load_country_config,
+                        motor_monthly, nova, publication_metadata, validate_config)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,6 +31,17 @@ class TcoConfigTests(unittest.TestCase):
         else:
             v["extensions"] = {"fuel_consumption_l_100km": {"real_world": 6}}
         return v
+
+    def test_publication_metadata_tracks_current_tax_pack(self):
+        metadata = publication_metadata(self.t)
+        self.assertEqual(metadata["engine_version"], ENGINE_VERSION)
+        self.assertEqual(metadata["country_pack"], f"AT@{self.t['version']}")
+        self.assertEqual(metadata["country_pack_status"], "draft")
+
+    def test_publication_metadata_rejects_missing_contract_fields(self):
+        for taxes in ({}, {"version": "1.2.0"}, {"status": "draft"}):
+            with self.assertRaises(ValueError):
+                publication_metadata(taxes)
 
     def test_pack_validates(self):
         validate_config(self.d, self.i)
