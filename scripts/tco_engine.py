@@ -43,6 +43,13 @@ def validate_config(d, i):
 FUEL_CONSUMPTION_DEFAULT = {"ice_diesel": 6.5, "ice_petrol": 6.0, "hev": 4.5, "phev": 5.0}
 
 
+def _is_finite_number(value):
+    try:
+        return math.isfinite(value)
+    except (OverflowError, TypeError):
+        return False
+
+
 def _required(mapping, path, label):
     value = mapping
     for key in path.split("."):
@@ -182,7 +189,7 @@ def calculate_tco(v, t, d, i, allow_draft=False):
         raw_consumption = cons.get("real_world") or cons.get("wltp_combined")
         if (isinstance(raw_consumption, bool) or
                 not isinstance(raw_consumption, (int, float)) or
-                not math.isfinite(raw_consumption) or raw_consumption <= 0):
+                not _is_finite_number(raw_consumption) or raw_consumption <= 0):
             raise ValueError("Cannot calculate TCO: finite positive BEV consumption is required")
         wh = float(raw_consumption)
         energy = wh / 1000 * km * d["electricity"]["default_tariff_eur_kwh"] * years
