@@ -23,7 +23,7 @@ from validate_tco_readiness import validate_catalog_readiness
 taxes, defaults, inspections = load_country_config(ROOT)
 # Run-level guard: do not scan vehicles or touch the output artifact on draft packs.
 assert_tax_pack_publishable(taxes)
-readiness_findings = validate_catalog_readiness(ROOT / "catalog" / "variants")
+readiness_findings = validate_catalog_readiness(ROOT / "catalog" / "variants", taxes)
 if readiness_findings:
     details = "; ".join(
         str(item["variant_id"]) + ": " + ", ".join(item["issues"])
@@ -34,12 +34,11 @@ tco = lambda vehicle: calculate_tco(vehicle, taxes, defaults, inspections)
 
 results = []
 for p in sorted((ROOT / "catalog" / "variants").glob("*.json")):
-    try:
-        r = tco(load(p))
-        if r:
-            results.append(r)
-    except Exception as e:
-        print(f"WARNING skipped {p.name}: {e}")
+    # Readiness is checked for the entire catalog before calculation. Any
+    # unexpected calculation error aborts before the output artifact is touched.
+    r = tco(load(p))
+    if r:
+        results.append(r)
 
 bevs = [r for r in results if r["powertrain"] == "bev"]
 others = [r for r in results if r["powertrain"] != "bev"]
