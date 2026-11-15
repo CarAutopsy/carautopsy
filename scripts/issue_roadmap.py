@@ -18,6 +18,14 @@ _LABEL_CLASSIFICATIONS = {
     "roadmap:triage": "needs-owner-triage",
 }
 
+_NON_ACTIONABLE_CLASSIFICATIONS = {
+    "closed",
+    "not-an-issue",
+    "informational",
+    "blocked",
+    "duplicate",
+}
+
 
 class IssueClassificationError(ValueError):
     """Raised when an issue snapshot is malformed or ambiguous."""
@@ -47,7 +55,8 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
 
     Explicit maintainer labels are the only signal that can make an issue
     actionable. Unknown, missing, or conflicting labels fail closed to
-    needs-owner-triage. Pull requests are excluded from issue intake.
+    needs-owner-triage. Any present pull_request key excludes the snapshot,
+    including malformed or falsy markers.
     """
     if not isinstance(issue, dict):
         raise IssueClassificationError("issue snapshot must be an object")
@@ -139,16 +148,19 @@ def build_issue_proposals(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
     proposals = []
     for number in sorted(grouped):
         snapshots = grouped[number]
-        # Closed issues and pull requests are outside intake. They must not
-        # create conflict records unless the same number also has an eligible
-        # open-issue snapshot that requires owner attention.
-        if all(
-            item["classification"] in {"closed", "not-an-issue"}
-            for item in snapshots
-        ):
+        # Closed issues, pull requests, and explicitly non-actionable open
+        # issues are outside proposal intake. They must not create conflicts
+        # unless an actionable or owner-triage open snapshot exists for the
+        # same number.
+        eligible = [
+            item for item in snapshots
+            if item["classification"] not in _NON_ACTIONABLE_CLASSIFICATIONS
+        ]
+        if not eligible:
             continue
 
-        # Collapse identical normalized snapshots; conflicting versions fail closed.
+        # Once an eligible open issue exists, any disagreement across all
+        # snapshots (including closed/PR snapshots) fails closed to owner triage.
         canonical = {
             (
                 item["issue_url"],
@@ -174,7 +186,7 @@ def build_issue_proposals(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
             )
             continue
 
-        snapshot = snapshots[0]
+        snapshot = eligible[0]
         proposal = snapshot["proposal"]
         if proposal is not None:
             proposals.append(proposal)
