@@ -41,6 +41,29 @@ const eur = (n: number | null | undefined) =>
     ? "—"
     : "€" + n.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+export const dynamic = "force-dynamic";
+
+function parseStrictTimestamp(value: unknown): number {
+  if (
+    typeof value !== "string" ||
+    !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/.test(value)
+  ) {
+    return Number.NaN;
+  }
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  const calendarDate = new Date(0);
+  calendarDate.setUTCHours(0, 0, 0, 0);
+  calendarDate.setUTCFullYear(year, month - 1, day);
+  if (
+    calendarDate.getUTCFullYear() !== year ||
+    calendarDate.getUTCMonth() !== month - 1 ||
+    calendarDate.getUTCDate() !== day
+  ) {
+    return Number.NaN;
+  }
+  return Date.parse(value);
+}
+
 async function getPublicationIssues(data: Payload): Promise<string[]> {
   const issues: string[] = [];
   const manifestPath = path.resolve(process.cwd(), "..", "..", "country-packs", "AT", "manifest.yaml");
@@ -101,7 +124,7 @@ async function getPublicationIssues(data: Payload): Promise<string[]> {
   }
 
   const generatedUtc = data.envelope.generated_utc;
-  const generatedAt = typeof generatedUtc === "string" ? Date.parse(generatedUtc) : Number.NaN;
+  const generatedAt = parseStrictTimestamp(generatedUtc);
   if (!Number.isFinite(generatedAt)) {
     issues.push("Artifact generation timestamp is missing or invalid.");
   } else {
