@@ -291,6 +291,36 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         result = fetch_open_issues("owner/repo", session=session, per_page=2)
         self.assertEqual([item["number"] for item in result], [1, 2])
 
+    def test_fetch_rejects_malformed_url_and_non_ascii_page_digits(self):
+        malformed_urls = (
+            "https://[invalid/repos/owner/repo/issues?page=2",
+            "https://api.github.com/repos/owner/repo/issues?page=%C2%B2",
+        )
+        for url in malformed_urls:
+            response = Mock()
+            response.links = {"next": {"url": url}}
+            response.json.return_value = [issue(1)]
+            session = Mock()
+            session.get.return_value = response
+            with self.subTest(url=url):
+                with self.assertRaises(IntakeControllerError):
+                    fetch_open_issues("owner/repo", session=session, per_page=2)
+
+    def test_fetch_rejects_pagination_links_that_skip_pages(self):
+        response = Mock()
+        response.links = {
+            "next": {
+                "url": "https://api.github.com/repos/owner/repo/issues?page=3"
+            }
+        }
+        response.json.return_value = [issue(1)]
+        session = Mock()
+        session.get.return_value = response
+
+        with self.assertRaisesRegex(IntakeControllerError, "skipped or repeated"):
+            fetch_open_issues("owner/repo", session=session, per_page=2)
+        session.get.assert_called_once()
+
     def test_fetch_rejects_untrusted_or_non_advancing_next_links(self):
         for url in (
             "https://evil.example/repos/owner/repo/issues?page=2",

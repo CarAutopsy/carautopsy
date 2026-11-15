@@ -70,24 +70,31 @@ def _project_issue_snapshot(item: Any) -> dict[str, Any]:
 
 
 def _next_page_from_link(link: Any, *, owner: str, repository: str, current_page: int) -> int:
-    """Validate GitHub's next link but continue through our fixed API endpoint."""
+    """Validate GitHub's next link and require strictly sequential pagination."""
     if not isinstance(link, dict) or not isinstance(link.get("url"), str):
         raise IntakeControllerError("GitHub returned a malformed pagination link")
-    parsed = urlsplit(link["url"])
-    expected_path = f"/repos/{owner}/{repository}/issues"
-    repository_id_path = re.fullmatch(r"/repositories/\d+/issues", parsed.path)
-    if (
-        parsed.scheme != "https"
-        or parsed.netloc != "api.github.com"
-        or (parsed.path != expected_path and repository_id_path is None)
-    ):
-        raise IntakeControllerError("GitHub returned an unexpected pagination URL")
-    page_values = parse_qs(parsed.query).get("page", [])
-    if len(page_values) != 1 or not page_values[0].isdigit():
-        raise IntakeControllerError("GitHub pagination link has an invalid page number")
-    next_page = int(page_values[0])
-    if next_page <= current_page:
-        raise IntakeControllerError("GitHub pagination link did not advance")
+    try:
+        parsed = urlsplit(link["url"])
+        expected_path = f"/repos/{owner}/{repository}/issues"
+        repository_id_path = re.fullmatch(r"/repositories/[0-9]+/issues", parsed.path)
+        if (
+            parsed.scheme != "https"
+            or parsed.netloc != "api.github.com"
+            or (parsed.path != expected_path and repository_id_path is None)
+        ):
+            raise IntakeControllerError("GitHub returned an unexpected pagination URL")
+
+        page_values = parse_qs(parsed.query).get("page", [])
+        if len(page_values) != 1 or re.fullmatch(r"[0-9]+", page_values[0]) is None:
+            raise IntakeControllerError("GitHub pagination link has an invalid page number")
+        next_page = int(page_values[0])
+    except ValueError as exc:
+        # urlsplit can reject malformed bracketed authorities; keep all
+        # untrusted pagination parsing failures inside the controlled CLI path.
+        raise IntakeControllerError("GitHub returned a malformed pagination link") from exc
+
+    if next_page != current_page + 1:
+        raise IntakeControllerError("GitHub pagination link skipped or repeated a page")
     if next_page > MAX_PAGES:
         raise IntakeControllerError(f"GitHub pagination exceeded {MAX_PAGES} pages")
     return next_page
