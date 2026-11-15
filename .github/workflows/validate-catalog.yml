@@ -14,5 +14,7 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Validate vehicle catalog
         run: python scripts/validate_catalog.py
+      - name: Report TCO calculation readiness
+        run: python scripts/validate_tco_readiness.py
       - name: Compile pipeline, candidate, prompt and retrieval modules
         run: python -m compileall -q scripts tests
