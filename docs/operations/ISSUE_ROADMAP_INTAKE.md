@@ -3,7 +3,9 @@
 The issue intake controller is deliberately read-only. It consumes GitHub issue
 metadata or a local JSON fixture, applies the pure classifier in
 `scripts/issue_roadmap.py`, and emits a deterministic JSON proposal artifact
-to standard output.
+to standard output. The report includes snapshot classification counts so
+informational, blocked, and duplicate issues remain visible even though they
+do not become proposals.
 
 ## Run with the example fixture
 
@@ -40,6 +42,8 @@ API object, issue bodies, and other unrelated fields are discarded.
   written by the controller.
 - Every actionable proposal requires explicit owner approval.
 - Ambiguous and conflicting snapshots remain visible as owner-triage records.
+- Classification counts retain informational, blocked, and duplicate issue
+  snapshots in the report without creating roadmap proposals for them.
 - No task dispatch, automatic merge, provider call, Hive retrieval, source
   manifest update, or readiness activation is performed.
 - Roadmap-state reconciliation, stale-state detection, dependency resolution,

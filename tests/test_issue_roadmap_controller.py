@@ -79,6 +79,22 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         ))
         self.assertEqual(first, second)
 
+    def test_non_actionable_classifications_remain_visible_in_summary(self):
+        snapshots = [
+            issue(1, labels=[{"name": "roadmap:informational"}]),
+            issue(2, labels=[{"name": "roadmap:blocked"}]),
+            issue(3, labels=[{"name": "roadmap:duplicate"}]),
+        ]
+        report = build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(report["proposal_count"], 0)
+        self.assertEqual(report["snapshot_classification_counts"], {
+            "blocked": 1,
+            "duplicate": 1,
+            "informational": 1,
+        })
+
     def test_unknown_and_conflicting_issues_are_visible_as_owner_triage(self):
         report = build_dry_run_report(
             [issue(labels=[]), issue(5, labels=[

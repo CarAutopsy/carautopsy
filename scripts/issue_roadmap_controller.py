@@ -12,12 +12,13 @@ import json
 import os
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
 import requests
 
-from issue_roadmap import IssueClassificationError, build_issue_proposals
+from issue_roadmap import IssueClassificationError, build_issue_proposals, classify_issue
 
 
 GITHUB_API = "https://api.github.com"
@@ -141,6 +142,9 @@ def build_dry_run_report(
         raise IntakeControllerError("unsupported intake source")
 
     proposals = build_issue_proposals(issues)
+    classification_counts = Counter(
+        classify_issue(snapshot)["classification"] for snapshot in issues
+    )
     actionable = sum(item.get("classification") == "actionable" for item in proposals)
     triage = sum(item.get("classification") == "needs-owner-triage" for item in proposals)
     return {
@@ -149,6 +153,7 @@ def build_dry_run_report(
         "repository": repository,
         "source": source,
         "issue_snapshots_seen": len(issues),
+        "snapshot_classification_counts": dict(sorted(classification_counts.items())),
         "proposal_count": len(proposals),
         "actionable_proposal_count": actionable,
         "owner_triage_count": triage,
