@@ -31,7 +31,10 @@ def _finite_number(record: dict[str, Any], path: str, *, positive: bool = False)
     value = _value(record, path)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return False
-    if not math.isfinite(value):
+    try:
+        if not math.isfinite(value):
+            return False
+    except (OverflowError, TypeError):
         return False
     return value > 0 if positive else value >= 0
 
@@ -47,9 +50,13 @@ def _date_value(record: dict[str, Any]) -> date | None:
 
 
 def _consumption_available(record: dict[str, Any], base: str) -> bool:
-    # Match calculate_tco's precedence: real_world first, then wltp_combined.
-    return any(_finite_number(record, f"{base}.{key}", positive=True)
-               for key in ("real_world", "wltp_combined"))
+    # Match calculate_tco's truthy precedence exactly. A malformed truthy
+    # real_world value must not be hidden by a valid WLTP fallback.
+    for key in ("real_world", "wltp_combined"):
+        value = _value(record, f"{base}.{key}")
+        if value:
+            return _finite_number(record, f"{base}.{key}", positive=True)
+    return False
 
 
 def validate_variant_readiness(
