@@ -1,6 +1,7 @@
 """Shared Austrian TCO engine with fail-closed, year-aware M1 tax calculations."""
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
+import math
 from pathlib import Path
 import yaml
 
@@ -177,12 +178,22 @@ def calculate_tco(v, t, d, i, allow_draft=False):
     monthly_tax = motor_monthly(v, t)
     mt = monthly_tax * 12 * years
     if pt == "bev":
-        cons = v.get("energy", {}).get("consumption_wh_km", {}) or {}
-        wh = cons.get("real_world") or cons.get("wltp_combined") or 0
+        cons = (v.get("energy") or {}).get("consumption_wh_km") or {}
+        raw_consumption = cons.get("real_world") or cons.get("wltp_combined")
+        if (isinstance(raw_consumption, bool) or
+                not isinstance(raw_consumption, (int, float)) or
+                not math.isfinite(raw_consumption) or raw_consumption <= 0):
+            raise ValueError("Cannot calculate TCO: finite positive BEV consumption is required")
+        wh = float(raw_consumption)
         energy = wh / 1000 * km * d["electricity"]["default_tariff_eur_kwh"] * years
     else:
-        cons = (v.get("extensions") or {}).get("fuel_consumption_l_100km") or {}
-        l100 = cons.get("real_world") or FUEL_CONSUMPTION_DEFAULT.get(pt, 6.0)
+        cons = ((v.get("extensions") or {}).get("fuel_consumption_l_100km") or {})
+        raw_consumption = cons.get("real_world") or cons.get("wltp_combined")
+        if (isinstance(raw_consumption, bool) or
+                not isinstance(raw_consumption, (int, float)) or
+                not math.isfinite(raw_consumption) or raw_consumption <= 0):
+            raise ValueError("Cannot calculate TCO: finite positive fuel consumption is required")
+        l100 = float(raw_consumption)
         energy = l100 / 100 * km * d["fuel"]["diesel_eur_l" if pt == "ice_diesel" else "petrol_eur_l"] * years
     key = "bev_annual_eur" if pt == "bev" else "ice_annual_eur"
     maint = d["maintenance"][key] * years
