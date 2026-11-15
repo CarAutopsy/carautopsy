@@ -100,13 +100,17 @@ def validate_variant_readiness(
     if powertrain == "bev":
         for path in ("performance.electric_motor_continuous_power_w",
                      "dimensions.own_weight_kg"):
-            if not _finite_number(record, path, positive=True):
+            if _value(record, path) is None:
+                issues.append(path)
+            elif not _finite_number(record, path, positive=True):
                 issues.append(f"{path} must be a finite positive number")
         if not _consumption_available(record, "energy.consumption_wh_km"):
             issues.append("energy.consumption_wh_km.real_world or wltp_combined must be a finite positive number")
     elif isinstance(powertrain, str) and powertrain in COMBUSTION_POWERTRAINS:
         for path in ("performance.combustion_engine_power_w",):
-            if not _finite_number(record, path, positive=True):
+            if _value(record, path) is None:
+                issues.append(path)
+            elif not _finite_number(record, path, positive=True):
                 issues.append(f"{path} must be a finite positive number")
         co2_path = ("emissions.co2_wltp_weighted_combined_gpkm"
                     if powertrain == "phev" else "emissions.co2_wltp_gpkm")
