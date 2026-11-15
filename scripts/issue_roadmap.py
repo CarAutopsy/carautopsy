@@ -104,6 +104,7 @@ def classify_issue(issue: dict[str, Any]) -> dict[str, Any]:
             "issue_number": number,
             "issue_url": issue_url,
             "title": title.strip(),
+            "classification": "actionable",
             "status": "proposed",
             "dependencies": [],
             "acceptance_criteria": [],
