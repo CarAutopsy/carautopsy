@@ -75,7 +75,12 @@ def _next_page_from_link(link: Any, *, owner: str, repository: str, current_page
         raise IntakeControllerError("GitHub returned a malformed pagination link")
     parsed = urlsplit(link["url"])
     expected_path = f"/repos/{owner}/{repository}/issues"
-    if parsed.scheme != "https" or parsed.netloc != "api.github.com" or parsed.path != expected_path:
+    repository_id_path = re.fullmatch(r"/repositories/\d+/issues", parsed.path)
+    if (
+        parsed.scheme != "https"
+        or parsed.netloc != "api.github.com"
+        or (parsed.path != expected_path and repository_id_path is None)
+    ):
         raise IntakeControllerError("GitHub returned an unexpected pagination URL")
     page_values = parse_qs(parsed.query).get("page", [])
     if len(page_values) != 1 or not page_values[0].isdigit():

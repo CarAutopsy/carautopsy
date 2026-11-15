@@ -246,10 +246,8 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(len(result), 5)
         self.assertEqual(result[0]["labels"], ["roadmap:candidate"])
         self.assertNotIn("body", result[0])
-        self.assertTrue(result[1]["pull_request"])
-        self.assertTrue(result[2]["pull_request"])
-        self.assertTrue(result[3]["pull_request"])
-        self.assertTrue(result[4]["pull_request"])
+        for pr_snapshot in result[1:]:
+            self.assertTrue(pr_snapshot["pull_request"])
         pr_report = build_dry_run_report(
             result[1:], repository="CarAutopsy/carautopsy", source="fixture"
         )
@@ -280,6 +278,19 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(session.get.call_count, 2)
         self.assertEqual(session.get.call_args_list[1].kwargs["params"]["page"], 2)
 
+    def test_fetch_accepts_github_repository_id_pagination_link(self):
+        first = Mock()
+        first.links = {"next": {"url": "https://api.github.com/repositories/12345/issues?per_page=2&page=2"}}
+        first.json.return_value = [issue(1)]
+        second = Mock()
+        second.links = {}
+        second.json.return_value = [issue(2)]
+        session = Mock()
+        session.get.side_effect = [first, second]
+
+        result = fetch_open_issues("owner/repo", session=session, per_page=2)
+        self.assertEqual([item["number"] for item in result], [1, 2])
+
     def test_fetch_rejects_untrusted_or_non_advancing_next_links(self):
         for url in (
             "https://evil.example/repos/owner/repo/issues?page=2",
@@ -296,9 +307,13 @@ class IssueRoadmapControllerTests(unittest.TestCase):
 
     def test_fetch_paginates_across_multiple_full_pages_and_final_short_page(self):
         pages = []
-        for page_numbers in ((1, 2), (3, 4), (5,)):
+        page_data = ((1, 2), (3, 4), (5,))
+        for index, page_numbers in enumerate(page_data, start=1):
             response = Mock()
-            response.links = {}
+            response.links = (
+                {"next": {"url": f"https://api.github.com/repos/owner/repo/issues?per_page=2&page={index + 1}"}}
+                if index < len(page_data) else {}
+            )
             response.json.return_value = [issue(number) for number in page_numbers]
             pages.append(response)
         session = Mock()
@@ -314,11 +329,14 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         )
 
     def test_fetch_stops_at_configured_page_limit(self):
-        full_page = Mock()
-        full_page.links = {"next": {"url": "https://api.github.com/repos/owner/repo/issues?page=3"}}
-        full_page.json.return_value = [issue(1), issue(2)]
+        first = Mock()
+        first.links = {"next": {"url": "https://api.github.com/repos/owner/repo/issues?page=2"}}
+        first.json.return_value = [issue(1), issue(2)]
+        second = Mock()
+        second.links = {"next": {"url": "https://api.github.com/repos/owner/repo/issues?page=3"}}
+        second.json.return_value = [issue(3), issue(4)]
         session = Mock()
-        session.get.return_value = full_page
+        session.get.side_effect = [first, second]
         with patch("issue_roadmap_controller.MAX_PAGES", 2):
             with self.assertRaises(IntakeControllerError):
                 fetch_open_issues("owner/repo", session=session, per_page=2)

@@ -20,7 +20,7 @@ python scripts/issue_roadmap_controller.py --input tests/fixtures/issue-intake.e
 ```
 
 A fixture may be a JSON array of issue snapshots or an object with an `issues`
-array. The issue body is ignored by the classifier.
+array. Issue bodies and unrelated fields are discarded before classification.
 
 ## Fetch open issues from GitHub
 
@@ -31,9 +31,11 @@ python scripts/issue_roadmap_controller.py --fetch-github --repo CarAutopsy/cara
 
 A token is optional for public repositories, but authenticated requests have
 higher API rate limits. The controller uses the GitHub issues read endpoint,
-paginates with bounded page size, and retains only number, title, state, labels,
-URL, and a boolean pull-request marker. Nested label metadata, the pull-request
-API object, issue bodies, and other unrelated fields are discarded.
+follows only validated `api.github.com` pagination links, enforces a page cap,
+and continues through its fixed repository endpoint. It retains only number,
+title, state, label names, URL, and a boolean pull-request marker. Nested label
+metadata, the pull-request API object, issue bodies, and unrelated fields are
+discarded.
 
 ## Safety and scope
 
@@ -41,6 +43,8 @@ API object, issue bodies, and other unrelated fields are discarded.
 - No issue labels, comments, roadmap files, workflow files, or task queues are
   written by the controller.
 - Every actionable proposal requires explicit owner approval.
+- Any present `pull_request` marker is excluded, including malformed or falsy
+  marker values; an absent marker is treated as an issue.
 - Ambiguous and conflicting snapshots remain visible as owner-triage records.
 - Classification counts retain informational, blocked, and duplicate issue
   snapshots in the report without creating roadmap proposals for them.
