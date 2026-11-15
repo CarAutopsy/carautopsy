@@ -151,8 +151,7 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         with self.assertRaises(IntakeControllerError):
             load_issue_fixture(ROOT / "README.md")
         with self.assertRaises(IntakeControllerError):
-            from issue_roadmap_controller import _project_issue_snapshot
-            _project_issue_snapshot({"number": 1, "title": "Bad", "state": "open", "labels": [None]})
+            load_issue_fixture_with_invalid_label()
 
     def test_fetch_uses_fixed_endpoint_and_projects_nested_api_fields(self):
         response = Mock()
@@ -179,6 +178,11 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertNotIn("body", result[0])
         self.assertEqual(result[1]["pull_request"], True)
         self.assertNotIsInstance(result[1]["pull_request"], dict)
+        pr_report = build_dry_run_report(
+            [result[1]], repository="CarAutopsy/carautopsy", source="fixture"
+        )
+        self.assertEqual(pr_report["snapshot_classification_counts"], {"not-an-issue": 1})
+        self.assertEqual(pr_report["proposal_count"], 0)
         args, kwargs = session.get.call_args
         self.assertEqual(
             args[0],
@@ -213,6 +217,18 @@ class IssueRoadmapControllerTests(unittest.TestCase):
             fetch_open_issues("owner/repo", per_page=True)
         with self.assertRaises(IntakeControllerError):
             fetch_open_issues("../repo")
+
+
+def load_issue_fixture_with_invalid_label():
+    from tempfile import TemporaryDirectory
+    from issue_roadmap_controller import load_issue_fixture
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "bad.json"
+        path.write_text(json.dumps([{
+            "number": 1, "title": "Bad", "state": "open", "labels": [None]
+        }]), encoding="utf-8")
+        return load_issue_fixture(path)
 
 
 if __name__ == "__main__":

@@ -172,6 +172,15 @@ class IssueRoadmapTests(unittest.TestCase):
         self.assertEqual(build_issue_proposals(closed_issues), [])
         self.assertEqual(build_issue_proposals(pull_requests), [])
 
+    def test_non_actionable_open_snapshot_conflicting_with_closed_is_ignored(self):
+        for label in ("roadmap:informational", "roadmap:blocked", "roadmap:duplicate"):
+            with self.subTest(label=label):
+                snapshots = [
+                    issue(labels=[{"name": label}]),
+                    issue(state="closed"),
+                ]
+                self.assertEqual(build_issue_proposals(snapshots), [])
+
     def test_open_issue_conflicting_with_closed_snapshot_requires_owner_triage(self):
         result = build_issue_proposals([issue(), issue(state="closed")])
         self.assertEqual(len(result), 1)
