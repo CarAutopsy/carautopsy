@@ -62,7 +62,7 @@ def _project_issue_snapshot(item: Any) -> dict[str, Any]:
         if key in item
     }
     snapshot["labels"] = labels
-    if "pull_request" in item:
+    if item.get("pull_request"):
         # The classifier only needs the marker's presence, not its URL.
         snapshot["pull_request"] = True
     return snapshot
@@ -165,8 +165,8 @@ def build_dry_run_report(
 
 
 def render_report(report: dict[str, Any]) -> str:
-    """Serialize a stable JSON artifact suitable for diffing and retries."""
-    return json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    """Serialize stable ASCII JSON suitable for diffing and terminal output."""
+    return json.dumps(report, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -196,7 +196,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         try:
             sys.stdout.write(render_report(report))
-        except OSError as exc:
+            sys.stdout.flush()
+        except (OSError, UnicodeError) as exc:
             parser.exit(2, f"error: could not write report to stdout ({type(exc).__name__})\n")
         return 0
     except (IntakeControllerError, IssueClassificationError) as exc:
