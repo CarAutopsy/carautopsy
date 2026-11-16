@@ -211,8 +211,13 @@ class OwnerApprovedRoadmapApplyTests(unittest.TestCase):
         approval = approval_for(payload)
         approval["approved_tasks"][0]["title"] = payload["proposals"][0]["title"]
         first = build(payload, approval)
-        self.assertNotIn("[Review](https://example.com)", first["roadmap_content"])
-        self.assertIn("&#91;Review&#93;&#40;https://example.com&#41;", first["roadmap_content"])
+        data_end = first["roadmap_content"].index("\ncarautopsy-issue-roadmap:data:end -->")
+        visible_table = first["roadmap_content"][data_end:]
+        self.assertNotIn("[Review](https://example.com)", visible_table)
+        self.assertIn("&#91;Review&#93;&#40;https://example.com&#41;", visible_table)
+        data_start = first["roadmap_content"].index("<!-- carautopsy-issue-roadmap:data:start\n")
+        stored_json = first["roadmap_content"][data_start + len("<!-- carautopsy-issue-roadmap:data:start\n"):data_end].strip()
+        self.assertEqual(json.loads(stored_json)["tasks"][0]["title"], "[Review](https://example.com)")
         approval["expected_roadmap_sha"] = "b" * 40
         second = build(payload, approval, markdown=first["roadmap_content"], sha="b" * 40)
         self.assertEqual(second["mode"], "no-op-already-applied")
@@ -264,8 +269,11 @@ class OwnerApprovedRoadmapApplyTests(unittest.TestCase):
 
     def test_managed_json_state_is_hidden_inside_one_html_comment(self):
         result = build()
-        self.assertIn("<!-- carautopsy-issue-roadmap:data:start\\n", result["roadmap_content"])
-        self.assertIn("\\ncarautopsy-issue-roadmap:data:end -->", result["roadmap_content"])
+        self.assertIn("<!-- carautopsy-issue-roadmap:data:start\n", result["roadmap_content"])
+        self.assertIn("\ncarautopsy-issue-roadmap:data:end -->", result["roadmap_content"])
+        data_start = result["roadmap_content"].index("<!-- carautopsy-issue-roadmap:data:start\n")
+        data_end = result["roadmap_content"].index("\ncarautopsy-issue-roadmap:data:end -->")
+        self.assertNotIn("-->", result["roadmap_content"][data_start:data_end])
 
     def test_partial_approval_batches_can_complete_one_report(self):
         payload = report()
@@ -314,6 +322,41 @@ class OwnerApprovedRoadmapApplyTests(unittest.TestCase):
         self.assertEqual(completed["changed_task_keys"], ["issue-11"])
         self.assertEqual(completed["unresolved_owner_decisions"], [])
         self.assertIn(approval["proposal_id"], completed["roadmap_content"])
+
+    def test_renamed_unrelated_issue_does_not_block_another_approval(self):
+        payload = report()
+        payload["issue_snapshots"].append({"number": 11, "state": "open", "updated_at": UPDATED_AT})
+        second = copy.deepcopy(payload["proposals"][0])
+        second.update({
+            "task_key": "issue-11",
+            "issue_number": 11,
+            "issue_url": "https://github.com/CarAutopsy/carautopsy/issues/11",
+            "title": "Add second safe intake task",
+            "owner_actions": ["Confirm second task scope"],
+        })
+        payload["proposals"].append(second)
+        payload["proposal_count"] = 2
+        payload["actionable_proposal_count"] = 2
+
+        first_approval = approval_for(payload)
+        first_approval["approved_tasks"] = [first_approval["approved_tasks"][0]]
+        first = build(payload, first_approval)
+
+        renamed = copy.deepcopy(payload)
+        renamed["proposals"][0]["title"] = "Renamed safe issue intake"
+        renamed["issue_snapshots"][0]["updated_at"] = "2026-11-16T20:05:00Z"
+        second_approval = approval_for(renamed)
+        second_approval["expected_roadmap_sha"] = "b" * 40
+        second_approval["approved_tasks"] = [{
+            "task_key": "issue-11",
+            "issue_number": 11,
+            "title": "Add second safe intake task",
+            "dependencies": [],
+            "acceptance_criteria": ["Validate second intake"],
+        }]
+        result = build(renamed, second_approval, markdown=first["roadmap_content"], sha="b" * 40)
+        self.assertEqual(result["changed_task_keys"], ["issue-11"])
+        self.assertEqual(result["unresolved_owner_decisions"], [])
 
 if __name__ == "__main__":
     unittest.main()
