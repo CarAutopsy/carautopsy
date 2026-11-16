@@ -329,10 +329,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             issues = load_issue_fixture(args.input)
             source_name = "fixture"
-
-        report = build_dry_run_report(
-            issues, repository=args.repo, source=source_name
-        )
+            report = build_dry_run_report(
+                issues, repository=args.repo, source=source_name
+            )
         try:
             sys.stdout.write(render_report(report))
             sys.stdout.flush()
