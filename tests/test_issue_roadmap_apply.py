@@ -166,5 +166,44 @@ class OwnerApprovedRoadmapApplyTests(unittest.TestCase):
             build(markdown=altered, sha="b" * 40)
 
 
+    def test_rejects_dependency_cycles(self):
+        payload = report()
+        payload["issue_snapshots"].append({
+            "number": 11, "state": "open", "updated_at": UPDATED_AT
+        })
+        second = copy.deepcopy(payload["proposals"][0])
+        second.update({
+            "task_key": "issue-11",
+            "issue_number": 11,
+            "title": "Second approved task",
+        })
+        payload["proposals"].append(second)
+        approval = approval_for(payload)
+        approval["approved_tasks"] = [
+            {
+                "task_key": "issue-10",
+                "issue_number": 10,
+                "title": "Add safe issue intake",
+                "dependencies": ["issue-11"],
+                "acceptance_criteria": ["Reject malformed issue metadata"],
+            },
+            {
+                "task_key": "issue-11",
+                "issue_number": 11,
+                "title": "Second approved task",
+                "dependencies": ["issue-10"],
+                "acceptance_criteria": ["Validate the second task"],
+            },
+        ]
+        with self.assertRaisesRegex(RoadmapApplyError, "dependency graph"):
+            build(payload, approval)
+
+    def test_rejects_unexpected_report_fields(self):
+        payload = report()
+        payload["untrusted_extension"] = {"write": True}
+        approval = approval_for(payload)
+        with self.assertRaisesRegex(RoadmapApplyError, "read-only all-state"):
+            build(payload, approval)
+
 if __name__ == "__main__":
     unittest.main()
