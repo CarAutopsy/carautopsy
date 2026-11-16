@@ -312,8 +312,8 @@ def _validate_report(report: Any) -> dict[str, Any]:
             _validate_evidence(raw_evidence, evidence_issue, repository, require_done=proposed_status == "done")
 
     normalized = copy.deepcopy(report)
-    normalized["proposals"] = sorted(proposals, key=lambda item: item["task_key"])
-    normalized["unchanged"] = sorted(unchanged, key=lambda item: item["task_key"])
+    normalized["proposals"] = sorted(normalized["proposals"], key=lambda item: item["task_key"])
+    normalized["unchanged"] = sorted(normalized["unchanged"], key=lambda item: item["task_key"])
     return normalized
 
 
