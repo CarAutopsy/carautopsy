@@ -27,8 +27,8 @@ _SHA = re.compile(r"[0-9a-f]{40}\Z")
 _OWNER = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\Z")
 _CONFIRMATION = "APPLY ROADMAP PROPOSAL"
 _START = "<!-- carautopsy-issue-roadmap:start -->"
-_DATA_START = "<!-- carautopsy-issue-roadmap:data:start -->"
-_DATA_END = "<!-- carautopsy-issue-roadmap:data:end -->"
+_DATA_START = "<!-- carautopsy-issue-roadmap:data:start\n"
+_DATA_END = "\ncarautopsy-issue-roadmap:data:end -->"
 _END = "<!-- carautopsy-issue-roadmap:end -->"
 _MAX_ROADMAP_BYTES = 500_000
 _MAX_REPORT_BYTES = 5_000_000
@@ -129,11 +129,14 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
         raise RoadmapApplyError("managed roadmap markers are incomplete or duplicated")
 
     start = markdown.index(_START)
-    data_start = markdown.index(_DATA_START, start) + len(_DATA_START)
-    data_end = markdown.index(_DATA_END, data_start)
-    end = markdown.index(_END, data_end) + len(_END)
-    if not (start < data_start < data_end < end):
+    data_start_marker = markdown.index(_DATA_START)
+    data_end_marker = markdown.index(_DATA_END)
+    end_marker = markdown.index(_END)
+    if not (start < data_start_marker < data_end_marker < end_marker):
         raise RoadmapApplyError("managed roadmap markers are out of order")
+    data_start = data_start_marker + len(_DATA_START)
+    data_end = data_end_marker
+    end = end_marker + len(_END)
     block = markdown[start:end]
     try:
         state = json.loads(
@@ -164,7 +167,7 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
     for task in state["tasks"]:
         if not isinstance(task, dict) or set(task) != task_fields:
             raise RoadmapApplyError("managed roadmap task has an invalid shape")
-        _plain_text(task.get("title"), "managed task title", maximum=200)
+        _plain_text(task.get("title"), "managed task title", maximum=256)
         criteria = task.get("acceptance_criteria")
         if not isinstance(criteria, list) or not 1 <= len(criteria) <= _MAX_CRITERIA:
             raise RoadmapApplyError("managed task acceptance criteria are malformed")
@@ -195,12 +198,15 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
 
 
 def _escape_cell(value: str) -> str:
-    return (
-        html.escape(value, quote=True)
-        .replace("|", "&#124;")
-        .replace(chr(96), "&#96;")
-        .replace("\\", "&#92;")
-    )
+    escaped = html.escape(value, quote=True)
+    for character, entity in {
+        "|": "&#124;", "`": "&#96;", "\\": "&#92;",
+        "[": "&#91;", "]": "&#93;", "(": "&#40;", ")": "&#41;",
+        "!": "&#33;", "*": "&#42;", "_": "&#95;", "#": "&#35;",
+        "~": "&#126;", "+": "&#43;",
+    }.items():
+        escaped = escaped.replace(character, entity)
+    return escaped
 
 
 def _render_managed_block(state: dict[str, Any]) -> str:
@@ -295,7 +301,19 @@ def build_owner_approved_apply_plan(
                 or not isinstance(proposal.get("title"), str)
             ):
                 raise RoadmapApplyError("actionable proposal identities or owner gates are invalid")
-            actionable[key] = proposal
+            title = _plain_text(proposal.get("title"), "proposal title", maximum=256)
+            owner_actions = proposal.get("owner_actions")
+            if (
+                not isinstance(owner_actions, list) or len(owner_actions) > 20
+                or any(not isinstance(action, str) for action in owner_actions)
+            ):
+                raise RoadmapApplyError("actionable proposal owner_actions are malformed")
+            actionable[key] = {
+                "task_key": key,
+                "issue_number": issue_number,
+                "title": title,
+                "owner_actions": [_plain_text(action, "owner action") for action in owner_actions],
+            }
 
     state, old_block = _load_managed_state(current_roadmap)
     existing_tasks = state["tasks"]
@@ -349,7 +367,7 @@ def build_owner_approved_apply_plan(
         normalized.append({
             "task_key": key,
             "issue_number": issue_number,
-            "title": _plain_text(item["title"], "task title", maximum=200),
+            "title": _plain_text(item["title"], "task title", maximum=256),
             "status": "approved",
             "dependencies": dependencies,
             "acceptance_criteria": criteria,
@@ -359,8 +377,28 @@ def build_owner_approved_apply_plan(
 
     existing_by_key = {item["task_key"]: item for item in existing_tasks}
     approved_by_key = {item["task_key"]: item for item in normalized}
+    for key, proposal in actionable.items():
+        previous = existing_by_key.get(key)
+        if previous is not None and (
+            previous.get("issue_number") != proposal["issue_number"]
+            or previous.get("title") != proposal["title"]
+        ):
+            raise RoadmapApplyError("existing task key conflicts with the current proposal")
+    unresolved_owner_decisions = [
+        {
+            "task_key": key,
+            "issue_number": proposal["issue_number"],
+            "title": proposal["title"],
+            "owner_actions": list(proposal["owner_actions"]),
+        }
+        for key, proposal in sorted(actionable.items())
+        if key not in existing_by_key and key not in approved_by_key
+    ]
     if digest in state["applied_proposals"]:
-        if any(existing_by_key.get(key) != task for key, task in approved_by_key.items()):
+        if (
+            not set(actionable).issubset(existing_by_key)
+            or any(existing_by_key.get(key) != task for key, task in approved_by_key.items())
+        ):
             raise RoadmapApplyError("proposal ID was already applied with different task content")
         return {
             "schema_version": 1,
@@ -368,6 +406,7 @@ def build_owner_approved_apply_plan(
             "proposal_id": digest,
             "changed_task_keys": [],
             "already_applied_task_keys": sorted(approved_by_key),
+            "unresolved_owner_decisions": [],
             "roadmap_sha_before": current_roadmap_sha,
             "roadmap_sha256_after": hashlib.sha256(current_roadmap.encode("utf-8")).hexdigest(),
             "roadmap_content": current_roadmap,
@@ -408,9 +447,14 @@ def build_owner_approved_apply_plan(
     except RoadmapReconciliationError as exc:
         raise RoadmapApplyError("approved tasks create an invalid roadmap dependency graph") from exc
 
+    completed_task_keys = {item["task_key"] for item in all_tasks}
+    report_fully_applied = set(actionable).issubset(completed_task_keys)
+    applied_proposals = list(state["applied_proposals"])
+    if report_fully_applied and digest not in applied_proposals:
+        applied_proposals.append(digest)
     next_state = {
         "schema_version": 1,
-        "applied_proposals": sorted([*state["applied_proposals"], digest]),
+        "applied_proposals": sorted(applied_proposals),
         "tasks": sorted(all_tasks, key=lambda item: item["task_key"]),
     }
     block = _render_managed_block(next_state)
@@ -424,10 +468,11 @@ def build_owner_approved_apply_plan(
 
     return {
         "schema_version": 1,
-        "mode": "apply-plan",
+        "mode": "no-op-partially-applied" if not changed and not report_fully_applied else "apply-plan",
         "proposal_id": digest,
         "changed_task_keys": sorted(changed),
         "already_applied_task_keys": sorted(already),
+        "unresolved_owner_decisions": unresolved_owner_decisions,
         "roadmap_sha_before": current_roadmap_sha,
         "roadmap_sha256_after": hashlib.sha256(updated.encode("utf-8")).hexdigest(),
         "roadmap_content": updated,
