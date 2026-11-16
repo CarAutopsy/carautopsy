@@ -281,6 +281,37 @@ class RoadmapSyncTests(unittest.TestCase):
         ambiguous = next(item for item in report["unchanged"] if item["task_key"] == "issue-10")
         self.assertIn("multiple linked PR", ambiguous["reason"])
 
+
+    def test_conflicting_records_for_same_pr_number_are_isolated(self):
+        report = build_reconciliation_proposal(
+            [task("issue-10", 10), task("issue-11", 11), task("issue-12", 12)],
+            [issue(10), issue(11), issue(12)],
+            [
+                pr(110, 10),
+                pr(110, 11, state="open", merged=False, merge_commit_sha=None),
+                pr(112, 12),
+            ],
+            checks(),
+            approved_task_keys={"issue-10", "issue-11", "issue-12"},
+        )
+        self.assertEqual([item["task_key"] for item in report["proposals"]], ["issue-12"])
+        for key in ("issue-10", "issue-11"):
+            item = next(row for row in report["unchanged"] if row["task_key"] == key)
+            self.assertIn("conflicting linked PR", item["reason"])
+
+    def test_same_pr_can_reference_multiple_issues_when_metadata_matches(self):
+        report = build_reconciliation_proposal(
+            [task("issue-10", 10), task("issue-11", 11)],
+            [issue(10), issue(11)],
+            [pr(110, 10), pr(110, 11)],
+            checks(),
+            approved_task_keys={"issue-10", "issue-11"},
+        )
+        self.assertEqual(
+            [item["task_key"] for item in report["proposals"]],
+            ["issue-10", "issue-11"],
+        )
+
     def test_duplicate_issue_snapshots_do_not_suppress_independent_tasks(self):
         report = build_reconciliation_proposal(
             [task("issue-10", 10), task("issue-11", 11)],
