@@ -178,7 +178,7 @@ jobs:
               "The JSON report is available as the issue-roadmap-dry-run workflow artifact.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
-              stream.write("\\n".join(summary) + "\\n")
+              stream.write("\n".join(summary) + "\n")
           PY
       - name: Upload dry-run report
         uses: actions/upload-artifact@v6
