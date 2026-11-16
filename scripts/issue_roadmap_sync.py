@@ -148,22 +148,55 @@ def _index_linked_prs(records: Any) -> tuple[dict[int, dict[str, Any]], set[int]
     if not isinstance(records, list) or len(records) > 20_000:
         raise RoadmapReconciliationError("pull-request evidence must be a bounded list")
     by_issue: dict[int, list[dict[str, Any]]] = {}
+    metadata_by_pr: dict[int, tuple[str, bool, str, str | None]] = {}
+    issues_by_pr: dict[int, set[int]] = {}
+    conflicting_pr_numbers: set[int] = set()
+
     for pr in records:
         if not isinstance(pr, dict):
             raise RoadmapReconciliationError("pull-request evidence entry must be an object")
+        # Unverified associations are ignored; they cannot poison verified records.
+        if pr.get("link_evidence") != "github-cross-reference-event":
+            continue
         issue_number = pr.get("issue_number")
+        pr_number = pr.get("number")
         if (
             isinstance(issue_number, bool)
             or not isinstance(issue_number, int)
             or issue_number < 1
+            or isinstance(pr_number, bool)
+            or not isinstance(pr_number, int)
+            or pr_number < 1
         ):
-            raise RoadmapReconciliationError("linked PR has an invalid issue_number")
-        # The collector must derive this marker from a GitHub cross-reference
-        # timeline event, not from issue text, PR body text, or model output.
-        if pr.get("link_evidence") == "github-cross-reference-event":
-            by_issue.setdefault(issue_number, []).append(pr)
+            raise RoadmapReconciliationError("linked PR has an invalid issue or PR number")
+
+        state = pr.get("state")
+        merged = pr.get("merged")
+        head_sha = pr.get("head_sha")
+        merge_sha = pr.get("merge_commit_sha")
+        if (
+            not isinstance(state, str) or state not in {"open", "closed"}
+            or type(merged) is not bool
+            or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
+            or (merge_sha is not None and (
+                not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None
+            ))
+            or (merged and (state != "closed" or merge_sha is None))
+        ):
+            raise RoadmapReconciliationError("linked PR metadata is malformed")
+
+        metadata = (state, merged, head_sha, merge_sha)
+        previous = metadata_by_pr.get(pr_number)
+        if previous is not None and previous != metadata:
+            conflicting_pr_numbers.add(pr_number)
+        else:
+            metadata_by_pr[pr_number] = metadata
+        issues_by_pr.setdefault(pr_number, set()).add(issue_number)
+        by_issue.setdefault(issue_number, []).append(pr)
 
     ambiguous = {number for number, matches in by_issue.items() if len(matches) > 1}
+    for pr_number in conflicting_pr_numbers:
+        ambiguous.update(issues_by_pr[pr_number])
     return {
         number: matches[0] for number, matches in by_issue.items() if number not in ambiguous
     }, ambiguous
