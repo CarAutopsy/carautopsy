@@ -218,7 +218,7 @@ def load_reconciliation_fixture(path: str | Path) -> dict[str, Any]:
         ),
         "check_runs": _project_records(
             payload.get("check_runs"),
-            ("name", "head_sha", "conclusion"),
+            ("id", "name", "head_sha", "conclusion", "html_url"),
             "check_runs",
         ),
     }
