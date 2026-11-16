@@ -75,7 +75,8 @@ class LiveIssueFetchCliTests(unittest.TestCase):
                 with self.assertRaises(SystemExit) as raised:
                     main(["--fetch-github"])
         self.assertEqual(raised.exception.code, 2)
-        self.assertIn("IntakeControllerError", stderr.getvalue())
+        self.assertIn("GitHub issues endpoint returned a non-list payload", stderr.getvalue())
+        self.assertNotIn("test-token", stderr.getvalue())
 
     def test_reconciliation_marks_outdated_issue_snapshot_stale(self):
         report = build_reconciliation_dry_run_report({
