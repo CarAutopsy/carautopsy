@@ -115,6 +115,27 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ProposalArtifactError):
                 build_proposal_artifact(report)
 
+
+    def test_rejects_duplicate_task_entries_and_malformed_unchanged_status(self):
+        report = approved_report()
+        report["unchanged"] = [{
+            "task_key": "issue-10",
+            "status": "approved",
+            "reason": "duplicate task record",
+        }]
+        with self.assertRaises(ProposalArtifactError):
+            build_proposal_artifact(report)
+
+        report = approved_report()
+        report["proposals"] = []
+        report["unchanged"] = [{
+            "task_key": "issue-10",
+            "status": True,
+            "reason": "bad type",
+        }]
+        with self.assertRaises(ProposalArtifactError):
+            build_proposal_artifact(report)
+
     def test_rejects_malformed_or_unverified_status_evidence(self):
         for mutate in (
             lambda r: r["proposals"][0]["evidence"].update({"head_sha": "bad"}),
