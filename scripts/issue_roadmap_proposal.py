@@ -261,6 +261,7 @@ def _validate_report(report: Any) -> dict[str, Any]:
 def build_proposal_artifact(report: Any) -> dict[str, Any]:
     """Return stable JSON and Markdown artifacts for a validated report."""
     normalized = _validate_report(report)
+    repository = normalized["repository"]
     canonical = json.dumps(
         normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
     ).encode("utf-8")
@@ -288,7 +289,7 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
         for item in normalized["proposals"]:
             evidence = item["evidence"]
             check_links = _render_check_links(
-                evidence, require_complete=item["to_status"] == "done"
+                evidence, repository, require_complete=item["to_status"] == "done"
             )
             lines.append(
                 f"| `{html.escape(item['task_key'])}` | #{item['issue_number']} "
