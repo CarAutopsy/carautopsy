@@ -159,7 +159,7 @@ class RoadmapSyncTests(unittest.TestCase):
             validate_task_graph([task("task-one", 10), task("task-two", 10)])
 
     def test_malformed_linked_pr_is_rejected(self):
-        with self.assertRaisesRegex(RoadmapReconciliationError, "malformed linked PR"):
+        with self.assertRaisesRegex(RoadmapReconciliationError, "linked PR metadata is malformed"):
             build_reconciliation_proposal(
                 [task()], [issue()], [pr(head_sha="not-a-sha")], []
             )
@@ -181,7 +181,7 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["audit"])
 
     def test_boolean_issue_reference_cannot_match_issue_one(self):
-        with self.assertRaisesRegex(RoadmapReconciliationError, "invalid issue_number"):
+        with self.assertRaisesRegex(RoadmapReconciliationError, "invalid issue_number or PR number"):
             build_reconciliation_proposal(
                 [task("task-one", 1)],
                 [issue(1)],
@@ -279,7 +279,7 @@ class RoadmapSyncTests(unittest.TestCase):
         )
         self.assertEqual([item["task_key"] for item in report["proposals"]], ["issue-11"])
         ambiguous = next(item for item in report["unchanged"] if item["task_key"] == "issue-10")
-        self.assertIn("multiple linked PR", ambiguous["reason"])
+        self.assertIn("ambiguous or conflicting linked PR", ambiguous["reason"])
 
 
     def test_conflicting_records_for_same_pr_number_are_isolated(self):
