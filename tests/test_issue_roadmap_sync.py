@@ -171,6 +171,25 @@ class RoadmapSyncTests(unittest.TestCase):
                 [task()], [issue()], [pr(merged=1)], checks()
             )
 
+
+    def test_duplicate_required_check_runs_are_ambiguous_and_block_completion(self):
+        duplicate_checks = checks() + [checks()[0]]
+        report = build_reconciliation_proposal(
+            [task()], [issue()], [pr()], duplicate_checks,
+            approved_task_keys={"issue-10"},
+        )
+        self.assertEqual(report["proposals"], [])
+        self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["audit"])
+
+    def test_boolean_issue_reference_cannot_match_issue_one(self):
+        with self.assertRaisesRegex(RoadmapReconciliationError, "invalid issue_number"):
+            build_reconciliation_proposal(
+                [task("task-one", 1)],
+                [issue(1)],
+                [pr(issue_number=True)],
+                checks(),
+            )
+
     def test_inputs_are_not_mutated_and_output_is_deterministic(self):
         tasks = [task()]
         issues = [issue()]
