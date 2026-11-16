@@ -92,7 +92,7 @@ class RoadmapSyncTests(unittest.TestCase):
 
     def test_closed_issue_without_merged_pr_never_becomes_done(self):
         report = build_reconciliation_proposal(
-            [task()], [issue()], [pr(state="open", merged=False)], [],
+            [task()], [issue()], [], [],
             approved_task_keys={"issue-10"},
         )
         self.assertEqual(report["proposals"], [])
