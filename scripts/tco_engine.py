@@ -52,7 +52,7 @@ def publication_artifact_is_current(existing, candidate, now=None):
     if (
         not isinstance(generated, str)
         or re.fullmatch(
-            r"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})",
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})",
             generated,
         ) is None
     ):
