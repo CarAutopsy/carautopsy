@@ -23,6 +23,7 @@ def approved_report():
         "roadmap_modified": False,
         "github_modified": False,
         "task_dispatch_performed": False,
+        "repository": "CarAutopsy/carautopsy",
         "proposals": [
             {
                 "task_key": "issue-10",
@@ -213,6 +214,23 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             build_proposal_artifact(report)
 
 
+    def test_ci_link_must_match_repository_and_exact_run_id(self):
+        mutations = (
+            lambda evidence: evidence["check_evidence"][0].update({
+                "html_url": "https://github.com/other/repo/runs/1001"
+            }),
+            lambda evidence: evidence["check_evidence"][0].update({
+                "html_url": "https://github.com/CarAutopsy/carautopsy/runs/9999"
+            }),
+            lambda evidence: evidence["check_evidence"][0].update({
+                "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1001)[Click](https://evil.example/"
+            }),
+        )
+        for mutate in mutations:
+            report = approved_report()
+            mutate(report["proposals"][0]["evidence"])
+            with self.assertRaisesRegex(ProposalArtifactError, "CI check URL"):
+                build_proposal_artifact(report)
     def test_done_proposal_requires_valid_merge_commit_sha(self):
         report = approved_report()
         del report["proposals"][0]["evidence"]["merge_commit_sha"]
