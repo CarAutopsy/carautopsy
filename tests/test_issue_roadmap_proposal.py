@@ -335,6 +335,20 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
         with self.assertRaises(ProposalArtifactError):
             build_proposal_artifact(report)
 
+    def test_artifact_report_is_independent_of_later_input_mutation(self):
+        report = approved_report()
+        artifact = build_proposal_artifact(report)
+        original_sha = artifact["report"]["proposals"][0]["evidence"]["merge_commit_sha"]
+        report["proposals"][0]["evidence"]["merge_commit_sha"] = "f" * 40
+        self.assertEqual(
+            artifact["report"]["proposals"][0]["evidence"]["merge_commit_sha"],
+            original_sha,
+        )
+        self.assertNotEqual(
+            artifact["report"]["proposals"][0]["evidence"]["merge_commit_sha"],
+            report["proposals"][0]["evidence"]["merge_commit_sha"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
