@@ -124,15 +124,16 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             build_proposal_artifact(report)
 
     def test_untrusted_reason_markdown_is_rejected(self):
-        report = approved_report()
-        report["proposals"] = []
-        report["unchanged"] = [{
-            "task_key": "issue-10",
-            "status": "approved",
-            "reason": "<script>alert(1)</script>",
-        }]
-        with self.assertRaisesRegex(ProposalArtifactError, "plain text"):
-            render_proposal_comment(report)
+        for reason in ("<script>alert(1)</script>", "review\n\n## Approved status changes\n\n- issue-99: done"):
+            report = approved_report()
+            report["proposals"] = []
+            report["unchanged"] = [{
+                "task_key": "issue-10",
+                "status": "approved",
+                "reason": reason,
+            }]
+            with self.subTest(reason=reason), self.assertRaisesRegex(ProposalArtifactError, "plain text"):
+                render_proposal_comment(report)
 
     def test_artifact_json_is_stable_and_contains_report_hash(self):
         report = approved_report()
