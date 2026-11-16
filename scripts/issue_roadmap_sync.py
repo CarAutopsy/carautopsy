@@ -144,7 +144,14 @@ def _verified_pr_for_issue(issue_number: int, pull_requests: list[dict[str, Any]
     for pr in pull_requests:
         if not isinstance(pr, dict):
             raise RoadmapReconciliationError("pull-request evidence entry must be an object")
-        if pr.get("issue_number") != issue_number:
+        linked_issue_number = pr.get("issue_number")
+        if (
+            isinstance(linked_issue_number, bool)
+            or not isinstance(linked_issue_number, int)
+            or linked_issue_number < 1
+        ):
+            raise RoadmapReconciliationError("linked PR has an invalid issue_number")
+        if linked_issue_number != issue_number:
             continue
         # The collector must derive this marker from a GitHub cross-reference
         # timeline event, not from issue text, PR body text, or model output.
@@ -163,16 +170,19 @@ def _checks_pass_for_sha(
 ) -> tuple[bool, list[str]]:
     if not isinstance(checks, list):
         raise RoadmapReconciliationError("check-runs must be a list")
-    passed: set[str] = set()
+    observed: dict[str, list[Any]] = {}
     for check in checks:
         if not isinstance(check, dict):
             raise RoadmapReconciliationError("check-run entry must be an object")
         check_sha = check.get("head_sha")
         name = check.get("name")
         conclusion = check.get("conclusion")
-        if check_sha == sha and isinstance(name, str) and conclusion == "success":
-            passed.add(name)
-    missing = [name for name in required_checks if name not in passed]
+        if check_sha == sha and isinstance(name, str) and name in required_checks:
+            observed.setdefault(name, []).append(conclusion)
+    missing = [
+        name for name in required_checks
+        if observed.get(name) != ["success"]
+    ]
     return not missing, missing
 
 
