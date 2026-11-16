@@ -35,6 +35,27 @@ def approved_report():
                     "linked_pr_number": 110,
                     "head_sha": SHA_HEAD,
                     "merge_commit_sha": "b" * 40,
+                    "issue_state": "closed",
+                    "issue_updated_at": "2026-11-16T12:00:00Z",
+                    "required_checks": ["audit", "validate"],
+                    "checks_passed": True,
+                    "missing_checks": [],
+                    "check_evidence": [
+                        {
+                            "id": 1001,
+                            "name": "audit",
+                            "head_sha": SHA_HEAD,
+                            "conclusion": "success",
+                            "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1001",
+                        },
+                        {
+                            "id": 1002,
+                            "name": "validate",
+                            "head_sha": SHA_HEAD,
+                            "conclusion": "success",
+                            "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1002",
+                        },
+                    ],
                 },
             }
         ],
@@ -130,9 +151,9 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             {
                 "task_key": f"task-{index:04d}",
                 "status": "approved",
-                "reason": "x" * 120,
+                "reason": "x" * 1000,
             }
-            for index in range(1200)
+            for index in range(80)
         ]
         with self.assertRaisesRegex(ProposalArtifactError, "comment size limit"):
             build_proposal_artifact(report)
