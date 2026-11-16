@@ -21,6 +21,7 @@ import requests
 
 from issue_roadmap import IssueClassificationError, build_issue_proposals, classify_issue
 from issue_roadmap_sync import RoadmapReconciliationError, build_reconciliation_proposal
+from issue_roadmap_proposal import ProposalArtifactError, render_proposal_comment
 
 
 GITHUB_API = "https://api.github.com"
@@ -310,10 +311,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="fetch open issue metadata from the GitHub API (read-only)",
     )
+    parser.add_argument("--render-proposal", action="store_true", help="render reconciliation report as a stable Markdown proposal comment (stdout only)")
     parser.add_argument("--repo", default="CarAutopsy/carautopsy", help="GitHub repository owner/name")
     args = parser.parse_args(argv)
 
     try:
+        if args.render_proposal and not args.reconcile_input:
+            raise IntakeControllerError("--render-proposal requires --reconcile-input")
         if args.reconcile_input:
             reconciliation = load_reconciliation_fixture(args.reconcile_input)
             report = build_reconciliation_dry_run_report(reconciliation)
@@ -328,13 +332,14 @@ def main(argv: list[str] | None = None) -> int:
                 issues, repository=args.repo, source=source_name
             )
         try:
-            sys.stdout.write(render_report(report))
+            rendered = render_proposal_comment(report) if args.render_proposal else render_report(report)
+            sys.stdout.write(rendered)
             sys.stdout.flush()
         except (OSError, UnicodeError) as exc:
             _silence_broken_stdout()
             parser.exit(2, f"error: could not write report to stdout ({type(exc).__name__})\n")
         return 0
-    except (IntakeControllerError, IssueClassificationError) as exc:
+    except (IntakeControllerError, IssueClassificationError, ProposalArtifactError) as exc:
         parser.exit(2, f"error: {exc}\n")
 
 
