@@ -123,17 +123,16 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
         with self.assertRaisesRegex(ProposalArtifactError, "lacks supporting evidence"):
             build_proposal_artifact(report)
 
-    def test_untrusted_reason_text_is_html_escaped(self):
+    def test_untrusted_reason_markdown_is_rejected(self):
         report = approved_report()
         report["proposals"] = []
         report["unchanged"] = [{
             "task_key": "issue-10",
             "status": "approved",
-            "reason": "<script>alert('x')</script>",
+            "reason": "<script>alert(1)</script>",
         }]
-        markdown = render_proposal_comment(report)
-        self.assertNotIn("<script>", markdown)
-        self.assertIn("&lt;script&gt;", markdown)
+        with self.assertRaisesRegex(ProposalArtifactError, "plain text"):
+            render_proposal_comment(report)
 
     def test_artifact_json_is_stable_and_contains_report_hash(self):
         report = approved_report()
