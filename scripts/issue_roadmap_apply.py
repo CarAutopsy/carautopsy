@@ -24,7 +24,7 @@ class RoadmapApplyError(ValueError):
 
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
-_OWNER = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37})\Z")
+_OWNER = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\Z")
 _CONFIRMATION = "APPLY ROADMAP PROPOSAL"
 _START = "<!-- carautopsy-issue-roadmap:start -->"
 _DATA_START = "<!-- carautopsy-issue-roadmap:data:start -->"
@@ -71,7 +71,7 @@ def proposal_digest(report: Any) -> str:
 def _plain_text(value: Any, field: str, *, maximum: int = _MAX_TEXT) -> str:
     if (
         not isinstance(value, str) or not value.strip() or len(value) > maximum
-        or any(ord(char) < 32 and ord(char) != 9 for char in value)
+        or any(ord(char) < 32 for char in value)
     ):
         raise RoadmapApplyError(f"{field} must be bounded plain text")
     return value.strip()
@@ -170,7 +170,7 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
             raise RoadmapApplyError("managed task acceptance criteria are malformed")
         for criterion in criteria:
             _plain_text(criterion, "managed acceptance criterion")
-        if task.get("status") != "proposed":
+        if task.get("status") != "approved":
             raise RoadmapApplyError("managed issue intake tasks must remain proposed")
         if not isinstance(task.get("dependencies"), list):
             raise RoadmapApplyError("managed task dependencies are malformed")
@@ -350,7 +350,7 @@ def build_owner_approved_apply_plan(
             "task_key": key,
             "issue_number": issue_number,
             "title": _plain_text(item["title"], "task title", maximum=200),
-            "status": "proposed",
+            "status": "approved",
             "dependencies": dependencies,
             "acceptance_criteria": criteria,
             "source_updated_at": snapshot["updated_at"],
