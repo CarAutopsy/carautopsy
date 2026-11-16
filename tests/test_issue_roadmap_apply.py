@@ -205,5 +205,115 @@ class OwnerApprovedRoadmapApplyTests(unittest.TestCase):
         with self.assertRaisesRegex(RoadmapApplyError, "read-only all-state"):
             build(payload, approval)
 
+    def test_issue_title_with_markdown_link_is_literal_and_reloadable(self):
+        payload = report()
+        payload["proposals"][0]["title"] = "[Review](https://example.com)"
+        approval = approval_for(payload)
+        approval["approved_tasks"][0]["title"] = payload["proposals"][0]["title"]
+        first = build(payload, approval)
+        self.assertNotIn("[Review](https://example.com)", first["roadmap_content"])
+        self.assertIn("&#91;Review&#93;&#40;https://example.com&#41;", first["roadmap_content"])
+        approval["expected_roadmap_sha"] = "b" * 40
+        second = build(payload, approval, markdown=first["roadmap_content"], sha="b" * 40)
+        self.assertEqual(second["mode"], "no-op-already-applied")
+
+    def test_long_github_issue_title_up_to_256_chars_applies_and_reloads(self):
+        payload = report()
+        long_title = "T" * 250
+        payload["proposals"][0]["title"] = long_title
+        approval = approval_for(payload)
+        approval["approved_tasks"][0]["title"] = long_title
+        first = build(payload, approval)
+        self.assertIn(long_title, first["roadmap_content"])
+        approval["expected_roadmap_sha"] = "b" * 40
+        second = build(payload, approval, markdown=first["roadmap_content"], sha="b" * 40)
+        self.assertEqual(second["mode"], "no-op-already-applied")
+
+    def test_duplicate_approved_task_keys_are_rejected(self):
+        approval = approval_for()
+        approval["approved_tasks"].append(copy.deepcopy(approval["approved_tasks"][0]))
+        with self.assertRaisesRegex(RoadmapApplyError, "duplicated"):
+            build(approval=approval)
+
+    def test_rejects_malformed_issue_state_and_non_timezone_timestamp(self):
+        for mutation in (
+            lambda snapshot: snapshot.update({"state": "merged"}),
+            lambda snapshot: snapshot.update({"updated_at": "2026-11-16T20:00:00"}),
+        ):
+            payload = report()
+            mutation(payload["issue_snapshots"][0])
+            approval = approval_for(payload)
+            with self.assertRaisesRegex(RoadmapApplyError, "valid state and timezone-aware"):
+                build(payload, approval)
+
+    def test_current_open_snapshot_is_used_without_historical_state(self):
+        payload = report()
+        payload["issue_snapshots"] = [{"number": 10, "state": "open", "updated_at": UPDATED_AT}]
+        approval = approval_for(payload)
+        result = build(payload, approval)
+        self.assertEqual(result["changed_task_keys"], ["issue-10"])
+
+    def test_reordered_managed_markers_raise_roadmap_apply_error(self):
+        first = build()
+        content = first["roadmap_content"]
+        data_start = content.index("<!-- carautopsy-issue-roadmap:data:start")
+        block_start = content.index("<!-- carautopsy-issue-roadmap:start -->")
+        malformed = content[:block_start] + content[data_start:] + content[block_start:data_start]
+        with self.assertRaisesRegex(RoadmapApplyError, "markers are out of order"):
+            build(markdown=malformed, sha="b" * 40)
+
+    def test_managed_json_state_is_hidden_inside_one_html_comment(self):
+        result = build()
+        self.assertIn("<!-- carautopsy-issue-roadmap:data:start\\n", result["roadmap_content"])
+        self.assertIn("\\ncarautopsy-issue-roadmap:data:end -->", result["roadmap_content"])
+
+    def test_partial_approval_batches_can_complete_one_report(self):
+        payload = report()
+        payload["issue_snapshots"].append({"number": 11, "state": "open", "updated_at": UPDATED_AT})
+        second = copy.deepcopy(payload["proposals"][0])
+        second.update({
+            "task_key": "issue-11",
+            "issue_number": 11,
+            "issue_url": "https://github.com/CarAutopsy/carautopsy/issues/11",
+            "title": "Add second safe intake task",
+            "owner_actions": ["Confirm second task scope"],
+        })
+        payload["proposals"].append(second)
+        payload["proposal_count"] = 2
+        payload["actionable_proposal_count"] = 2
+        approval = approval_for(payload)
+        approval["approved_tasks"] = [approval["approved_tasks"][0]]
+        first = build(payload, approval)
+        self.assertEqual(first["changed_task_keys"], ["issue-10"])
+        self.assertEqual([x["task_key"] for x in first["unresolved_owner_decisions"]], ["issue-11"])
+        self.assertNotIn(approval["proposal_id"], first["roadmap_content"])
+
+        partial_approval = copy.deepcopy(approval)
+        partial_approval["expected_roadmap_sha"] = "b" * 40
+        partial = build(
+            payload, partial_approval,
+            markdown=first["roadmap_content"], sha="b" * 40,
+        )
+        self.assertEqual(partial["mode"], "no-op-partially-applied")
+        self.assertEqual(partial["changed_task_keys"], [])
+        self.assertEqual([x["task_key"] for x in partial["unresolved_owner_decisions"]], ["issue-11"])
+
+        second_approval = copy.deepcopy(approval)
+        second_approval["expected_roadmap_sha"] = "c" * 40
+        second_approval["approved_tasks"] = [{
+            "task_key": "issue-11",
+            "issue_number": 11,
+            "title": "Add second safe intake task",
+            "dependencies": [],
+            "acceptance_criteria": ["Validate second intake"],
+        }]
+        completed = build(
+            payload, second_approval,
+            markdown=first["roadmap_content"], sha="c" * 40,
+        )
+        self.assertEqual(completed["changed_task_keys"], ["issue-11"])
+        self.assertEqual(completed["unresolved_owner_decisions"], [])
+        self.assertIn(approval["proposal_id"], completed["roadmap_content"])
+
 if __name__ == "__main__":
     unittest.main()
