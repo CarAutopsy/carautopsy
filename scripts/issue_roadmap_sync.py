@@ -19,6 +19,7 @@ class RoadmapReconciliationError(ValueError):
 
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
+_CHECK_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,99}\Z")
 _CHECK_URL = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/(?:actions/)?runs/([1-9][0-9]*)(?:/job/([1-9][0-9]*))?\Z")
 _ALLOWED_STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
 _MANDATORY_REQUIRED_CHECKS = ("audit", "validate")
