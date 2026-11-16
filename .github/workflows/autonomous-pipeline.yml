@@ -157,7 +157,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          python scripts/issue_roadmap_controller.py --fetch-github --repo "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/issue-roadmap-dry-run.json"
+          python scripts/issue_roadmap_controller.py --fetch-github --state all --repo "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/issue-roadmap-dry-run.json"
           python - <<'PY'
           import json
           import os
