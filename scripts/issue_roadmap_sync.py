@@ -295,7 +295,7 @@ def build_reconciliation_proposal(
             unchanged.append({
                 "task_key": key,
                 "status": task["status"],
-                "reason": "multiple linked PR records; no status inferred",
+                "reason": "ambiguous or conflicting linked PR records; no status inferred",
                 "stale": stale,
                 "evidence": {
                     "issue_number": issue_number,
