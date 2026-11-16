@@ -55,6 +55,7 @@ function parseStrictTimestamp(value: unknown): number {
   calendarDate.setUTCHours(0, 0, 0, 0);
   calendarDate.setUTCFullYear(year, month - 1, day);
   if (
+    year < 1 ||
     calendarDate.getUTCFullYear() !== year ||
     calendarDate.getUTCMonth() !== month - 1 ||
     calendarDate.getUTCDate() !== day
@@ -188,6 +189,7 @@ function isPayload(value: unknown): value is Payload {
   if (!isRecord(value.summary) || !isRecord(value.envelope)) return false;
   const { summary, envelope } = value;
   return (
+    typeof summary.variants === "number" &&
     Number.isSafeInteger(summary.variants) &&
     (summary.variants as number) >= 0 &&
     isNullableFiniteNumber(summary.bev_avg_monthly_eur) &&
