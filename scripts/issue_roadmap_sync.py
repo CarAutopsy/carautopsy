@@ -127,6 +127,8 @@ def _index_unique(records: Any, field: str, label: str) -> dict[int, dict[str, A
 def _verified_pr_for_issue(issue_number: int, pull_requests: list[dict[str, Any]]) -> dict[str, Any] | None:
     matches = []
     for pr in pull_requests:
+        if not isinstance(pr, dict):
+            raise RoadmapReconciliationError("pull-request evidence entry must be an object")
         if pr.get("issue_number") != issue_number:
             continue
         # The collector must derive this marker from a GitHub cross-reference
@@ -182,7 +184,7 @@ def build_reconciliation_proposal(
         not isinstance(name, str) or not name for name in required_checks
     ):
         raise RoadmapReconciliationError("required_checks must be a non-empty tuple of names")
-    approved = approved_task_keys or set()
+    approved = set() if approved_task_keys is None else approved_task_keys
     if not isinstance(approved, set) or any(
         not isinstance(key, str) or key not in tasks for key in approved
     ):
@@ -234,9 +236,11 @@ def build_reconciliation_proposal(
                 or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
             ):
                 raise RoadmapReconciliationError(f"{key}: malformed linked PR evidence")
-            merged = pr.get("merged") is True
             if type(pr.get("merged")) is not bool:
                 raise RoadmapReconciliationError(f"{key}: PR merged marker must be boolean")
+            merged = pr["merged"]
+            if merged and pr["state"] != "closed":
+                raise RoadmapReconciliationError(f"{key}: merged PR must be closed")
             if merged:
                 merge_sha = pr.get("merge_commit_sha")
                 if not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None:
@@ -252,9 +256,12 @@ def build_reconciliation_proposal(
                     reason = "linked PR merged but issue remains open"
                 else:
                     reason = "merged PR lacks exact-head required CI evidence or issue closure"
-            elif pr["state"] == "open":
+            elif pr["state"] == "open" and issue["state"] == "open":
                 desired_status = "in_progress"
                 reason = "open issue has a GitHub cross-referenced open PR"
+            elif pr["state"] == "open":
+                desired_status = "needs-owner-triage"
+                reason = "issue is closed but its linked PR remains open"
         if desired_status is None or desired_status == task["status"]:
             unchanged.append({
                 "task_key": key,
