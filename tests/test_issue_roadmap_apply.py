@@ -159,10 +159,10 @@ class OwnerApprovedRoadmapApplyTests(unittest.TestCase):
         with self.assertRaisesRegex(RoadmapApplyError, "duplicate issue snapshots"):
             build(payload, approval)
 
-    def test_rejects_manually_edited_managed_block(self):
+    def test_rejects_inconsistent_managed_block_edit(self):
         first = build()
         altered = first["roadmap_content"].replace("Add safe issue intake", "Tampered title", 1)
-        with self.assertRaisesRegex(RoadmapApplyError, "edited outside"):
+        with self.assertRaisesRegex(RoadmapApplyError, "canonical task state"):
             build(markdown=altered, sha="b" * 40)
 
 
