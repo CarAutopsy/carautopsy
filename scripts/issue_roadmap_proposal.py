@@ -99,6 +99,24 @@ def _validate_report(report: Any) -> dict[str, Any]:
             raise ProposalArtifactError("unchanged entry has an unsupported proposed status")
         if "reason" in item and not isinstance(item["reason"], str):
             raise ProposalArtifactError("unchanged entry reason must be text")
+        if item.get("requires_owner_approval") is True and proposed_status is not None:
+            evidence = item.get("evidence")
+            if not isinstance(evidence, dict):
+                raise ProposalArtifactError("pending owner decision lacks supporting evidence")
+            evidence_issue = evidence.get("issue_number")
+            linked_pr = evidence.get("linked_pr_number")
+            head_sha = evidence.get("head_sha")
+            merge_sha = evidence.get("merge_commit_sha")
+            if (
+                isinstance(evidence_issue, bool) or not isinstance(evidence_issue, int) or evidence_issue < 1
+                or isinstance(linked_pr, bool) or not isinstance(linked_pr, int) or linked_pr < 1
+                or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
+                or (merge_sha is not None and (
+                    not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None
+                ))
+                or (proposed_status == "done" and merge_sha is None)
+            ):
+                raise ProposalArtifactError("pending owner decision has incomplete supporting evidence")
 
     normalized = copy.deepcopy(report)
     normalized["proposals"] = sorted(normalized["proposals"], key=lambda item: item["task_key"])
@@ -154,10 +172,14 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
     if pending:
         lines.extend(["### Pending owner approval", ""])
         for item in pending:
+            evidence = item["evidence"]
+            merge_sha = evidence.get("merge_commit_sha", "—")
             lines.append(
                 f"- `{html.escape(item['task_key'])}`: "
                 f"{html.escape(str(item.get('status', 'unknown')))} → "
-                f"{html.escape(str(item['proposed_status']))} — owner approval required"
+                f"{html.escape(str(item['proposed_status']))} — owner approval required "
+                f"(issue #{evidence['issue_number']}, PR #{evidence['linked_pr_number']}, "
+                f"head `{evidence['head_sha']}`, merge {html.escape(str(merge_sha))})"
             )
         lines.append("")
 
