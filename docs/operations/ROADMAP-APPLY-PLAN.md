@@ -22,7 +22,7 @@ cycles, and task-key collisions. Only `issue-N` keys from actionable proposals c
 ## Idempotency and tamper detection
 
 Applied proposal digests and task records are stored in a controller-managed block in
-`ROADMAP.md`. The planner verifies that block has not been edited outside the controller.
+`ROADMAP.md`. The planner verifies that the visible table matches the canonical machine-readable task state. This is a consistency check, not a cryptographic signature; the approval workflow must still protect writes and verify the authenticated owner.
 Reapplying the same exact proposal is a no-op; a reused task key with different content fails.
 
 ## Caller requirements
