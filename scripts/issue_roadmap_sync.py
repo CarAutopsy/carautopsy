@@ -19,6 +19,8 @@ class RoadmapReconciliationError(ValueError):
 
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
+_CHECK_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,99}\Z")
+_CHECK_URL = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/(?:actions/)?runs/([1-9][0-9]*)(?:/job/([1-9][0-9]*))?\Z")
 _ALLOWED_STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
 _MANDATORY_REQUIRED_CHECKS = ("audit", "validate")
 _MAX_ROADMAP_TASKS = 5000
@@ -203,32 +205,64 @@ def _index_linked_prs(records: Any) -> tuple[dict[int, dict[str, Any]], set[int]
     }, ambiguous
 
 
-def _index_check_runs(checks: Any, required_checks: tuple[str, ...]) -> dict[str, dict[str, list[Any]]]:
+def _index_check_runs(checks: Any, required_checks: tuple[str, ...]) -> dict[str, dict[str, list[dict[str, Any]]]]:
     if not isinstance(checks, list) or len(checks) > 100_000:
         raise RoadmapReconciliationError("check-runs must be a bounded list")
-    by_sha: dict[str, dict[str, list[Any]]] = {}
+    by_sha: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for check in checks:
         if not isinstance(check, dict):
             raise RoadmapReconciliationError("check-run entry must be an object")
         sha = check.get("head_sha")
         name = check.get("name")
         if isinstance(sha, str) and _SHA.fullmatch(sha) and isinstance(name, str) and name in required_checks:
-            by_sha.setdefault(sha, {}).setdefault(name, []).append(check.get("conclusion"))
+            by_sha.setdefault(sha, {}).setdefault(name, []).append({
+                "id": check.get("id"),
+                "name": name,
+                "head_sha": sha,
+                "conclusion": check.get("conclusion"),
+                "html_url": check.get("html_url"),
+            })
     return by_sha
 
 
 def _checks_pass_for_sha(
-    checks_by_sha: dict[str, dict[str, list[Any]]],
+    checks_by_sha: dict[str, dict[str, list[dict[str, Any]]]],
     sha: str,
     required_checks: tuple[str, ...],
-) -> tuple[bool, list[str]]:
+    repository: str,
+) -> tuple[bool, list[str], list[dict[str, Any]]]:
     observed = checks_by_sha.get(sha, {})
-    # Exactly one successful run is required for each named check. Duplicate
-    # attempts are ambiguous until a future collector explicitly selects the
-    # authoritative latest attempt from GitHub metadata.
-    missing = [name for name in required_checks if observed.get(name) != ["success"]]
-    return not missing, missing
-
+    missing: list[str] = []
+    evidence: list[dict[str, Any]] = []
+    for name in required_checks:
+        matches = observed.get(name, [])
+        if len(matches) != 1:
+            missing.append(name)
+            continue
+        check = matches[0]
+        check_id = check.get('id')
+        html_url = check.get('html_url')
+        url_match = _CHECK_URL.fullmatch(html_url) if isinstance(html_url, str) and len(html_url) <= 300 else None
+        if (
+            check.get('conclusion') != 'success'
+            or isinstance(check_id, bool) or not isinstance(check_id, int) or check_id < 1
+            or url_match is None
+            or url_match.group(1) != repository
+            or (url_match.group(3) or url_match.group(2)) != str(check_id)
+        ):
+            missing.append(name)
+            continue
+        evidence.append(check)
+    id_names: dict[int, list[str]] = {}
+    url_names: dict[str, list[str]] = {}
+    for item in evidence:
+        id_names.setdefault(item['id'], []).append(item['name'])
+        url_names.setdefault(item['html_url'], []).append(item['name'])
+    ambiguous_names = {name for group in list(id_names.values()) + list(url_names.values()) if len(group) > 1 for name in group}
+    if ambiguous_names:
+        missing = sorted(set(missing).union(ambiguous_names))
+        evidence = [item for item in evidence if item['name'] not in ambiguous_names]
+    return not missing, missing, evidence
 
 def build_reconciliation_proposal(
     roadmap_tasks: Any,
@@ -238,6 +272,7 @@ def build_reconciliation_proposal(
     *,
     approved_task_keys: set[str] | None = None,
     required_checks: tuple[str, ...] = (),
+    repository: str = 'CarAutopsy/carautopsy',
 ) -> dict[str, Any]:
     """Build a deterministic reconciliation proposal without applying changes.
 
@@ -245,10 +280,13 @@ def build_reconciliation_proposal(
     evidence are unambiguous, required checks passed on the exact PR head SHA,
     all dependencies are done, and its task key is explicitly owner-approved.
     """
+    if not isinstance(repository, str) or re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository) is None:
+        raise RoadmapReconciliationError('repository must be owner/name')
     tasks = validate_task_graph(roadmap_tasks)
     issues, ambiguous_issue_snapshots = _index_unique(issue_snapshots, "number", "issue snapshot")
     if not isinstance(required_checks, tuple) or any(
-        not isinstance(name, str) or not name for name in required_checks
+        not isinstance(name, str) or _CHECK_NAME.fullmatch(name) is None
+        for name in required_checks
     ):
         raise RoadmapReconciliationError("additional required checks must be a tuple of names")
     effective_required_checks = tuple(dict.fromkeys((*_MANDATORY_REQUIRED_CHECKS, *required_checks)))
@@ -306,6 +344,7 @@ def build_reconciliation_proposal(
                     "head_sha": None,
                     "required_checks": list(effective_required_checks),
                     "checks_passed": False,
+                    "check_evidence": [],
                 },
             })
             continue
@@ -320,6 +359,7 @@ def build_reconciliation_proposal(
             "head_sha": None,
             "required_checks": list(effective_required_checks),
             "checks_passed": False,
+            "check_evidence": [],
         }
         reason = "insufficient verified PR/CI evidence; preserve current status"
         if pr is not None:
@@ -343,9 +383,10 @@ def build_reconciliation_proposal(
                 if not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None:
                     raise RoadmapReconciliationError(f"{key}: merged PR lacks merge commit SHA")
                 evidence["merge_commit_sha"] = merge_sha
-                passed, missing = _checks_pass_for_sha(checks_by_sha, head_sha, effective_required_checks)
+                passed, missing, check_evidence = _checks_pass_for_sha(checks_by_sha, head_sha, effective_required_checks, repository)
                 evidence["checks_passed"] = passed
                 evidence["missing_checks"] = missing
+                evidence["check_evidence"] = check_evidence
                 if issue["state"] == "open":
                     desired_status = "needs-owner-triage"
                     reason = "linked PR merged but issue remains open"

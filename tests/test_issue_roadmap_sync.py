@@ -50,8 +50,20 @@ def pr(number=110, issue_number=10, state="closed", merged=True, **overrides):
 
 def checks(sha=SHA_A):
     return [
-        {"name": "audit", "head_sha": sha, "conclusion": "success"},
-        {"name": "validate", "head_sha": sha, "conclusion": "success"},
+        {
+            "id": 1001,
+            "name": "audit",
+            "head_sha": sha,
+            "conclusion": "success",
+            "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1001",
+        },
+        {
+            "id": 1002,
+            "name": "validate",
+            "head_sha": sha,
+            "conclusion": "success",
+            "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1002",
+        },
     ]
 
 
@@ -73,6 +85,10 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(approved["proposals"][0]["to_status"], "done")
         self.assertEqual(approved["proposals"][0]["evidence"]["head_sha"], SHA_A)
         self.assertEqual(approved["proposals"][0]["evidence"]["merge_commit_sha"], SHA_B)
+        self.assertEqual(
+            [item["name"] for item in approved["proposals"][0]["evidence"]["check_evidence"]],
+            ["audit", "validate"],
+        )
         self.assertFalse(approved["proposals"][0]["requires_owner_approval"])
 
     def test_check_runs_for_different_sha_do_not_complete_task(self):
@@ -180,6 +196,38 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(report["proposals"], [])
         self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["audit"])
 
+    def test_check_links_must_match_repository_run_id_and_unique_identity(self):
+        bad_cases = (
+            [
+                {**checks()[0], "html_url": "https://github.com/other/repo/runs/1001"},
+                checks()[1],
+            ],
+            [
+                {**checks()[0], "html_url": "https://github.com/CarAutopsy/carautopsy/runs/9999"},
+                checks()[1],
+            ],
+            [
+                {**checks()[0], "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1001)[Click](https://evil.example/"},
+                checks()[1],
+            ],
+        )
+        for invalid_checks in bad_cases:
+            report = build_reconciliation_proposal(
+                [task()], [issue()], [pr()], invalid_checks,
+                approved_task_keys={"issue-10"},
+            )
+            self.assertEqual(report["proposals"], [])
+            self.assertFalse(report["unchanged"][0]["evidence"]["checks_passed"])
+
+        duplicate_identity = checks()
+        duplicate_identity[1]["id"] = duplicate_identity[0]["id"]
+        duplicate_identity[1]["html_url"] = duplicate_identity[0]["html_url"]
+        report = build_reconciliation_proposal(
+            [task()], [issue()], [pr()], duplicate_identity,
+            approved_task_keys={"issue-10"},
+        )
+        self.assertEqual(report["proposals"], [])
+        self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["audit", "validate"])
     def test_boolean_issue_reference_cannot_match_issue_one(self):
         with self.assertRaisesRegex(RoadmapReconciliationError, "invalid issue_number or PR number"):
             build_reconciliation_proposal(
@@ -369,6 +417,15 @@ class RoadmapSyncTests(unittest.TestCase):
             build_reconciliation_proposal(
                 [task()], [issue()], [pr()], checks(), approved_task_keys={"unknown"}
             )
+
+    def test_required_check_names_must_match_renderer_safe_character_set(self):
+        for invalid_name in ("unit (linux)", "audit\\n\\n## Approved", "x" * 101):
+            with self.subTest(name=invalid_name):
+                with self.assertRaises(RoadmapReconciliationError):
+                    build_reconciliation_proposal(
+                        [task()], [issue()], [pr()], checks(),
+                        required_checks=(invalid_name,),
+                    )
 
 
 if __name__ == "__main__":
