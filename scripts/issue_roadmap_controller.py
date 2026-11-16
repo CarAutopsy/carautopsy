@@ -233,6 +233,7 @@ def build_reconciliation_dry_run_report(payload: dict[str, Any]) -> dict[str, An
             payload["pull_request_evidence"],
             payload["check_runs"],
             approved_task_keys=set(),
+            repository=payload["repository"],
         )
     except (KeyError, RoadmapReconciliationError) as exc:
         raise IntakeControllerError(f"reconciliation input rejected ({type(exc).__name__})") from exc
