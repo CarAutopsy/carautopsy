@@ -7,6 +7,7 @@ check-runs. Issue bodies and comments are deliberately not accepted.
 
 from __future__ import annotations
 
+import heapq
 import re
 from datetime import datetime
 from typing import Any
@@ -20,6 +21,8 @@ _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
 _ALLOWED_STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
 _DEFAULT_REQUIRED_CHECKS = ("audit", "validate")
+_MAX_ROADMAP_TASKS = 5000
+_MAX_DEPENDENCIES_PER_TASK = 100
 
 
 def _aware_timestamp(value: Any, field: str) -> datetime:
@@ -38,6 +41,8 @@ def validate_task_graph(tasks: Any) -> dict[str, dict[str, Any]]:
     """Validate stable task identities, dependency references, and acyclicity."""
     if not isinstance(tasks, list):
         raise RoadmapReconciliationError("roadmap tasks must be a list")
+    if len(tasks) > _MAX_ROADMAP_TASKS:
+        raise RoadmapReconciliationError("roadmap task count exceeds the safety limit")
 
     indexed: dict[str, dict[str, Any]] = {}
     issue_numbers: set[int] = set()
@@ -66,6 +71,8 @@ def validate_task_graph(tasks: Any) -> dict[str, dict[str, Any]]:
             for item in dependencies
         ):
             raise RoadmapReconciliationError(f"{key}: dependencies must be task-key strings")
+        if len(dependencies) > _MAX_DEPENDENCIES_PER_TASK:
+            raise RoadmapReconciliationError(f"{key}: dependency count exceeds the safety limit")
         if len(set(dependencies)) != len(dependencies):
             raise RoadmapReconciliationError(f"{key}: duplicate dependency")
         if key in dependencies:
@@ -89,22 +96,30 @@ def validate_task_graph(tasks: Any) -> dict[str, dict[str, Any]]:
                     f"{key}: unknown dependency {dependency}"
                 )
 
-    visiting: set[str] = set()
-    visited: set[str] = set()
+    # Iterative Kahn traversal avoids recursion-depth failures on long or
+    # adversarial dependency chains.
+    indegree = {key: len(task["dependencies"]) for key, task in indexed.items()}
+    dependents = {key: [] for key in indexed}
+    for key, task in indexed.items():
+        for dependency in task["dependencies"]:
+            dependents[dependency].append(key)
 
-    def visit(key: str) -> None:
-        if key in visiting:
-            raise RoadmapReconciliationError(f"dependency cycle includes {key}")
-        if key in visited:
-            return
-        visiting.add(key)
-        for dependency in indexed[key]["dependencies"]:
-            visit(dependency)
-        visiting.remove(key)
-        visited.add(key)
+    ready = [key for key, degree in indegree.items() if degree == 0]
+    heapq.heapify(ready)
+    visited_count = 0
+    while ready:
+        key = heapq.heappop(ready)
+        visited_count += 1
+        for dependent in dependents[key]:
+            indegree[dependent] -= 1
+            if indegree[dependent] == 0:
+                heapq.heappush(ready, dependent)
 
-    for key in sorted(indexed):
-        visit(key)
+    if visited_count != len(indexed):
+        cycle_keys = sorted(key for key, degree in indegree.items() if degree > 0)
+        raise RoadmapReconciliationError(
+            "dependency cycle includes " + ", ".join(cycle_keys[:5])
+        )
     return indexed
 
 
