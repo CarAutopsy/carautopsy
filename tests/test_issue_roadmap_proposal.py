@@ -156,8 +156,11 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             }
             for index in range(80)
         ]
-        with self.assertRaisesRegex(ProposalArtifactError, "comment size limit"):
-            build_proposal_artifact(report)
+        artifact = build_proposal_artifact(report)
+        self.assertIn("compact comment", artifact["comment_markdown"])
+        self.assertIn("Unchanged / blocked tasks: 80", artifact["comment_markdown"])
+        self.assertLess(len(artifact["comment_markdown"].encode("utf-8")), 60_000)
+        self.assertEqual(len(artifact["report"]["unchanged"]), 80)
 
         report["unchanged"] = [
             {
