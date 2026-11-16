@@ -22,12 +22,12 @@ permissions:
   contents: write
   pull-requests: write
 
-concurrency:
-  group: autonomous-pipeline
-  cancel-in-progress: false
-
 jobs:
   run:
+    if: github.event_name != 'workflow_dispatch' || inputs.run_mode != 'crawler-only'
+    concurrency:
+      group: autonomous-pipeline-research
+      cancel-in-progress: false
     runs-on: ubuntu-26.04
     steps:
       - name: Publish automation heartbeat
@@ -136,7 +136,10 @@ jobs:
   # Read-only issue crawler: reuses this workflow's existing 15-minute schedule.
   # No comments, roadmap writes, or task dispatch; report is a short-lived artifact.
   issue-roadmap-crawler:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_mode == 'crawler-only')
+    if: github.event_name == 'workflow_dispatch' && inputs.run_mode == 'crawler-only'
+    concurrency:
+      group: autonomous-pipeline-issue-crawler-${{ github.run_id }}
+      cancel-in-progress: false
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
