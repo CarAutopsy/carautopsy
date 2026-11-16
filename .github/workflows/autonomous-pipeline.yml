@@ -133,7 +133,7 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
         run: python scripts/autonomous_pipeline.py
-  # Read-only issue crawler: reuses this workflow's existing 15-minute schedule.
+  # Read-only issue crawler: manual dispatch only until its dry-run audit is complete.
   # No comments, roadmap writes, or task dispatch; report is a short-lived artifact.
   issue-roadmap-crawler:
     if: github.event_name == 'workflow_dispatch' && inputs.run_mode == 'crawler-only'
