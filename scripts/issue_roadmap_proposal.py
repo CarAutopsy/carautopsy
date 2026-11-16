@@ -19,10 +19,73 @@ class ProposalArtifactError(ValueError):
 
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
+_CHECK_URL = re.compile(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/(?:runs|actions/runs)/[0-9]+(?:/.*)?\Z")
 _STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
 _MAX_REPORT_ITEMS = 5000
 _MAX_REPORT_BYTES = 5_000_000
 _MAX_MARKDOWN_BYTES = 60_000
+
+
+def _validate_check_evidence(evidence: dict[str, Any], head_sha: str) -> list[dict[str, Any]]:
+    required = evidence.get("required_checks")
+    checks = evidence.get("check_evidence")
+    if (
+        not isinstance(required, list)
+        or len(required) > 10
+        or any(not isinstance(name, str) or not name or len(name) > 100 for name in required)
+        or len(set(required)) != len(required)
+        or not {"audit", "validate"}.issubset(set(required))
+        or not isinstance(checks, list)
+        or len(checks) > 10
+    ):
+        raise ProposalArtifactError("done proposal lacks required CI check evidence")
+
+    indexed: dict[str, dict[str, Any]] = {}
+    for check in checks:
+        if not isinstance(check, dict):
+            raise ProposalArtifactError("CI check evidence entry must be an object")
+        name = check.get("name")
+        check_sha = check.get("head_sha")
+        check_id = check.get("id")
+        html_url = check.get("html_url")
+        if (
+            not isinstance(name, str) or name not in required or name in indexed
+            or check_sha != head_sha
+            or check.get("conclusion") != "success"
+            or isinstance(check_id, bool) or not isinstance(check_id, int) or check_id < 1
+            or not isinstance(html_url, str) or len(html_url) > 300
+            or _CHECK_URL.fullmatch(html_url) is None
+        ):
+            raise ProposalArtifactError("CI check evidence is incomplete or mismatched")
+        indexed[name] = check
+    if set(indexed) != set(required):
+        raise ProposalArtifactError("done proposal lacks audit/validate check-run references")
+    return [indexed[name] for name in required]
+
+
+def _render_check_links(evidence: dict[str, Any], *, require_complete: bool) -> str:
+    head_sha = evidence.get("head_sha")
+    if require_complete:
+        checks = _validate_check_evidence(evidence, head_sha)
+    else:
+        checks = evidence.get("check_evidence", [])
+        if not isinstance(checks, list):
+            return "CI evidence unavailable"
+    if not checks:
+        missing = evidence.get("missing_checks", [])
+        if isinstance(missing, list) and missing:
+            return "missing: " + ", ".join(html.escape(str(name)) for name in missing)
+        return "CI evidence pending"
+    links = []
+    for check in checks:
+        if not isinstance(check, dict):
+            return "CI evidence unavailable"
+        name = html.escape(str(check.get("name", "check")))
+        url = check.get("html_url")
+        if not isinstance(url, str) or _CHECK_URL.fullmatch(url) is None:
+            return "CI evidence unavailable"
+        links.append(f"[{name}]({url})")
+    return ", ".join(links)
 
 
 def _validate_report(report: Any) -> dict[str, Any]:
@@ -83,6 +146,7 @@ def _validate_report(report: Any) -> dict[str, Any]:
             merge_sha = evidence.get("merge_commit_sha")
             if not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None:
                 raise ProposalArtifactError("done proposal evidence lacks a valid merge commit SHA")
+            _validate_check_evidence(evidence, head_sha)
 
     for item in unchanged:
         if not isinstance(item, dict):
@@ -124,6 +188,8 @@ def _validate_report(report: Any) -> dict[str, Any]:
                 or (proposed_status == "done" and merge_sha is None)
             ):
                 raise ProposalArtifactError("pending owner decision has incomplete supporting evidence")
+            if proposed_status == "done":
+                _validate_check_evidence(evidence, head_sha)
 
     try:
         normalized = copy.deepcopy(report)
@@ -162,16 +228,19 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
         lines.extend([
             "### Proposed status changes",
             "",
-            "| Task | Issue | Current | Proposed | PR | Exact head | Merge commit |",
-            "|---|---:|---|---|---:|---|---|",
+            "| Task | Issue | Current | Proposed | PR | Exact head | Merge commit | CI evidence |",
+            "|---|---:|---|---|---:|---|---|---|",
         ])
         for item in normalized["proposals"]:
             evidence = item["evidence"]
+            check_links = _render_check_links(
+                evidence, require_complete=item["to_status"] == "done"
+            )
             lines.append(
                 f"| `{html.escape(item['task_key'])}` | #{item['issue_number']} "
                 f"| {html.escape(item['from_status'])} | {html.escape(item['to_status'])} "
                 f"| #{evidence['linked_pr_number']} | `{evidence['head_sha']}` | "
-                f"{html.escape(str(evidence.get('merge_commit_sha', '—')))} |"
+                f"{html.escape(str(evidence.get('merge_commit_sha', '—')))} | {check_links} |"
             )
         lines.append("")
     else:
