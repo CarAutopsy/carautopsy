@@ -284,7 +284,8 @@ def build_reconciliation_proposal(
     tasks = validate_task_graph(roadmap_tasks)
     issues, ambiguous_issue_snapshots = _index_unique(issue_snapshots, "number", "issue snapshot")
     if not isinstance(required_checks, tuple) or any(
-        not isinstance(name, str) or not name for name in required_checks
+        not isinstance(name, str) or _CHECK_NAME.fullmatch(name) is None
+        for name in required_checks
     ):
         raise RoadmapReconciliationError("additional required checks must be a tuple of names")
     effective_required_checks = tuple(dict.fromkeys((*_MANDATORY_REQUIRED_CHECKS, *required_checks)))
