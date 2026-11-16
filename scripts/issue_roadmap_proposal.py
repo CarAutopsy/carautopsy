@@ -211,6 +211,8 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
         "This artifact is informational. It is not an approval, merge request, or activation signal.",
     ])
     markdown = "\n".join(lines) + "\n"
+    if len(markdown.encode("utf-8")) > _MAX_MARKDOWN_BYTES:
+        raise ProposalArtifactError("Markdown proposal exceeds the safe comment size limit")
     return {
         "schema_version": 1,
         "proposal_id": proposal_id,
