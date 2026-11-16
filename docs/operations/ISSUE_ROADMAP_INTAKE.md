@@ -65,10 +65,10 @@ python scripts/issue_roadmap_controller.py --reconcile-input tests/fixtures/road
 ```
 
 The fixture contains `roadmap_tasks`, `issue_snapshots`,
-`pull_request_evidence`, and `check_runs`, plus an optional explicit
-`approved_task_keys` list. The CLI projects each record to a fixed metadata
+`pull_request_evidence`, and `check_runs`, with the owner-approval list deliberately excluded from fixture control. The CLI projects each record to a fixed metadata
 allowlist and discards issue bodies, PR bodies, check output, and unrelated
-fields. The reconciliation core validates dependencies/cycles, stale source
+fields. Fixtures cannot self-approve tasks or weaken the required `audit` and
+`validate` checks; all status changes remain pending owner approval. The reconciliation core validates dependencies/cycles, stale source
 timestamps, cross-reference markers, exact PR-head checks, and owner approval.
 
 This mode is an offline test harness: it does not fetch or authenticate the
