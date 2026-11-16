@@ -85,6 +85,7 @@ def _validate_report(report: Any, repository: str) -> tuple[str, dict[int, dict[
         or report.get("mode") != "dry-run"
         or report.get("repository") != repository
         or report.get("source") != "github-all-issues"
+        or report.get("requires_owner_approval") is not True
         or report.get("roadmap_modified") is not False
         or report.get("github_modified") is not False
         or report.get("task_dispatch_performed") is not False
