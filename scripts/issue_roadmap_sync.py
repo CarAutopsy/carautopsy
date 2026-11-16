@@ -168,15 +168,16 @@ def _index_linked_prs(records: Any) -> tuple[dict[int, dict[str, Any]], set[int]
             or not isinstance(pr_number, int)
             or pr_number < 1
         ):
-            raise RoadmapReconciliationError("linked PR has an invalid issue or PR number")
+            raise RoadmapReconciliationError("linked PR has an invalid issue_number or PR number")
 
         state = pr.get("state")
         merged = pr.get("merged")
         head_sha = pr.get("head_sha")
         merge_sha = pr.get("merge_commit_sha")
+        if type(merged) is not bool:
+            raise RoadmapReconciliationError("PR merged marker must be boolean")
         if (
             not isinstance(state, str) or state not in {"open", "closed"}
-            or type(merged) is not bool
             or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
             or (merge_sha is not None and (
                 not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None
