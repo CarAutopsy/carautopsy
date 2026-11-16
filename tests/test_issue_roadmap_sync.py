@@ -72,6 +72,7 @@ class RoadmapSyncTests(unittest.TestCase):
         )
         self.assertEqual(approved["proposals"][0]["to_status"], "done")
         self.assertEqual(approved["proposals"][0]["evidence"]["head_sha"], SHA_A)
+        self.assertEqual(approved["proposals"][0]["evidence"]["merge_commit_sha"], SHA_B)
         self.assertFalse(approved["proposals"][0]["requires_owner_approval"])
 
     def test_check_runs_for_different_sha_do_not_complete_task(self):
@@ -157,9 +158,7 @@ class RoadmapSyncTests(unittest.TestCase):
         with self.assertRaisesRegex(RoadmapReconciliationError, "duplicate issue_number"):
             validate_task_graph([task("task-one", 10), task("task-two", 10)])
 
-    def test_duplicate_or_malformed_github_snapshots_are_rejected(self):
-        with self.assertRaisesRegex(RoadmapReconciliationError, "duplicate issue snapshot"):
-            build_reconciliation_proposal([task()], [issue(), issue()], [], [])
+    def test_malformed_linked_pr_is_rejected(self):
         with self.assertRaisesRegex(RoadmapReconciliationError, "malformed linked PR"):
             build_reconciliation_proposal(
                 [task()], [issue()], [pr(head_sha="not-a-sha")], []
@@ -189,6 +188,95 @@ class RoadmapSyncTests(unittest.TestCase):
                 [pr(issue_number=True)],
                 checks(),
             )
+
+
+    def test_reopened_issue_with_merged_pr_routes_to_owner_triage_not_done(self):
+        reopened_at = "2026-11-17T12:00:00Z"
+        report = build_reconciliation_proposal(
+            [task(status="in_progress", source_updated_at=reopened_at)],
+            [issue(state="open", updated_at=reopened_at)],
+            [pr()],
+            checks(),
+            approved_task_keys={"issue-10"},
+        )
+        self.assertEqual(report["proposals"][0]["to_status"], "needs-owner-triage")
+        self.assertNotEqual(report["proposals"][0]["to_status"], "done")
+
+    def test_open_issue_with_merged_pr_routes_to_triage_even_without_ci(self):
+        report = build_reconciliation_proposal(
+            [task(status="in_progress")],
+            [issue(state="open")],
+            [pr()],
+            [],
+            approved_task_keys={"issue-10"},
+        )
+        self.assertEqual(report["proposals"][0]["to_status"], "needs-owner-triage")
+        self.assertFalse(report["proposals"][0]["evidence"]["checks_passed"])
+        self.assertEqual(
+            report["proposals"][0]["evidence"]["missing_checks"], ["audit", "validate"]
+        )
+
+    def test_closed_issue_with_open_pr_routes_to_owner_triage(self):
+        report = build_reconciliation_proposal(
+            [task(status="approved")],
+            [issue(state="closed")],
+            [pr(state="open", merged=False)],
+            [],
+            approved_task_keys={"issue-10"},
+        )
+        self.assertEqual(report["proposals"][0]["to_status"], "needs-owner-triage")
+
+    def test_protected_roadmap_states_survive_without_owner_approval(self):
+        tasks = [
+            task("issue-10", 10, status="blocked"),
+            task("issue-11", 11, status="needs-owner-triage"),
+        ]
+        before = copy.deepcopy(tasks)
+        report = build_reconciliation_proposal(
+            tasks,
+            [issue(10), issue(11)],
+            [pr(110, 10), pr(111, 11)],
+            checks(),
+        )
+        self.assertEqual(report["proposals"], [])
+        unchanged = {item["task_key"]: item for item in report["unchanged"]}
+        self.assertEqual(unchanged["issue-10"]["status"], "blocked")
+        self.assertEqual(unchanged["issue-11"]["status"], "needs-owner-triage")
+        self.assertTrue(unchanged["issue-10"]["requires_owner_approval"])
+        self.assertEqual([item["status"] for item in tasks], [item["status"] for item in before])
+
+    def test_ambiguous_pr_links_do_not_suppress_independent_tasks(self):
+        report = build_reconciliation_proposal(
+            [task("issue-10", 10), task("issue-11", 11)],
+            [issue(10), issue(11)],
+            [pr(110, 10), pr(111, 10), pr(112, 11)],
+            checks(),
+            approved_task_keys={"issue-11"},
+        )
+        self.assertEqual([item["task_key"] for item in report["proposals"]], ["issue-11"])
+        ambiguous = next(item for item in report["unchanged"] if item["task_key"] == "issue-10")
+        self.assertIn("multiple linked PR", ambiguous["reason"])
+
+    def test_duplicate_issue_snapshots_do_not_suppress_independent_tasks(self):
+        report = build_reconciliation_proposal(
+            [task("issue-10", 10), task("issue-11", 11)],
+            [issue(10), issue(10), issue(11)],
+            [pr(110, 10), pr(111, 11)],
+            checks(),
+            approved_task_keys={"issue-11"},
+        )
+        self.assertEqual([item["task_key"] for item in report["proposals"]], ["issue-11"])
+        ambiguous = next(item for item in report["unchanged"] if item["task_key"] == "issue-10")
+        self.assertIn("duplicate issue snapshots", ambiguous["reason"])
+
+    def test_direct_caller_cannot_weaken_mandatory_checks(self):
+        report = build_reconciliation_proposal(
+            [task()], [issue()], [pr()], checks()[:1],
+            approved_task_keys={"issue-10"},
+            required_checks=("audit",),
+        )
+        self.assertEqual(report["proposals"], [])
+        self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["validate"])
 
     def test_inputs_are_not_mutated_and_output_is_deterministic(self):
         tasks = [task()]
