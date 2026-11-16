@@ -124,7 +124,7 @@ def _validate_evidence(evidence: Any, issue_number: int, *, require_done: bool =
         isinstance(evidence_issue, bool) or not isinstance(evidence_issue, int) or evidence_issue != issue_number
         or isinstance(linked_pr, bool) or not isinstance(linked_pr, int) or linked_pr < 1
         or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
-        or issue_state not in {"open", "closed"}
+        or not isinstance(issue_state, str) or issue_state not in {"open", "closed"}
         or not isinstance(updated_at, str) or len(updated_at) > 64
         or not isinstance(required, list) or len(required) > 10
         or any(not isinstance(name, str) or not name or len(name) > 100 for name in required)
@@ -237,10 +237,16 @@ def _validate_report(report: Any) -> dict[str, Any]:
             or len(set(blocked_by)) != len(blocked_by)
         ):
             raise ProposalArtifactError("blocked_by must be a unique list of task keys")
+        if proposed_status is not None and item.get("requires_owner_approval") is not True:
+            raise ProposalArtifactError("unapproved status change must remain owner-gated")
         if item.get("requires_owner_approval") is True and proposed_status is not None:
-            evidence = _validate_evidence(item.get("evidence"), item.get("evidence", {}).get("issue_number", -1), require_done=proposed_status == "done")
-            if evidence.get("issue_number") < 1:
+            raw_evidence = item.get("evidence")
+            if not isinstance(raw_evidence, dict):
                 raise ProposalArtifactError("pending owner decision lacks supporting evidence")
+            evidence_issue = raw_evidence.get("issue_number")
+            if isinstance(evidence_issue, bool) or not isinstance(evidence_issue, int) or evidence_issue < 1:
+                raise ProposalArtifactError("pending owner decision lacks a valid issue reference")
+            _validate_evidence(raw_evidence, evidence_issue, require_done=proposed_status == "done")
 
     normalized = dict(report)
     normalized["proposals"] = sorted(proposals, key=lambda item: item["task_key"])
@@ -299,12 +305,14 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
         for item in pending:
             evidence = item["evidence"]
             merge_sha = evidence.get("merge_commit_sha", "—")
+            ci_links = _render_check_links(evidence, require_complete=item["proposed_status"] == "done")
             lines.append(
-                f"- `{html.escape(item['task_key'])}`: "
+                f"- {html.escape(item['task_key'])}: "
                 f"{html.escape(str(item.get('status', 'unknown')))} → "
                 f"{html.escape(str(item['proposed_status']))} — owner approval required "
                 f"(issue #{evidence['issue_number']}, PR #{evidence['linked_pr_number']}, "
-                f"head `{evidence['head_sha']}`, merge {html.escape(str(merge_sha))})"
+                f"head {evidence['head_sha']}, merge {html.escape(str(merge_sha))}, "
+                f"CI: {ci_links})"
             )
         lines.append("")
 
@@ -316,7 +324,9 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
         lines.extend(["### Unchanged / blocked", ""])
         for item in blocked:
             reason = html.escape(str(item.get("reason", "No verified status change")))
-            lines.append(f"- `{html.escape(item['task_key'])}`: {reason}")
+            blockers = item.get("blocked_by", [])
+            suffix = " (blocked by: " + ", ".join(html.escape(dep) for dep in blockers) + ")" if blockers else ""
+            lines.append(f"- {html.escape(item['task_key'])}: {reason}{suffix}")
         lines.append("")
 
     lines.extend([
