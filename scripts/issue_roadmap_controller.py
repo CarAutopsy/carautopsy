@@ -20,6 +20,7 @@ from urllib.parse import parse_qs, urlsplit
 import requests
 
 from issue_roadmap import IssueClassificationError, build_issue_proposals, classify_issue
+from issue_roadmap_sync import RoadmapReconciliationError, build_reconciliation_proposal
 
 
 GITHUB_API = "https://api.github.com"
@@ -168,6 +169,83 @@ def load_issue_fixture(path: str | Path) -> list[dict[str, Any]]:
     return [_project_issue_snapshot(item) for item in payload]
 
 
+def _project_records(payload: Any, fields: tuple[str, ...], label: str) -> list[dict[str, Any]]:
+    if not isinstance(payload, list):
+        raise IntakeControllerError(f"{label} must be a list")
+    projected = []
+    for item in payload:
+        if not isinstance(item, dict):
+            raise IntakeControllerError(f"{label} entries must be objects")
+        projected.append({key: item[key] for key in fields if key in item})
+    return projected
+
+
+def load_reconciliation_fixture(path: str | Path) -> dict[str, Any]:
+    """Load a reconciliation fixture while discarding bodies and unrelated fields."""
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError, RecursionError) as exc:
+        raise IntakeControllerError(
+            f"could not read reconciliation fixture ({type(exc).__name__})"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise IntakeControllerError("reconciliation fixture must be a JSON object")
+
+    repository = payload.get("repository", "CarAutopsy/carautopsy")
+    _validate_repository(repository)
+    approved = payload.get("approved_task_keys", [])
+    required = payload.get("required_checks", ["audit", "validate"])
+    if not isinstance(approved, list) or any(not isinstance(key, str) for key in approved):
+        raise IntakeControllerError("approved_task_keys must be a list of task-key strings")
+    if not isinstance(required, list) or any(not isinstance(name, str) or not name for name in required):
+        raise IntakeControllerError("required_checks must be a list of non-empty names")
+
+    return {
+        "repository": repository,
+        "roadmap_tasks": _project_records(
+            payload.get("roadmap_tasks"),
+            ("task_key", "issue_number", "status", "dependencies", "source_updated_at"),
+            "roadmap_tasks",
+        ),
+        "issue_snapshots": _project_records(
+            payload.get("issue_snapshots"),
+            ("number", "state", "updated_at"),
+            "issue_snapshots",
+        ),
+        "pull_request_evidence": _project_records(
+            payload.get("pull_request_evidence"),
+            ("number", "issue_number", "state", "merged", "head_sha", "merge_commit_sha", "link_evidence"),
+            "pull_request_evidence",
+        ),
+        "check_runs": _project_records(
+            payload.get("check_runs"),
+            ("name", "head_sha", "conclusion"),
+            "check_runs",
+        ),
+        "approved_task_keys": approved,
+        "required_checks": required,
+    }
+
+
+def build_reconciliation_dry_run_report(payload: dict[str, Any]) -> dict[str, Any]:
+    """Create a fixture-backed reconciliation proposal without applying it."""
+    try:
+        report = build_reconciliation_proposal(
+            payload["roadmap_tasks"],
+            payload["issue_snapshots"],
+            payload["pull_request_evidence"],
+            payload["check_runs"],
+            approved_task_keys=set(payload["approved_task_keys"]),
+            required_checks=tuple(payload["required_checks"]),
+        )
+    except (KeyError, RoadmapReconciliationError) as exc:
+        raise IntakeControllerError(f"reconciliation input rejected ({type(exc).__name__})") from exc
+    report["repository"] = payload["repository"]
+    report["source"] = "fixture"
+    report["issue_snapshots_seen"] = len(payload["issue_snapshots"])
+    return report
+
+
 def build_dry_run_report(
     issues: list[dict[str, Any]],
     *,
@@ -231,6 +309,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--input", help="JSON fixture containing issue snapshots")
+    source.add_argument("--reconcile-input", help="JSON fixture containing roadmap and verified GitHub evidence snapshots")
     source.add_argument(
         "--fetch-github",
         action="store_true",
@@ -240,9 +319,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        if args.fetch_github:
+        if args.reconcile_input:
+            reconciliation = load_reconciliation_fixture(args.reconcile_input)
+            report = build_reconciliation_dry_run_report(reconciliation)
+        elif args.fetch_github:
             issues = fetch_open_issues(args.repo, os.environ.get("GITHUB_TOKEN"))
             source_name = "github-open-issues"
+            report = build_dry_run_report(issues, repository=args.repo, source=source_name)
         else:
             issues = load_issue_fixture(args.input)
             source_name = "fixture"
