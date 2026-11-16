@@ -17,12 +17,16 @@ The manifest is bound to:
 
 The apply planner rejects stale roadmap SHAs, duplicate/ambiguous issue snapshots, closed
 issues, triage-only proposals, missing acceptance criteria, unknown dependencies, dependency
-cycles, and task-key collisions. Only `issue-N` keys from actionable proposals can be approved.
+cycles, and task-key collisions. Partial approval batches remain possible: a report digest is
+marked fully applied only after every actionable task from that report is present in the managed
+state, and the plan lists still-unresolved owner decisions and their required actions. Only `issue-N` keys from actionable proposals can be approved.
 
 ## Idempotency and tamper detection
 
 Applied proposal digests and task records are stored in a controller-managed block in
-`ROADMAP.md`. The planner verifies that the visible table matches the canonical machine-readable task state. This is a consistency check, not a cryptographic signature; the approval workflow must still protect writes and verify the authenticated owner.
+`ROADMAP.md`. The canonical JSON state is enclosed in one hidden HTML comment so readers see
+only the human-readable table. The planner verifies that the visible table matches the canonical
+machine-readable task state. This is a consistency check, not a cryptographic signature; the approval workflow must still protect writes and verify the authenticated owner.
 Reapplying the same exact proposal is a no-op; a reused task key with different content fails.
 
 ## Caller requirements
