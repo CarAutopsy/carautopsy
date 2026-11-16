@@ -43,7 +43,7 @@ class TcoConfigTests(unittest.TestCase):
     def test_publication_artifact_is_current_only_when_metadata_matches_and_is_fresh(self):
         now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
         candidate = {
-            "results": [{"variant_id": "test", "monthly_eur": 100}],
+            "results": [{"variant_id": "test", "monthly_eur": 1}],
             "summary": {"variants": 1},
             "envelope": {
                 **publication_metadata(self.t),
