@@ -73,8 +73,15 @@ def _plain_text(value: Any, field: str, *, maximum: int = _MAX_TEXT) -> str:
 
 
 def _validate_report(report: Any, repository: str) -> tuple[str, dict[int, dict[str, Any]]]:
-    if not isinstance(report, dict) or (
-        report.get("schema_version") != 1
+    allowed_report_fields = {
+        "schema_version", "mode", "repository", "source", "issue_snapshots_seen",
+        "api_records_seen", "pull_request_snapshots_excluded", "issue_snapshots",
+        "snapshot_classification_counts", "proposal_count", "actionable_proposal_count",
+        "owner_triage_count", "requires_owner_approval", "roadmap_modified",
+        "github_modified", "task_dispatch_performed", "proposals",
+    }
+    if not isinstance(report, dict) or set(report) - allowed_report_fields or (
+        type(report.get("schema_version")) is not int or report.get("schema_version") != 1
         or report.get("mode") != "dry-run"
         or report.get("repository") != repository
         or report.get("source") != "github-all-issues"
@@ -135,6 +142,40 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
         or not isinstance(state.get("tasks"), list)
     ):
         raise RoadmapApplyError("managed roadmap state is malformed")
+    if len(state["tasks"]) > 5000:
+        raise RoadmapApplyError("managed roadmap task count exceeds the safety limit")
+    task_fields = {
+        "task_key", "issue_number", "title", "status", "dependencies",
+        "acceptance_criteria", "source_updated_at",
+    }
+    for task in state["tasks"]:
+        if not isinstance(task, dict) or set(task) != task_fields:
+            raise RoadmapApplyError("managed roadmap task has an invalid shape")
+        _plain_text(task.get("title"), "managed task title", maximum=200)
+        criteria = task.get("acceptance_criteria")
+        if not isinstance(criteria, list) or not 1 <= len(criteria) <= _MAX_CRITERIA:
+            raise RoadmapApplyError("managed task acceptance criteria are malformed")
+        for criterion in criteria:
+            _plain_text(criterion, "managed acceptance criterion")
+        if task.get("status") != "proposed":
+            raise RoadmapApplyError("managed issue intake tasks must remain proposed")
+        if not isinstance(task.get("dependencies"), list):
+            raise RoadmapApplyError("managed task dependencies are malformed")
+        if not _aware_timestamp(task.get("source_updated_at")):
+            raise RoadmapApplyError("managed task source timestamp is malformed")
+    try:
+        validate_task_graph([
+            {
+                "task_key": item["task_key"],
+                "issue_number": item["issue_number"],
+                "status": item["status"],
+                "dependencies": item["dependencies"],
+                "source_updated_at": item["source_updated_at"],
+            }
+            for item in state["tasks"]
+        ])
+    except (KeyError, RoadmapReconciliationError) as exc:
+        raise RoadmapApplyError("managed roadmap dependency graph is invalid") from exc
     if _render_managed_block(state) != block:
         raise RoadmapApplyError("managed roadmap block was edited outside the apply controller")
     return state, block
@@ -231,8 +272,16 @@ def build_owner_approved_apply_plan(
             raise RoadmapApplyError("proposal entry must be an object")
         if proposal.get("classification") == "actionable":
             key = proposal.get("task_key")
-            if not isinstance(key, str) or _TASK_KEY.fullmatch(key) is None or key in actionable:
-                raise RoadmapApplyError("actionable proposal identities are invalid or duplicated")
+            issue_number = proposal.get("issue_number")
+            if (
+                not isinstance(key, str) or _TASK_KEY.fullmatch(key) is None or key in actionable
+                or isinstance(issue_number, bool) or not isinstance(issue_number, int) or issue_number < 1
+                or proposal.get("status") != "proposed"
+                or proposal.get("owner_input_required") is not True
+                or proposal.get("requires_owner_approval") is not True
+                or not isinstance(proposal.get("title"), str)
+            ):
+                raise RoadmapApplyError("actionable proposal identities or owner gates are invalid")
             actionable[key] = proposal
 
     state, old_block = _load_managed_state(current_roadmap)
@@ -259,10 +308,12 @@ def build_owner_approved_apply_plan(
             raise RoadmapApplyError("approved task has an invalid shape")
         key = item.get("task_key")
         issue_number = item.get("issue_number")
-        if not isinstance(key, str) or _TASK_KEY.fullmatch(key) is None or key in seen_keys:
-            raise RoadmapApplyError("approved task key is invalid or duplicated")
-        if isinstance(issue_number, bool) or not isinstance(issue_number, int) or issue_number < 1:
-            raise RoadmapApplyError("approved task issue number is invalid")
+        if (
+            not isinstance(key, str) or _TASK_KEY.fullmatch(key) is None or key in seen_keys
+            or isinstance(issue_number, bool) or not isinstance(issue_number, int) or issue_number < 1
+            or key != f"issue-{issue_number}"
+        ):
+            raise RoadmapApplyError("approved task key or issue number is invalid or duplicated")
         proposal = actionable.get(key)
         if proposal is None or proposal.get("issue_number") != issue_number:
             raise RoadmapApplyError("approved task is not an actionable proposal in this report")
