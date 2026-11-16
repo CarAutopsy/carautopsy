@@ -289,6 +289,8 @@ def build_dry_run_report(
     triage = sum(item.get("classification") == "needs-owner-triage" for item in proposals)
     issue_records = []
     for snapshot in issues:
+        if "pull_request" in snapshot:
+            continue
         record = {"number": snapshot["number"], "state": snapshot["state"]}
         if "updated_at" in snapshot:
             record["updated_at"] = snapshot["updated_at"]
@@ -302,7 +304,9 @@ def build_dry_run_report(
         "mode": "dry-run",
         "repository": repository,
         "source": source,
-        "issue_snapshots_seen": len(issues),
+        "issue_snapshots_seen": len(issue_records),
+        "api_records_seen": len(issues),
+        "pull_request_snapshots_excluded": len(issues) - len(issue_records),
         "issue_snapshots": issue_records,
         "snapshot_classification_counts": dict(sorted(classification_counts.items())),
         "proposal_count": len(proposals),
