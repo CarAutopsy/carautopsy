@@ -122,6 +122,41 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
         self.assertEqual(parsed["report"], report)
         self.assertTrue(parsed["proposal_id"].startswith("sha256:"))
 
+
+    def test_renderer_bounds_report_entries_and_comment_size(self):
+        report = approved_report()
+        report["proposals"] = []
+        report["unchanged"] = [
+            {
+                "task_key": f"task-{index:04d}",
+                "status": "approved",
+                "reason": "x" * 120,
+            }
+            for index in range(800)
+        ]
+        with self.assertRaisesRegex(ProposalArtifactError, "comment size limit"):
+            build_proposal_artifact(report)
+
+        report["unchanged"] = [
+            {
+                "task_key": f"task-{index:04d}",
+                "status": "approved",
+                "reason": "small",
+            }
+            for index in range(5001)
+        ]
+        with self.assertRaisesRegex(ProposalArtifactError, "entry count"):
+            build_proposal_artifact(report)
+
+    def test_renderer_rejects_unreasonably_deep_report_data(self):
+        report = approved_report()
+        nested = []
+        for _ in range(1500):
+            nested = [nested]
+        report["untrusted_extension"] = nested
+        with self.assertRaises(ProposalArtifactError):
+            build_proposal_artifact(report)
+
     def test_rejects_non_proposal_or_write_enabled_reports(self):
         for key, value in (
             ("mode", "apply"),
