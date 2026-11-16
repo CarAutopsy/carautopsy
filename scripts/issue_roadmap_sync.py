@@ -16,8 +16,8 @@ class RoadmapReconciliationError(ValueError):
     """Raised when roadmap or GitHub evidence is malformed or ambiguous."""
 
 
-_TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\\Z")
-_SHA = re.compile(r"[0-9a-f]{40}\\Z")
+_TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
+_SHA = re.compile(r"[0-9a-f]{40}\Z")
 _ALLOWED_STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
 _DEFAULT_REQUIRED_CHECKS = ("Repository Audit", "Validate Catalog")
 
