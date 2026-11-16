@@ -13,6 +13,7 @@ import os
 import re
 import sys
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
@@ -64,6 +65,17 @@ def _project_issue_snapshot(item: Any) -> dict[str, Any]:
         for key in ("number", "title", "state", "html_url")
         if key in item
     }
+    if "updated_at" in item:
+        updated_at = item["updated_at"]
+        if not isinstance(updated_at, str) or not updated_at or len(updated_at) > 64:
+            raise IntakeControllerError("issue updated_at must be a bounded ISO-8601 timestamp")
+        try:
+            parsed_updated_at = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise IntakeControllerError("issue updated_at must be a bounded ISO-8601 timestamp") from exc
+        if parsed_updated_at.tzinfo is None or parsed_updated_at.utcoffset() is None:
+            raise IntakeControllerError("issue updated_at must include a timezone")
+        snapshot["updated_at"] = updated_at
     snapshot["labels"] = labels
     if "pull_request" in item:
         # Any present marker, including a malformed/falsy one, fails closed.
@@ -275,12 +287,23 @@ def build_dry_run_report(
     )
     actionable = sum(item.get("classification") == "actionable" for item in proposals)
     triage = sum(item.get("classification") == "needs-owner-triage" for item in proposals)
+    issue_records = []
+    for snapshot in issues:
+        record = {"number": snapshot["number"], "state": snapshot["state"]}
+        if "updated_at" in snapshot:
+            record["updated_at"] = snapshot["updated_at"]
+        issue_records.append(record)
+    issue_records.sort(key=lambda item: (
+        item["number"], item["state"], item.get("updated_at", "")
+    ))
+
     return {
         "schema_version": 1,
         "mode": "dry-run",
         "repository": repository,
         "source": source,
         "issue_snapshots_seen": len(issues),
+        "issue_snapshots": issue_records,
         "snapshot_classification_counts": dict(sorted(classification_counts.items())),
         "proposal_count": len(proposals),
         "actionable_proposal_count": actionable,
@@ -330,22 +353,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--render-proposal", action="store_true", help="render reconciliation report as a stable Markdown proposal comment (stdout only)")
     parser.add_argument("--repo", default="CarAutopsy/carautopsy", help="GitHub repository owner/name")
-    parser.add_argument("--state", choices=("open", "closed", "all"), default="open", help="issue state filter for --fetch-github (default: open)")
+    parser.add_argument("--state", choices=("open", "closed", "all"), default=None, help="issue state filter for --fetch-github (default: open)")
     args = parser.parse_args(argv)
 
     try:
         if args.render_proposal and not args.reconcile_input:
             raise IntakeControllerError("--render-proposal requires --reconcile-input")
-        if args.state != "open" and not args.fetch_github:
+        if args.state is not None and not args.fetch_github:
             raise IntakeControllerError("--state is only valid with --fetch-github")
         if args.reconcile_input:
             reconciliation = load_reconciliation_fixture(args.reconcile_input)
             report = build_reconciliation_dry_run_report(reconciliation)
         elif args.fetch_github:
             issues = fetch_issue_snapshots(
-                args.repo, os.environ.get("GITHUB_TOKEN"), state=args.state
+                args.repo, os.environ.get("GITHUB_TOKEN"), state=args.state or "open"
             )
-            source_name = f"github-{args.state}-issues"
+            source_name = f"github-{args.state or 'open'}-issues"
             report = build_dry_run_report(issues, repository=args.repo, source=source_name)
         else:
             issues = load_issue_fixture(args.input)
