@@ -5,7 +5,7 @@ The `issue-roadmap-crawler` job is a read-only intake monitor attached to the ex
 
 ## Operation
 
-- Currently runs only when manually dispatched with crawler-only; scheduled activation is deferred until the dry-run has been audited.
+- Runs whenever the existing autonomous pipeline schedule fires (currently every 15 minutes). It can also be started manually with crawler-only.
 - Can also be started manually with the `crawler-only` workflow-dispatch mode.
 - Reads open GitHub issue metadata using the run-scoped `GITHUB_TOKEN`.
 - Projects issue snapshots to a strict metadata allowlist; issue bodies and comments are not
