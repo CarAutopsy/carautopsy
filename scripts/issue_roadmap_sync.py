@@ -19,7 +19,7 @@ class RoadmapReconciliationError(ValueError):
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
 _ALLOWED_STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
-_DEFAULT_REQUIRED_CHECKS = ("Repository Audit", "Validate Catalog")
+_DEFAULT_REQUIRED_CHECKS = ("audit", "validate")
 
 
 def _aware_timestamp(value: Any, field: str) -> datetime:
@@ -209,7 +209,7 @@ def build_reconciliation_proposal(
             )
         updated_at = _aware_timestamp(issue.get("updated_at"), f"issue #{task['issue_number']}.updated_at")
         source_updated_at = task["source_updated_at"]
-        stale = source_updated_at is None or updated_at > _aware_timestamp(
+        stale = source_updated_at is None or updated_at != _aware_timestamp(
             source_updated_at, f"{key}.source_updated_at"
         )
 
