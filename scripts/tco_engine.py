@@ -3,6 +3,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 import json
 import math
+import re
 from pathlib import Path
 import yaml
 
@@ -48,7 +49,13 @@ def publication_artifact_is_current(existing, candidate, now=None):
         return False
 
     generated = old_envelope.get("generated_utc")
-    if not isinstance(generated, str):
+    if (
+        not isinstance(generated, str)
+        or re.fullmatch(
+            r"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})",
+            generated,
+        ) is None
+    ):
         return False
     try:
         generated_at = datetime.fromisoformat(generated.replace("Z", "+00:00"))
