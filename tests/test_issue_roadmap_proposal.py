@@ -271,6 +271,70 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             with self.assertRaises(ProposalArtifactError):
                 build_proposal_artifact(report)
 
+    def test_accepts_github_actions_job_url_and_checks_job_id(self):
+        report = approved_report()
+        report["proposals"][0]["evidence"]["check_evidence"][0]["html_url"] = (
+            "https://github.com/CarAutopsy/carautopsy/actions/runs/900/job/1001"
+        )
+        build_proposal_artifact(report)
+
+    def test_rejects_markdown_check_names_and_unvalidated_extra_fields(self):
+        for mutation in (
+            lambda check: check.update({"name": "[click](https://evil.example)"}),
+            lambda check: check.update({"extra": {"untrusted": "value"}}),
+        ):
+            report = approved_report()
+            mutation(report["proposals"][0]["evidence"]["check_evidence"][0])
+            with self.assertRaises(ProposalArtifactError):
+                build_proposal_artifact(report)
+
+    def test_validates_evidence_on_unchanged_entries(self):
+        report = approved_report()
+        report["proposals"] = []
+        evidence = copy.deepcopy(approved_report()["proposals"][0]["evidence"])
+        report["unchanged"] = [{"task_key": "issue-10", "status": "approved", "evidence": evidence}]
+        build_proposal_artifact(report)
+        report["unchanged"][0]["evidence"]["extra"] = {"untrusted": True}
+        with self.assertRaises(ProposalArtifactError):
+            build_proposal_artifact(report)
+
+    def test_unchanged_evidence_allows_missing_pr_without_ci_claims(self):
+        report = approved_report()
+        report["proposals"] = []
+        report["unchanged"] = [{
+            "task_key": "issue-10", "status": "approved",
+            "evidence": {
+                "issue_number": 10, "issue_state": "open",
+                "issue_updated_at": "2026-11-16T12:00:00Z",
+                "linked_pr_number": None, "head_sha": None,
+                "required_checks": ["audit", "validate"], "checks_passed": False,
+                "missing_checks": [], "merge_commit_sha": None, "check_evidence": [],
+            },
+        }]
+        build_proposal_artifact(report)
+        report["unchanged"][0]["evidence"]["checks_passed"] = True
+        with self.assertRaises(ProposalArtifactError):
+            build_proposal_artifact(report)
+
+    def test_missing_repository_is_rejected_even_for_empty_report(self):
+        report = approved_report()
+        report["repository"] = None
+        report["proposals"] = []
+        with self.assertRaisesRegex(ProposalArtifactError, "repository is required"):
+            build_proposal_artifact(report)
+
+    def test_recursion_error_from_allowed_nested_value_is_wrapped(self):
+        report = approved_report()
+        report["proposals"] = []
+        nested = []
+        for _ in range(1500):
+            nested = [nested]
+        report["unchanged"] = [{
+            "task_key": "issue-10", "status": "approved", "reason": "safe", "stale": nested,
+        }]
+        with self.assertRaises(ProposalArtifactError):
+            build_proposal_artifact(report)
+
 
 if __name__ == "__main__":
     unittest.main()
