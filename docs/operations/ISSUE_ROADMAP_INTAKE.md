@@ -88,7 +88,7 @@ The renderer validates proposal-only/no-write flags, owner approval, unique
 task identities, exact PR-head evidence, and the merge commit SHA for any
 `done` proposal. It sorts entries and computes a content-derived SHA-256
 proposal ID, so identical reports produce byte-identical Markdown and IDs.
-Pending-approval entries include the supporting issue number, linked PR, exact head SHA, and merge SHA when applicable. The fixed comment marker is groundwork for a future idempotent publisher. This command only prints to stdout; it never calls the GitHub comments API.
+Pending-approval entries include the supporting issue number, linked PR, exact head SHA, merge SHA when applicable, and repository-bound links to exact successful check-run IDs. The renderer rejects cross-repository, mismatched-ID, duplicate, or Markdown-injecting check URLs. Roadmaps may contain up to 5,000 entries; when detailed Markdown would exceed the safe comment limit, the comment becomes a compact count-and-artifact-ID summary while the deterministic JSON retains every task and evidence record. The fixed comment marker is groundwork for a future idempotent publisher. This command only prints to stdout; it never calls the GitHub comments API.
 
 Issue #86 remains open. Live GitHub evidence collection, idempotent proposal
 publishing, a separately owner-authorized apply path, and workflow wiring
