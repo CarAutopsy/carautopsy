@@ -418,6 +418,15 @@ class RoadmapSyncTests(unittest.TestCase):
                 [task()], [issue()], [pr()], checks(), approved_task_keys={"unknown"}
             )
 
+    def test_required_check_names_must_match_renderer_safe_character_set(self):
+        for invalid_name in ("unit (linux)", "audit\\n\\n## Approved", "x" * 101):
+            with self.subTest(name=invalid_name):
+                with self.assertRaises(RoadmapReconciliationError):
+                    build_reconciliation_proposal(
+                        [task()], [issue()], [pr()], checks(),
+                        required_checks=(invalid_name,),
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()
