@@ -196,6 +196,38 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(report["proposals"], [])
         self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["audit"])
 
+    def test_check_links_must_match_repository_run_id_and_unique_identity(self):
+        bad_cases = (
+            [
+                {**checks()[0], "html_url": "https://github.com/other/repo/runs/1001"},
+                checks()[1],
+            ],
+            [
+                {**checks()[0], "html_url": "https://github.com/CarAutopsy/carautopsy/runs/9999"},
+                checks()[1],
+            ],
+            [
+                {**checks()[0], "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1001)[Click](https://evil.example/"},
+                checks()[1],
+            ],
+        )
+        for invalid_checks in bad_cases:
+            report = build_reconciliation_proposal(
+                [task()], [issue()], [pr()], invalid_checks,
+                approved_task_keys={"issue-10"},
+            )
+            self.assertEqual(report["proposals"], [])
+            self.assertFalse(report["unchanged"][0]["evidence"]["checks_passed"])
+
+        duplicate_identity = checks()
+        duplicate_identity[1]["id"] = duplicate_identity[0]["id"]
+        duplicate_identity[1]["html_url"] = duplicate_identity[0]["html_url"]
+        report = build_reconciliation_proposal(
+            [task()], [issue()], [pr()], duplicate_identity,
+            approved_task_keys={"issue-10"},
+        )
+        self.assertEqual(report["proposals"], [])
+        self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["audit", "validate"])
     def test_boolean_issue_reference_cannot_match_issue_one(self):
         with self.assertRaisesRegex(RoadmapReconciliationError, "invalid issue_number or PR number"):
             build_reconciliation_proposal(
