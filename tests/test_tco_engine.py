@@ -75,6 +75,18 @@ class TcoConfigTests(unittest.TestCase):
         impossible_calendar_date["envelope"]["generated_utc"] = "2026-11-31T12:00:00Z"
         self.assertFalse(publication_artifact_is_current(impossible_calendar_date, candidate, now=now))
 
+        invalid_timezone_minutes = copy.deepcopy(fresh)
+        invalid_timezone_minutes["envelope"]["generated_utc"] = "2026-11-14T12:00:00+00:60"
+        self.assertFalse(publication_artifact_is_current(invalid_timezone_minutes, candidate, now=now))
+
+        boolean_summary_count = copy.deepcopy(fresh)
+        boolean_summary_count["summary"]["variants"] = True
+        self.assertFalse(publication_artifact_is_current(boolean_summary_count, candidate, now=now))
+
+        boolean_result_cost = copy.deepcopy(fresh)
+        boolean_result_cost["results"][0]["monthly_eur"] = True
+        self.assertFalse(publication_artifact_is_current(boolean_result_cost, candidate, now=now))
+
     def test_publication_artifact_refreshes_when_results_or_summary_change(self):
         now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
         candidate = {
