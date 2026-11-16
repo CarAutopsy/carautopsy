@@ -54,6 +54,8 @@ class IssueCrawlerStateFilterTests(unittest.TestCase):
             {"number": 10, "state": "open", "updated_at": "2026-11-16T12:00:00Z"},
             {"number": 11, "state": "closed", "updated_at": "2026-11-16T13:00:00Z"},
         ])
+        self.assertEqual(report["issue_snapshots_seen"], 2)
+        self.assertEqual(report["api_records_seen"], 2)
 
     def test_fetch_rejects_malformed_updated_at(self):
         response = Mock()
@@ -64,6 +66,21 @@ class IssueCrawlerStateFilterTests(unittest.TestCase):
         session.get.return_value = response
         with self.assertRaisesRegex(IntakeControllerError, "updated_at"):
             fetch_issue_snapshots("CarAutopsy/carautopsy", state="all", session=session)
+
+    def test_pull_request_snapshots_are_excluded_from_issue_evidence(self):
+        response = Mock()
+        response.links = {}
+        response.json.return_value = [issue(15, "open", [{"name": "roadmap:candidate"}])]
+        response.json.return_value[0]["pull_request"] = {"url": "https://api.github.com/pulls/15"}
+        session = Mock()
+        session.get.return_value = response
+        snapshots = fetch_issue_snapshots("CarAutopsy/carautopsy", state="all", session=session)
+        report = build_dry_run_report(
+            snapshots, repository="CarAutopsy/carautopsy", source="github-all-issues"
+        )
+        self.assertEqual(report["issue_snapshots"], [])
+        self.assertEqual(report["issue_snapshots_seen"], 0)
+        self.assertEqual(report["pull_request_snapshots_excluded"], 1)
 
     def test_fetch_closed_uses_closed_filter(self):
         response = Mock()

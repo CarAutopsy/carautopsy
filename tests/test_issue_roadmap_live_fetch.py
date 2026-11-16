@@ -30,11 +30,11 @@ def snapshot(number=10, state="open", labels=None):
 class LiveIssueFetchCliTests(unittest.TestCase):
     def run_live_cli(self, snapshots):
         output = io.StringIO()
-        with patch("issue_roadmap_controller.fetch_open_issues", return_value=snapshots) as fetch:
+        with patch("issue_roadmap_controller.fetch_issue_snapshots", return_value=snapshots) as fetch:
             with patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"}):
                 with contextlib.redirect_stdout(output):
                     self.assertEqual(main(["--fetch-github"]), 0)
-        fetch.assert_called_once_with("CarAutopsy/carautopsy", "test-token")
+        fetch.assert_called_once_with("CarAutopsy/carautopsy", "test-token", state="open")
         return output.getvalue()
 
     def test_live_fetch_cli_is_deterministic_and_uses_projected_metadata(self):
@@ -68,7 +68,7 @@ class LiveIssueFetchCliTests(unittest.TestCase):
     def test_live_fetch_cli_fails_closed_on_malformed_api_response(self):
         stderr = io.StringIO()
         with patch(
-            "issue_roadmap_controller.fetch_open_issues",
+            "issue_roadmap_controller.fetch_issue_snapshots",
             side_effect=IntakeControllerError("GitHub issues endpoint returned a non-list payload"),
         ):
             with contextlib.redirect_stderr(stderr):

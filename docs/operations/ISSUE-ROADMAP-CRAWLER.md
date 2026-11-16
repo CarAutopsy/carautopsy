@@ -5,14 +5,15 @@ The `issue-roadmap-crawler` job is a read-only intake monitor attached to the ex
 
 ## Operation
 
-- Currently runs only when manually dispatched with crawler-only; scheduled activation is deferred until the dry-run has been audited.
+- Runs whenever the existing autonomous pipeline schedule fires (currently every 15 minutes). It can also be started manually with crawler-only.
 - Can also be started manually with the `crawler-only` workflow-dispatch mode.
-- Reads open GitHub issue metadata using the run-scoped `GITHUB_TOKEN`.
+- Reads all GitHub issue states (open and closed) using the run-scoped `GITHUB_TOKEN`.
+- The controller supports `--state open`, `--state closed`, and `--state all`; the scheduled crawler uses `--state all`.
 - Projects issue snapshots to a strict metadata allowlist; issue bodies and comments are not
   interpreted or retained.
 - Classifies only from maintainer-controlled `roadmap:*` labels and basic issue metadata.
-- Uploads deterministic JSON as the `issue-roadmap-dry-run` artifact for seven days and
-  writes a short count summary to the Actions run summary.
+- Uploads deterministic JSON, including minimal per-issue number/state/updated_at evidence, as the
+  `issue-roadmap-dry-run` artifact for seven days and writes a short count summary to the Actions run summary.
 
 ## Safety boundary
 
