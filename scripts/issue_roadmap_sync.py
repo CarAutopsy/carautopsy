@@ -70,9 +70,6 @@ def validate_task_graph(tasks: Any) -> dict[str, dict[str, Any]]:
             raise RoadmapReconciliationError(f"{key}: duplicate dependency")
         if key in dependencies:
             raise RoadmapReconciliationError(f"{key}: task cannot depend on itself")
-        owner_approved = task.get("owner_approved", False)
-        if not isinstance(owner_approved, bool):
-            raise RoadmapReconciliationError(f"{key}: owner_approved must be boolean")
         source_updated_at = task.get("source_updated_at")
         if source_updated_at is not None:
             _aware_timestamp(source_updated_at, f"{key}.source_updated_at")
@@ -82,7 +79,6 @@ def validate_task_graph(tasks: Any) -> dict[str, dict[str, Any]]:
             "issue_number": issue_number,
             "status": status,
             "dependencies": list(dependencies),
-            "owner_approved": owner_approved,
             "source_updated_at": source_updated_at,
         }
 
