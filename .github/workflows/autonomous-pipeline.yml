@@ -168,7 +168,7 @@ jobs:
               "## Issue roadmap crawler",
               "",
               "- Mode: **read-only dry run**",
-              f"- Open issue snapshots: **{report['issue_snapshots_seen']}**",
+              f"- Issue snapshots (all states): **{report['issue_snapshots_seen']}**",
               f"- Proposals: **{report['proposal_count']}**",
               f"- Actionable: **{report['actionable_proposal_count']}**",
               f"- Owner triage: **{report['owner_triage_count']}**",
