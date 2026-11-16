@@ -216,6 +216,22 @@ class RoadmapSyncTests(unittest.TestCase):
             report["proposals"][0]["evidence"]["missing_checks"], ["audit", "validate"]
         )
 
+
+    def test_duplicate_ci_runs_do_not_hide_open_issue_merge_triage(self):
+        duplicate_checks = checks() + [checks()[0]]
+        report = build_reconciliation_proposal(
+            [task(status="in_progress")],
+            [issue(state="open")],
+            [pr()],
+            duplicate_checks,
+            approved_task_keys={"issue-10"},
+        )
+        self.assertEqual(report["proposals"][0]["to_status"], "needs-owner-triage")
+        self.assertFalse(report["proposals"][0]["evidence"]["checks_passed"])
+        self.assertEqual(
+            report["proposals"][0]["evidence"]["missing_checks"], ["audit"]
+        )
+
     def test_closed_issue_with_open_pr_routes_to_owner_triage(self):
         report = build_reconciliation_proposal(
             [task(status="approved")],
