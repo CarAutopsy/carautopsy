@@ -31,6 +31,8 @@ class IssueCrawlerStateFilterTests(unittest.TestCase):
             issue(10, "open", [{"name": "roadmap:candidate"}]),
             issue(11, "closed", [{"name": "roadmap:candidate"}]),
         ]
+        response.json.return_value[0]["updated_at"] = "2026-11-16T12:00:00Z"
+        response.json.return_value[1]["updated_at"] = "2026-11-16T13:00:00Z"
         session = Mock()
         session.get.return_value = response
 
@@ -39,6 +41,7 @@ class IssueCrawlerStateFilterTests(unittest.TestCase):
         )
 
         self.assertEqual([item["state"] for item in snapshots], ["open", "closed"])
+        self.assertEqual(snapshots[1]["updated_at"], "2026-11-16T13:00:00Z")
         self.assertEqual(session.get.call_args.kwargs["params"]["state"], "all")
         report = build_dry_run_report(
             snapshots, repository="CarAutopsy/carautopsy", source="github-all-issues"
@@ -47,6 +50,20 @@ class IssueCrawlerStateFilterTests(unittest.TestCase):
             "actionable": 1, "closed": 1
         })
         self.assertEqual(report["proposal_count"], 1)
+        self.assertEqual(report["issue_snapshots"], [
+            {"number": 10, "state": "open", "updated_at": "2026-11-16T12:00:00Z"},
+            {"number": 11, "state": "closed", "updated_at": "2026-11-16T13:00:00Z"},
+        ])
+
+    def test_fetch_rejects_malformed_updated_at(self):
+        response = Mock()
+        response.links = {}
+        response.json.return_value = [issue(14, "closed")]
+        response.json.return_value[0]["updated_at"] = "not-a-timestamp"
+        session = Mock()
+        session.get.return_value = response
+        with self.assertRaisesRegex(IntakeControllerError, "updated_at"):
+            fetch_issue_snapshots("CarAutopsy/carautopsy", state="all", session=session)
 
     def test_fetch_closed_uses_closed_filter(self):
         response = Mock()
