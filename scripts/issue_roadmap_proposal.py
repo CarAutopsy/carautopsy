@@ -19,7 +19,7 @@ class ProposalArtifactError(ValueError):
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
 _CHECK_URL = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/(?:actions/)?runs/([1-9][0-9]*)(?:/job/([1-9][0-9]*))?\Z")
-_CHECK_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,99}\\Z")
+_CHECK_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,99}\Z")
 _STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
 _MAX_REPORT_ITEMS = 5000
 _MAX_REPORT_BYTES = 5_000_000
@@ -67,7 +67,7 @@ def _validate_check_evidence(evidence: dict[str, Any], head_sha: str, repository
     if (
         not isinstance(required, list)
         or len(required) > 10
-        or any(not isinstance(name, str) or not name or len(name) > 100 for name in required)
+        or any(not isinstance(name, str) or _CHECK_NAME.fullmatch(name) is None for name in required)
         or len(set(required)) != len(required)
         or not {"audit", "validate"}.issubset(set(required))
         or not isinstance(checks, list)
@@ -137,7 +137,7 @@ def _validate_evidence(
         or not isinstance(issue_state, str) or issue_state not in {"open", "closed"}
         or not isinstance(updated_at, str) or len(updated_at) > 64
         or not isinstance(required, list) or len(required) > 10
-        or any(not isinstance(name, str) or not name or len(name) > 100 for name in required)
+        or any(not isinstance(name, str) or _CHECK_NAME.fullmatch(name) is None for name in required)
         or len(set(required)) != len(required)
         or not {"audit", "validate"}.issubset(set(required))
         or type(evidence.get("checks_passed")) is not bool
