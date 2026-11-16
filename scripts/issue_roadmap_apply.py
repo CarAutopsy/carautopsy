@@ -31,6 +31,8 @@ _DATA_START = "<!-- carautopsy-issue-roadmap:data:start -->"
 _DATA_END = "<!-- carautopsy-issue-roadmap:data:end -->"
 _END = "<!-- carautopsy-issue-roadmap:end -->"
 _MAX_ROADMAP_BYTES = 500_000
+_MAX_REPORT_BYTES = 5_000_000
+_MAX_REPORT_ITEMS = 100_000
 _MAX_APPROVED_TASKS = 100
 _MAX_CRITERIA = 20
 _MAX_TEXT = 500
@@ -48,10 +50,13 @@ def _aware_timestamp(value: Any) -> bool:
 
 def _canonical_json(value: Any) -> bytes:
     try:
-        return json.dumps(
+        encoded = json.dumps(
             value, sort_keys=True, separators=(",", ":"),
             ensure_ascii=True, allow_nan=False,
         ).encode("utf-8")
+        if len(encoded) > _MAX_REPORT_BYTES:
+            raise RoadmapApplyError("proposal report exceeds the size limit")
+        return encoded
     except (TypeError, ValueError, RecursionError) as exc:
         raise RoadmapApplyError("proposal report is not safe JSON") from exc
 
@@ -90,9 +95,11 @@ def _validate_report(report: Any, repository: str) -> tuple[str, dict[int, dict[
         or report.get("github_modified") is not False
         or report.get("task_dispatch_performed") is not False
         or not isinstance(report.get("proposals"), list)
+        or len(report.get("proposals", [])) > _MAX_REPORT_ITEMS
         or not isinstance(report.get("issue_snapshots"), list)
+        or len(report.get("issue_snapshots", [])) > _MAX_REPORT_ITEMS
     ):
-        raise RoadmapApplyError("only a read-only all-state crawler report can be approved")
+        raise RoadmapApplyError("only a bounded read-only all-state crawler report can be approved")
 
     snapshots: dict[int, dict[str, Any]] = {}
     duplicate_numbers: set[int] = set()
@@ -129,7 +136,12 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
         raise RoadmapApplyError("managed roadmap markers are out of order")
     block = markdown[start:end]
     try:
-        state = json.loads(markdown[data_start:data_end].strip())
+        state = json.loads(
+            markdown[data_start:data_end].strip(),
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                RoadmapApplyError("managed roadmap JSON contains a non-finite number")
+            ),
+        )
     except (ValueError, RecursionError) as exc:
         raise RoadmapApplyError("managed roadmap state is malformed") from exc
     if not isinstance(state, dict) or set(state) != {"schema_version", "applied_proposals", "tasks"}:
