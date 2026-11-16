@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import math
 import re
 from typing import Any
 
@@ -161,7 +162,41 @@ def _validate_evidence(
     return evidence
 
 
+
+def _validate_json_depth(value: Any, *, max_depth: int = 100) -> None:
+    """Reject cyclic, excessively deep, or non-JSON values without recursion."""
+    stack: list[tuple[Any, int, bool]] = [(value, 0, False)]
+    active: set[int] = set()
+    while stack:
+        current, depth, exiting = stack.pop()
+        if depth > max_depth:
+            raise ProposalArtifactError("report nesting exceeds the safety limit")
+        if isinstance(current, (dict, list, tuple)):
+            identity = id(current)
+            if exiting:
+                active.remove(identity)
+                continue
+            if identity in active:
+                raise ProposalArtifactError("report contains a cyclic value")
+            active.add(identity)
+            stack.append((current, depth, True))
+            if isinstance(current, dict):
+                for key, child in current.items():
+                    if not isinstance(key, str):
+                        raise ProposalArtifactError("report object keys must be strings")
+                    stack.append((child, depth + 1, False))
+            else:
+                for child in current:
+                    stack.append((child, depth + 1, False))
+        elif current is None or isinstance(current, (str, bool, int)):
+            continue
+        elif isinstance(current, float) and math.isfinite(current):
+            continue
+        else:
+            raise ProposalArtifactError("report contains a non-JSON value")
+
 def _validate_report(report: Any) -> dict[str, Any]:
+    _validate_json_depth(report)
     if not isinstance(report, dict) or set(report) - _REPORT_FIELDS:
         raise ProposalArtifactError("reconciliation report must be a known-shape object")
     if type(report.get("schema_version")) is not int or report["schema_version"] != 1:
