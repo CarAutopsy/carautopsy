@@ -20,6 +20,9 @@ class ProposalArtifactError(ValueError):
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
 _STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
+_MAX_REPORT_ITEMS = 5000
+_MAX_REPORT_BYTES = 5_000_000
+_MAX_MARKDOWN_BYTES = 60_000
 
 
 def _validate_report(report: Any) -> dict[str, Any]:
@@ -36,6 +39,8 @@ def _validate_report(report: Any) -> dict[str, Any]:
     unchanged = report.get("unchanged")
     if not isinstance(proposals, list) or not isinstance(unchanged, list):
         raise ProposalArtifactError("report proposals and unchanged must be lists")
+    if len(proposals) + len(unchanged) > _MAX_REPORT_ITEMS:
+        raise ProposalArtifactError("report entry count exceeds the safety limit")
 
     seen_task_keys: set[str] = set()
     for item in proposals:
@@ -97,8 +102,10 @@ def _validate_report(report: Any) -> dict[str, Any]:
             not isinstance(proposed_status, str) or proposed_status not in _STATUSES
         ):
             raise ProposalArtifactError("unchanged entry has an unsupported proposed status")
-        if "reason" in item and not isinstance(item["reason"], str):
-            raise ProposalArtifactError("unchanged entry reason must be text")
+        if "reason" in item and (
+            not isinstance(item["reason"], str) or len(item["reason"]) > 4000
+        ):
+            raise ProposalArtifactError("unchanged entry reason must be text within the length limit")
         if item.get("requires_owner_approval") is True and proposed_status is not None:
             evidence = item.get("evidence")
             if not isinstance(evidence, dict):
@@ -118,7 +125,10 @@ def _validate_report(report: Any) -> dict[str, Any]:
             ):
                 raise ProposalArtifactError("pending owner decision has incomplete supporting evidence")
 
-    normalized = copy.deepcopy(report)
+    try:
+        normalized = copy.deepcopy(report)
+    except (TypeError, ValueError, RecursionError) as exc:
+        raise ProposalArtifactError("report could not be safely copied") from exc
     normalized["proposals"] = sorted(normalized["proposals"], key=lambda item: item["task_key"])
     normalized["unchanged"] = sorted(normalized["unchanged"], key=lambda item: item["task_key"])
     try:
@@ -134,6 +144,8 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
     canonical = json.dumps(
         normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
     ).encode("utf-8")
+    if len(canonical) > _MAX_REPORT_BYTES:
+        raise ProposalArtifactError("report exceeds the artifact size limit")
     digest = hashlib.sha256(canonical).hexdigest()
     proposal_id = f"sha256:{digest}"
 
