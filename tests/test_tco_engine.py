@@ -1,10 +1,13 @@
 import copy
+import json
+from datetime import datetime, timedelta, timezone
 import sys
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from tco_engine import assert_tax_pack_publishable, calculate_tco, load_country_config, motor_monthly, nova, validate_config
+from tco_engine import (ENGINE_VERSION, assert_tax_pack_publishable, calculate_tco, load_country_config,
+                        motor_monthly, nova, publication_artifact_is_current, publication_metadata, validate_config)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,6 +33,84 @@ class TcoConfigTests(unittest.TestCase):
         else:
             v["extensions"] = {"fuel_consumption_l_100km": {"real_world": 6}}
         return v
+
+    def test_shared_engine_contract_has_valid_freshness_policy(self):
+        contract = json.loads((ROOT / "tco-contract.json").read_text(encoding="utf-8"))
+        self.assertEqual(contract["engine_version"], ENGINE_VERSION)
+        self.assertGreater(contract["max_artifact_age_days"], 0)
+        self.assertGreaterEqual(contract["max_future_skew_minutes"], 0)
+
+    def test_publication_artifact_is_current_only_when_metadata_matches_and_is_fresh(self):
+        now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
+        candidate = {
+            "results": [{"variant_id": "test", "monthly_eur": 1}],
+            "summary": {"variants": 1},
+            "envelope": {
+                **publication_metadata(self.t),
+                "generated_utc": now.isoformat(),
+                "currency": "EUR",
+            },
+        }
+        fresh = copy.deepcopy(candidate)
+        fresh["envelope"]["generated_utc"] = (now - timedelta(days=1)).isoformat()
+        self.assertTrue(publication_artifact_is_current(fresh, candidate, now=now))
+
+        expired = copy.deepcopy(candidate)
+        expired["envelope"]["generated_utc"] = (now - timedelta(days=8)).isoformat()
+        self.assertFalse(publication_artifact_is_current(expired, candidate, now=now))
+
+        wrong_metadata = copy.deepcopy(fresh)
+        wrong_metadata["envelope"]["country_pack_status"] = "verified"
+        self.assertFalse(publication_artifact_is_current(wrong_metadata, candidate, now=now))
+
+        malformed_timestamp = copy.deepcopy(fresh)
+        malformed_timestamp["envelope"]["generated_utc"] = "not-a-date"
+        self.assertFalse(publication_artifact_is_current(malformed_timestamp, candidate, now=now))
+
+        space_separated_timestamp = copy.deepcopy(fresh)
+        space_separated_timestamp["envelope"]["generated_utc"] = "2026-11-14 12:00:00+00:00"
+        self.assertFalse(publication_artifact_is_current(space_separated_timestamp, candidate, now=now))
+
+        impossible_calendar_date = copy.deepcopy(fresh)
+        impossible_calendar_date["envelope"]["generated_utc"] = "2026-11-31T12:00:00Z"
+        self.assertFalse(publication_artifact_is_current(impossible_calendar_date, candidate, now=now))
+
+        invalid_timezone_minutes = copy.deepcopy(fresh)
+        invalid_timezone_minutes["envelope"]["generated_utc"] = "2026-11-14T12:00:00+00:60"
+        self.assertFalse(publication_artifact_is_current(invalid_timezone_minutes, candidate, now=now))
+
+        boolean_summary_count = copy.deepcopy(fresh)
+        boolean_summary_count["summary"]["variants"] = True
+        self.assertFalse(publication_artifact_is_current(boolean_summary_count, candidate, now=now))
+
+        boolean_result_cost = copy.deepcopy(fresh)
+        boolean_result_cost["results"][0]["monthly_eur"] = True
+        self.assertFalse(publication_artifact_is_current(boolean_result_cost, candidate, now=now))
+
+    def test_publication_artifact_refreshes_when_results_or_summary_change(self):
+        now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
+        candidate = {
+            "results": [{"variant_id": "test", "monthly_eur": 100}],
+            "summary": {"variants": 1},
+            "envelope": {**publication_metadata(self.t), "generated_utc": now.isoformat()},
+        }
+        changed = copy.deepcopy(candidate)
+        changed["results"][0]["monthly_eur"] = 101
+        self.assertFalse(publication_artifact_is_current(candidate, changed, now=now))
+        changed = copy.deepcopy(candidate)
+        changed["summary"]["variants"] = 2
+        self.assertFalse(publication_artifact_is_current(candidate, changed, now=now))
+
+    def test_publication_metadata_tracks_current_tax_pack(self):
+        metadata = publication_metadata(self.t)
+        self.assertEqual(metadata["engine_version"], ENGINE_VERSION)
+        self.assertEqual(metadata["country_pack"], f"AT@{self.t['version']}")
+        self.assertEqual(metadata["country_pack_status"], "draft")
+
+    def test_publication_metadata_rejects_missing_contract_fields(self):
+        for taxes in ({}, {"version": "1.2.0"}, {"status": "draft"}):
+            with self.assertRaises(ValueError):
+                publication_metadata(taxes)
 
     def test_pack_validates(self):
         validate_config(self.d, self.i)

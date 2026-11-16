@@ -1,9 +1,102 @@
 """Shared Austrian TCO engine with fail-closed, year-aware M1 tax calculations."""
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
+import json
 import math
+import re
 from pathlib import Path
 import yaml
+
+_ENGINE_CONTRACT_PATH = Path(__file__).resolve().parents[1] / "tco-contract.json"
+_ENGINE_CONTRACT = json.loads(_ENGINE_CONTRACT_PATH.read_text(encoding="utf-8"))
+ENGINE_VERSION = _ENGINE_CONTRACT.get("engine_version")
+if not isinstance(ENGINE_VERSION, str) or not ENGINE_VERSION.strip():
+    raise ValueError("TCO engine contract is missing a valid engine_version")
+
+
+def publication_metadata(taxes):
+    """Return the engine and tax-pack identity embedded in every published artifact."""
+    version = taxes.get("version") if isinstance(taxes, dict) else None
+    status = taxes.get("status") if isinstance(taxes, dict) else None
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError("Cannot publish TCO metadata without a country-pack version")
+    if status not in {"draft", "verified"}:
+        raise ValueError("Cannot publish TCO metadata without a recognized country-pack status")
+    return {
+        "engine_version": ENGINE_VERSION,
+        "country_pack": f"AT@{version}",
+        "country_pack_status": status,
+    }
+
+
+
+def _json_values_equal(left, right):
+    """Compare decoded JSON values without Python's bool/int equality coercion."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            _json_values_equal(left[key], right[key]) for key in left
+        )
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            _json_values_equal(a, b) for a, b in zip(left, right)
+        )
+    return left == right
+
+
+def publication_artifact_is_current(existing, candidate, now=None):
+    """Return True only when the stored artifact is identical and still fresh."""
+    if not isinstance(existing, dict) or not isinstance(candidate, dict):
+        return False
+    if not _json_values_equal(existing.get("results"), candidate.get("results")):
+        return False
+    if not _json_values_equal(existing.get("summary"), candidate.get("summary")):
+        return False
+
+    old_envelope = existing.get("envelope")
+    new_envelope = candidate.get("envelope")
+    if not isinstance(old_envelope, dict) or not isinstance(new_envelope, dict):
+        return False
+    stable_old = {key: value for key, value in old_envelope.items() if key != "generated_utc"}
+    stable_new = {key: value for key, value in new_envelope.items() if key != "generated_utc"}
+    if not _json_values_equal(stable_old, stable_new):
+        return False
+
+    generated = old_envelope.get("generated_utc")
+    if (
+        not isinstance(generated, str)
+        or re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:[0-5]\d)",
+            generated,
+        ) is None
+    ):
+        return False
+    try:
+        generated_at = datetime.fromisoformat(generated.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if generated_at.tzinfo is None or generated_at.utcoffset() is None:
+        return False
+
+    max_age_days = _ENGINE_CONTRACT.get("max_artifact_age_days")
+    future_skew_minutes = _ENGINE_CONTRACT.get("max_future_skew_minutes")
+    if (
+        isinstance(max_age_days, bool) or not isinstance(max_age_days, (int, float))
+        or not math.isfinite(max_age_days) or max_age_days <= 0
+        or isinstance(future_skew_minutes, bool) or not isinstance(future_skew_minutes, (int, float))
+        or not math.isfinite(future_skew_minutes) or future_skew_minutes < 0
+    ):
+        return False
+
+    current_time = now or datetime.now(timezone.utc)
+    if current_time.tzinfo is None or current_time.utcoffset() is None:
+        raise ValueError("Artifact freshness comparison requires a timezone-aware clock")
+    age_seconds = (current_time - generated_at).total_seconds()
+    return (
+        age_seconds <= max_age_days * 86400
+        and age_seconds >= -future_skew_minutes * 60
+    )
 
 
 def load_country_config(root):
