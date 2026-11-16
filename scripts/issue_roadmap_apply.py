@@ -198,15 +198,15 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
 
 
 def _escape_cell(value: str) -> str:
-    escaped = html.escape(value, quote=True)
-    for character, entity in {
+    # Translate each original character once; generated entities are never re-escaped.
+    entities = {
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#x27;",
         "|": "&#124;", "`": "&#96;", "\\": "&#92;",
         "[": "&#91;", "]": "&#93;", "(": "&#40;", ")": "&#41;",
         "!": "&#33;", "*": "&#42;", "_": "&#95;", "#": "&#35;",
         "~": "&#126;", "+": "&#43;",
-    }.items():
-        escaped = escaped.replace(character, entity)
-    return escaped
+    }
+    return "".join(entities.get(character, character) for character in value)
 
 
 def _render_managed_block(state: dict[str, Any]) -> str:
@@ -379,10 +379,8 @@ def build_owner_approved_apply_plan(
     approved_by_key = {item["task_key"]: item for item in normalized}
     for key, proposal in actionable.items():
         previous = existing_by_key.get(key)
-        if previous is not None and (
-            previous.get("issue_number") != proposal["issue_number"]
-            or previous.get("title") != proposal["title"]
-        ):
+        # A renamed unrelated issue must not block approval of a different task.
+        if previous is not None and previous.get("issue_number") != proposal["issue_number"]:
             raise RoadmapApplyError("existing task key conflicts with the current proposal")
     unresolved_owner_decisions = [
         {
