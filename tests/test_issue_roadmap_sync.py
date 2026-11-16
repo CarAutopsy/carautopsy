@@ -50,8 +50,8 @@ def pr(number=110, issue_number=10, state="closed", merged=True, **overrides):
 
 def checks(sha=SHA_A):
     return [
-        {"name": "Repository Audit", "head_sha": sha, "conclusion": "success"},
-        {"name": "Validate Catalog", "head_sha": sha, "conclusion": "success"},
+        {"name": "audit", "head_sha": sha, "conclusion": "success"},
+        {"name": "validate", "head_sha": sha, "conclusion": "success"},
     ]
 
 
@@ -88,7 +88,7 @@ class RoadmapSyncTests(unittest.TestCase):
             approved_task_keys={"issue-10"},
         )
         self.assertEqual(report["proposals"], [])
-        self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["Validate Catalog"])
+        self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["validate"])
 
     def test_closed_issue_without_merged_pr_never_becomes_done(self):
         report = build_reconciliation_proposal(
