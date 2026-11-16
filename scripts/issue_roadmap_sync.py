@@ -139,50 +139,58 @@ def _index_unique(records: Any, field: str, label: str) -> dict[int, dict[str, A
     return indexed
 
 
-def _verified_pr_for_issue(issue_number: int, pull_requests: list[dict[str, Any]]) -> dict[str, Any] | None:
-    matches = []
-    for pr in pull_requests:
+def _index_linked_prs(records: Any) -> dict[int, dict[str, Any]]:
+    if not isinstance(records, list) or len(records) > 20_000:
+        raise RoadmapReconciliationError("pull-request evidence must be a bounded list")
+    by_issue: dict[int, list[dict[str, Any]]] = {}
+    for pr in records:
         if not isinstance(pr, dict):
             raise RoadmapReconciliationError("pull-request evidence entry must be an object")
-        linked_issue_number = pr.get("issue_number")
+        issue_number = pr.get("issue_number")
         if (
-            isinstance(linked_issue_number, bool)
-            or not isinstance(linked_issue_number, int)
-            or linked_issue_number < 1
+            isinstance(issue_number, bool)
+            or not isinstance(issue_number, int)
+            or issue_number < 1
         ):
             raise RoadmapReconciliationError("linked PR has an invalid issue_number")
-        if linked_issue_number != issue_number:
-            continue
         # The collector must derive this marker from a GitHub cross-reference
         # timeline event, not from issue text, PR body text, or model output.
-        if pr.get("link_evidence") != "github-cross-reference-event":
-            continue
-        matches.append(pr)
-    if len(matches) > 1:
+        if pr.get("link_evidence") == "github-cross-reference-event":
+            by_issue.setdefault(issue_number, []).append(pr)
+
+    ambiguous = [number for number, matches in by_issue.items() if len(matches) > 1]
+    if ambiguous:
         raise RoadmapReconciliationError(
-            f"issue #{issue_number} has multiple linked PR evidence records"
+            "multiple linked PR evidence records for issue(s): "
+            + ", ".join(str(number) for number in sorted(ambiguous)[:5])
         )
-    return matches[0] if matches else None
+    return {number: matches[0] for number, matches in by_issue.items()}
 
 
-def _checks_pass_for_sha(
-    checks: Any, sha: str, required_checks: tuple[str, ...]
-) -> tuple[bool, list[str]]:
-    if not isinstance(checks, list):
-        raise RoadmapReconciliationError("check-runs must be a list")
-    observed: dict[str, list[Any]] = {}
+def _index_check_runs(checks: Any, required_checks: tuple[str, ...]) -> dict[str, dict[str, list[Any]]]:
+    if not isinstance(checks, list) or len(checks) > 100_000:
+        raise RoadmapReconciliationError("check-runs must be a bounded list")
+    by_sha: dict[str, dict[str, list[Any]]] = {}
     for check in checks:
         if not isinstance(check, dict):
             raise RoadmapReconciliationError("check-run entry must be an object")
-        check_sha = check.get("head_sha")
+        sha = check.get("head_sha")
         name = check.get("name")
-        conclusion = check.get("conclusion")
-        if check_sha == sha and isinstance(name, str) and name in required_checks:
-            observed.setdefault(name, []).append(conclusion)
-    missing = [
-        name for name in required_checks
-        if observed.get(name) != ["success"]
-    ]
+        if isinstance(sha, str) and _SHA.fullmatch(sha) and isinstance(name, str) and name in required_checks:
+            by_sha.setdefault(sha, {}).setdefault(name, []).append(check.get("conclusion"))
+    return by_sha
+
+
+def _checks_pass_for_sha(
+    checks_by_sha: dict[str, dict[str, list[Any]]],
+    sha: str,
+    required_checks: tuple[str, ...],
+) -> tuple[bool, list[str]]:
+    observed = checks_by_sha.get(sha, {})
+    # Exactly one successful run is required for each named check. Duplicate
+    # attempts are ambiguous until a future collector explicitly selects the
+    # authoritative latest attempt from GitHub metadata.
+    missing = [name for name in required_checks if observed.get(name) != ["success"]]
     return not missing, missing
 
 
@@ -203,12 +211,12 @@ def build_reconciliation_proposal(
     """
     tasks = validate_task_graph(roadmap_tasks)
     issues = _index_unique(issue_snapshots, "number", "issue snapshot")
-    if not isinstance(pull_request_evidence, list):
-        raise RoadmapReconciliationError("pull-request evidence must be a list")
     if not isinstance(required_checks, tuple) or not required_checks or any(
         not isinstance(name, str) or not name for name in required_checks
     ):
         raise RoadmapReconciliationError("required_checks must be a non-empty tuple of names")
+    linked_prs = _index_linked_prs(pull_request_evidence)
+    checks_by_sha = _index_check_runs(check_runs, required_checks)
     approved = set() if approved_task_keys is None else approved_task_keys
     if not isinstance(approved, set) or any(
         not isinstance(key, str) or key not in tasks for key in approved
@@ -238,7 +246,7 @@ def build_reconciliation_proposal(
             source_updated_at, f"{key}.source_updated_at"
         )
 
-        pr = _verified_pr_for_issue(task["issue_number"], pull_request_evidence)
+        pr = linked_prs.get(task["issue_number"])
         desired_status = None
         evidence: dict[str, Any] = {
             "issue_number": task["issue_number"],
@@ -270,7 +278,7 @@ def build_reconciliation_proposal(
                 merge_sha = pr.get("merge_commit_sha")
                 if not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None:
                     raise RoadmapReconciliationError(f"{key}: merged PR lacks merge commit SHA")
-                passed, missing = _checks_pass_for_sha(check_runs, head_sha, required_checks)
+                passed, missing = _checks_pass_for_sha(checks_by_sha, head_sha, required_checks)
                 evidence["checks_passed"] = passed
                 evidence["missing_checks"] = missing
                 if issue["state"] == "closed" and passed:
