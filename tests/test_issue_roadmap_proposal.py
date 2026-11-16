@@ -83,7 +83,7 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
         other["task_key"] = "issue-09"
         other["issue_number"] = 9
         other["evidence"]["issue_number"] = 9
-        report["proposals"].insert(0, other)
+        report["proposals"].append(other)
         artifact = build_proposal_artifact(report)
         self.assertLess(
             artifact["report"]["proposals"][0]["task_key"],
@@ -233,6 +233,24 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             mutate(report["proposals"][0]["evidence"])
             with self.assertRaisesRegex(ProposalArtifactError, "CI check URL"):
                 build_proposal_artifact(report)
+    def test_optional_merge_sha_is_validated_for_non_done_statuses(self):
+        report = approved_report()
+        report["proposals"][0]["to_status"] = "in_progress"
+        report["proposals"][0]["evidence"]["merge_commit_sha"] = "not-a-sha"
+        with self.assertRaisesRegex(ProposalArtifactError, "incomplete or malformed"):
+            build_proposal_artifact(report)
+
+    def test_unapproved_pending_status_is_rejected_not_silently_omitted(self):
+        report = approved_report()
+        report["proposals"] = []
+        report["unchanged"] = [{
+            "task_key": "issue-10",
+            "status": "approved",
+            "proposed_status": "done",
+            "requires_owner_approval": False,
+        }]
+        with self.assertRaisesRegex(ProposalArtifactError, "owner-gated"):
+            build_proposal_artifact(report)
     def test_done_proposal_requires_valid_merge_commit_sha(self):
         report = approved_report()
         del report["proposals"][0]["evidence"]["merge_commit_sha"]
