@@ -15,18 +15,19 @@ on:
         options:
           - research-only
           - provider-smoke-test
+          - crawler-only
           - full
 
 permissions:
   contents: write
   pull-requests: write
 
-concurrency:
-  group: autonomous-pipeline
-  cancel-in-progress: false
-
 jobs:
   run:
+    if: github.event_name != 'workflow_dispatch' || inputs.run_mode != 'crawler-only'
+    concurrency:
+      group: autonomous-pipeline-research
+      cancel-in-progress: false
     runs-on: ubuntu-26.04
     steps:
       - name: Publish automation heartbeat
@@ -132,3 +133,60 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
         run: python scripts/autonomous_pipeline.py
+  # Read-only issue crawler: manual dispatch only until its dry-run audit is complete.
+  # No comments, roadmap writes, or task dispatch; report is a short-lived artifact.
+  issue-roadmap-crawler:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_mode == 'crawler-only'
+    concurrency:
+      group: autonomous-pipeline-issue-crawler-${{ github.run_id }}
+      cancel-in-progress: false
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install crawler dependency
+        run: python -m pip install "requests>=2.32,<3"
+      - name: Crawl and classify open issues (read-only)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python scripts/issue_roadmap_controller.py --fetch-github --repo "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/issue-roadmap-dry-run.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path(os.environ["RUNNER_TEMP"] + "/issue-roadmap-dry-run.json").read_text(encoding="utf-8"))
+          summary = [
+              "## Issue roadmap crawler",
+              "",
+              "- Mode: **read-only dry run**",
+              f"- Open issue snapshots: **{report['issue_snapshots_seen']}**",
+              f"- Proposals: **{report['proposal_count']}**",
+              f"- Actionable: **{report['actionable_proposal_count']}**",
+              f"- Owner triage: **{report['owner_triage_count']}**",
+              "- Roadmap/GitHub writes: **none**",
+              "- Task dispatch: **none**",
+              "",
+              "The JSON report is available as the issue-roadmap-dry-run workflow artifact.",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
+              stream.write("\n".join(summary) + "\n")
+          PY
+      - name: Upload dry-run report
+        uses: actions/upload-artifact@v6
+        with:
+          name: issue-roadmap-dry-run
+          path: ${{ runner.temp }}/issue-roadmap-dry-run.json
+          if-no-files-found: error
+          retention-days: 7
