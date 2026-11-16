@@ -15,8 +15,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from issue_roadmap_controller import (
     IntakeControllerError,
     build_dry_run_report,
+    build_reconciliation_dry_run_report,
     fetch_open_issues,
     load_issue_fixture,
+    load_reconciliation_fixture,
     main,
     render_report,
 )
@@ -49,6 +51,96 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(report["actionable_proposal_count"], 1)
         self.assertEqual(report["owner_triage_count"], 1)
         self.assertTrue(report["requires_owner_approval"])
+
+
+    def test_reconciliation_fixture_projects_untrusted_fields_and_stays_proposal_only(self):
+        payload = load_reconciliation_fixture(
+            ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        )
+        self.assertNotIn("body", payload["issue_snapshots"][0])
+        self.assertNotIn("body", payload["pull_request_evidence"][0])
+        self.assertNotIn("output", payload["check_runs"][0])
+        report = build_reconciliation_dry_run_report(payload)
+        self.assertEqual(report["mode"], "proposal-only")
+        self.assertEqual(report["source"], "fixture")
+        self.assertEqual(report["unchanged"][0]["proposed_status"], "done")
+        self.assertTrue(report["unchanged"][0]["requires_owner_approval"])
+        self.assertFalse(report["roadmap_modified"])
+        self.assertFalse(report["github_modified"])
+        self.assertFalse(report["task_dispatch_performed"])
+
+
+
+    def test_reconciliation_cli_preserves_blocked_and_owner_triage_statuses(self):
+        payload = load_reconciliation_fixture(
+            ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        )
+        payload["roadmap_tasks"][0]["status"] = "blocked"
+        payload["roadmap_tasks"].append({
+            "task_key": "issue-11",
+            "issue_number": 11,
+            "status": "needs-owner-triage",
+            "dependencies": [],
+            "source_updated_at": "2026-11-16T12:00:00Z",
+        })
+        payload["issue_snapshots"].append({
+            "number": 11,
+            "state": "closed",
+            "updated_at": "2026-11-16T12:00:00Z",
+        })
+        payload["pull_request_evidence"].append({
+            "number": 111,
+            "issue_number": 11,
+            "state": "closed",
+            "merged": True,
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "merge_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "link_evidence": "github-cross-reference-event",
+        })
+        before = json.loads(json.dumps(payload))
+        report = build_reconciliation_dry_run_report(payload)
+        self.assertEqual(report["proposals"], [])
+        unchanged = {item["task_key"]: item for item in report["unchanged"]}
+        self.assertEqual(unchanged["issue-10"]["status"], "blocked")
+        self.assertEqual(unchanged["issue-11"]["status"], "needs-owner-triage")
+        self.assertEqual(payload, before)
+        self.assertFalse(report["roadmap_modified"])
+        self.assertFalse(report["github_modified"])
+
+    def test_reconciliation_cli_emits_deterministic_json_to_stdout(self):
+        fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        first = io.StringIO()
+        with redirect_stdout(first):
+            self.assertEqual(main(["--reconcile-input", str(fixture)]), 0)
+        second = io.StringIO()
+        with redirect_stdout(second):
+            self.assertEqual(main(["--reconcile-input", str(fixture)]), 0)
+        self.assertEqual(first.getvalue(), second.getvalue())
+        self.assertEqual(json.loads(first.getvalue())["mode"], "proposal-only")
+
+
+    def test_reconciliation_fixture_cannot_self_approve_or_weaken_required_checks(self):
+        fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        payload = json.loads(fixture.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "approval.json"
+            payload["approved_task_keys"] = ["issue-10"]
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(IntakeControllerError, "cannot assert owner approval"):
+                load_reconciliation_fixture(path)
+
+            payload.pop("approved_task_keys")
+            payload["required_checks"] = ["audit"]
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(IntakeControllerError, "cannot override required CI checks"):
+                load_reconciliation_fixture(path)
+
+    def test_reconciliation_fixture_rejects_malformed_sections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.json"
+            path.write_text(json.dumps({"roadmap_tasks": []}), encoding="utf-8")
+            with self.assertRaises(IntakeControllerError):
+                load_reconciliation_fixture(path)
 
     def test_cli_emits_report_to_stdout_and_rejects_output_path(self):
         output = io.StringIO()
