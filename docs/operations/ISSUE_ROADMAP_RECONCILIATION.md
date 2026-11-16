@@ -13,7 +13,7 @@
 ## Status evidence rules
 
 - An open issue with a GitHub cross-referenced open PR may propose `in_progress`.
-- A closed issue may propose `done` only when its linked PR is merged, the merge commit SHA is valid, and both `Repository Audit` and `Validate Catalog` succeeded on the exact PR head SHA.
+- A closed issue may propose `done` only when its linked PR is merged, the merge commit SHA is valid, and the `audit` (Repository Audit) and `validate` (Validate Catalog) check-runs succeeded on the exact PR head SHA.
 - A merged PR with an issue still open, or a closed issue with an open PR, is sent to owner triage.
 - Missing issue/PR/check evidence preserves the current roadmap status. An issue being closed or a PR merely being opened never proves completion.
 - A newer GitHub `updated_at` than the roadmap's `source_updated_at` marks the record stale and blocks a status proposal until the roadmap snapshot is refreshed.
