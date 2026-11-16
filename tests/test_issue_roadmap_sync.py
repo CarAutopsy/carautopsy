@@ -22,7 +22,6 @@ def task(key="issue-10", number=10, status="approved", **overrides):
         "issue_number": number,
         "status": status,
         "dependencies": [],
-        "owner_approved": False,
         "source_updated_at": NOW,
     }
     value.update(overrides)
@@ -136,11 +135,12 @@ class RoadmapSyncTests(unittest.TestCase):
             task("issue-10", 10, status="approved", dependencies=["issue-9"]),
         ]
         report = build_reconciliation_proposal(
-            tasks, [issue(10)], [pr()], checks(),
+            tasks, [issue(9), issue(10)], [pr()], checks(),
             approved_task_keys={"issue-10"},
         )
         self.assertEqual(report["proposals"], [])
-        self.assertEqual(report["unchanged"][0]["blocked_by"], ["issue-9"])
+        blocked = next(item for item in report["unchanged"] if item["task_key"] == "issue-10")
+        self.assertEqual(blocked["blocked_by"], ["issue-9"])
 
     def test_unknown_dependency_and_cycle_are_rejected(self):
         with self.assertRaisesRegex(RoadmapReconciliationError, "unknown dependency"):
