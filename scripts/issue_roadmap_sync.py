@@ -58,7 +58,7 @@ def validate_task_graph(tasks: Any) -> dict[str, dict[str, Any]]:
         issue_numbers.add(issue_number)
 
         status = task.get("status")
-        if status not in _ALLOWED_STATUSES:
+        if not isinstance(status, str) or status not in _ALLOWED_STATUSES:
             raise RoadmapReconciliationError(f"{key}: unsupported roadmap status")
         dependencies = task.get("dependencies", [])
         if not isinstance(dependencies, list) or any(
@@ -205,7 +205,7 @@ def build_reconciliation_proposal(
                 "stale": True,
             })
             continue
-        if issue.get("state") not in {"open", "closed"}:
+        if not isinstance(issue.get("state"), str) or issue.get("state") not in {"open", "closed"}:
             raise RoadmapReconciliationError(
                 f"{key}: issue state must be open or closed"
             )
@@ -234,12 +234,12 @@ def build_reconciliation_proposal(
             evidence["head_sha"] = head_sha
             if (
                 isinstance(pr_number, bool) or not isinstance(pr_number, int) or pr_number < 1
-                or pr.get("state") not in {"open", "closed"}
+                or not isinstance(pr.get("state"), str) or pr.get("state") not in {"open", "closed"}
                 or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
             ):
                 raise RoadmapReconciliationError(f"{key}: malformed linked PR evidence")
             merged = pr.get("merged") is True
-            if pr.get("merged") not in {True, False}:
+            if type(pr.get("merged")) is not bool:
                 raise RoadmapReconciliationError(f"{key}: PR merged marker must be boolean")
             if merged:
                 merge_sha = pr.get("merge_commit_sha")
