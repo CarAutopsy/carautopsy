@@ -18,9 +18,9 @@ class ProposalArtifactError(ValueError):
 
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
-_CHECK_URL = re.compile(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/(?:runs|actions/runs)/[0-9]+(?:/.*)?\Z")
+_CHECK_URL = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/runs/([1-9][0-9]*)\Z")
 _STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
-_MAX_REPORT_ITEMS = 1000
+_MAX_REPORT_ITEMS = 5000
 _MAX_REPORT_BYTES = 5_000_000
 _MAX_REASON_CHARS = 1000
 _MAX_MARKDOWN_BYTES = 60_000
@@ -38,7 +38,7 @@ _EVIDENCE_FIELDS = {
 }
 
 
-def _validate_check_record(check: Any, head_sha: str) -> dict[str, Any]:
+def _validate_check_record(check: Any, head_sha: str, repository: str) -> dict[str, Any]:
     if not isinstance(check, dict):
         raise ProposalArtifactError("CI check evidence entry must be an object")
     check_id = check.get("id")
@@ -50,13 +50,15 @@ def _validate_check_record(check: Any, head_sha: str) -> dict[str, Any]:
         or check.get("head_sha") != head_sha
         or check.get("conclusion") != "success"
         or not isinstance(url, str) or len(url) > 300
-        or _CHECK_URL.fullmatch(url) is None
     ):
         raise ProposalArtifactError("CI check evidence is incomplete or mismatched")
+    url_match = _CHECK_URL.fullmatch(url)
+    if url_match is None or url_match.group(1) != repository or url_match.group(2) != str(check_id):
+        raise ProposalArtifactError("CI check URL does not identify this repository and check-run ID")
     return check
 
 
-def _validate_check_evidence(evidence: dict[str, Any], head_sha: str) -> list[dict[str, Any]]:
+def _validate_check_evidence(evidence: dict[str, Any], head_sha: str, repository: str) -> list[dict[str, Any]]:
     required = evidence.get("required_checks")
     checks = evidence.get("check_evidence")
     if (
@@ -74,7 +76,7 @@ def _validate_check_evidence(evidence: dict[str, Any], head_sha: str) -> list[di
     ids: set[int] = set()
     urls: set[str] = set()
     for raw_check in checks:
-        check = _validate_check_record(raw_check, head_sha)
+        check = _validate_check_record(raw_check, head_sha, repository)
         name = check["name"]
         if name not in required or name in indexed or check["id"] in ids or check["html_url"] in urls:
             raise ProposalArtifactError("CI check evidence contains duplicate or unexpected references")
@@ -86,16 +88,16 @@ def _validate_check_evidence(evidence: dict[str, Any], head_sha: str) -> list[di
     return [indexed[name] for name in required]
 
 
-def _render_check_links(evidence: dict[str, Any], *, require_complete: bool) -> str:
+def _render_check_links(evidence: dict[str, Any], repository: str, *, require_complete: bool) -> str:
     head_sha = evidence.get("head_sha")
     if require_complete:
-        checks = _validate_check_evidence(evidence, head_sha)
+        checks = _validate_check_evidence(evidence, head_sha, repository)
     else:
         raw_checks = evidence.get("check_evidence", [])
         if not isinstance(raw_checks, list) or len(raw_checks) > 10:
             return "CI evidence unavailable"
         try:
-            checks = [_validate_check_record(item, head_sha) for item in raw_checks]
+            checks = [_validate_check_record(item, head_sha, repository) for item in raw_checks]
         except ProposalArtifactError:
             return "CI evidence unavailable"
     if not checks:
@@ -108,7 +110,7 @@ def _render_check_links(evidence: dict[str, Any], *, require_complete: bool) -> 
     )
 
 
-def _validate_evidence(evidence: Any, issue_number: int, *, require_done: bool = False) -> dict[str, Any]:
+def _validate_evidence(evidence: Any, issue_number: int, repository: str, *, require_done: bool = False) -> dict[str, Any]:
     if not isinstance(evidence, dict) or set(evidence) - _EVIDENCE_FIELDS:
         raise ProposalArtifactError("proposal evidence has an invalid shape")
     evidence_issue = evidence.get("issue_number")
