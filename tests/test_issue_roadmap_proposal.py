@@ -77,11 +77,29 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
             "proposed_status": "done",
             "requires_owner_approval": True,
             "reason": "status change requires explicit owner approval",
+            "evidence": copy.deepcopy(approved_report()["proposals"][0]["evidence"]),
         }]
         markdown = render_proposal_comment(report)
         self.assertIn("Pending owner approval", markdown)
         self.assertIn("issue-10", markdown)
         self.assertIn("owner approval required", markdown)
+        self.assertIn("issue #10, PR #110", markdown)
+        self.assertIn(SHA_HEAD, markdown)
+        self.assertIn("b" * 40, markdown)
+
+
+    def test_pending_owner_decision_requires_supporting_evidence(self):
+        report = approved_report()
+        report["proposals"] = []
+        report["unchanged"] = [{
+            "task_key": "issue-10",
+            "status": "approved",
+            "proposed_status": "done",
+            "requires_owner_approval": True,
+            "reason": "approval required",
+        }]
+        with self.assertRaisesRegex(ProposalArtifactError, "lacks supporting evidence"):
+            build_proposal_artifact(report)
 
     def test_untrusted_reason_text_is_html_escaped(self):
         report = approved_report()
