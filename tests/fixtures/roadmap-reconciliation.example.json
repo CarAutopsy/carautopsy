@@ -35,12 +35,16 @@
       "name": "audit",
       "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "conclusion": "success",
-      "output": "untrusted check output is discarded"
+      "output": "untrusted check output is discarded",
+      "id": 1001,
+      "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1001"
     },
     {
       "name": "validate",
       "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "conclusion": "success"
+      "conclusion": "success",
+      "id": 1002,
+      "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1002"
     }
   ]
 }
