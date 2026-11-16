@@ -82,6 +82,25 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(json.loads(first.getvalue())["mode"], "proposal-only")
 
 
+
+    def test_cli_renders_stable_markdown_proposal_without_publishing(self):
+        fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        first = io.StringIO()
+        with redirect_stdout(first):
+            self.assertEqual(main(["--reconcile-input", str(fixture), "--render-proposal"]), 0)
+        second = io.StringIO()
+        with redirect_stdout(second):
+            self.assertEqual(main(["--reconcile-input", str(fixture), "--render-proposal"]), 0)
+        self.assertEqual(first.getvalue(), second.getvalue())
+        self.assertIn("Roadmap reconciliation proposal", first.getvalue())
+        self.assertIn("Pending owner approval", first.getvalue())
+        self.assertIn("No roadmap, GitHub", first.getvalue())
+
+    def test_render_proposal_requires_reconciliation_fixture(self):
+        with self.assertRaises(SystemExit) as raised:
+            main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json"), "--render-proposal"])
+        self.assertEqual(raised.exception.code, 2)
+
     def test_reconciliation_fixture_cannot_self_approve_or_weaken_required_checks(self):
         fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
         payload = json.loads(fixture.read_text(encoding="utf-8"))
