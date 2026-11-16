@@ -226,7 +226,10 @@ def render_proposal_comment(report: Any) -> str:
 
 def render_proposal_artifact_json(report: Any) -> str:
     """Serialize the full proposal artifact as deterministic JSON."""
-    return json.dumps(
+    rendered = json.dumps(
         build_proposal_artifact(report), indent=2, sort_keys=True, ensure_ascii=True,
         allow_nan=False,
     ) + "\n"
+    if len(rendered.encode("utf-8")) > _MAX_REPORT_BYTES:
+        raise ProposalArtifactError("serialized proposal artifact exceeds the size limit")
+    return rendered
