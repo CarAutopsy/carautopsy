@@ -18,7 +18,8 @@ class ProposalArtifactError(ValueError):
 
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
-_CHECK_URL = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/runs/([1-9][0-9]*)\Z")
+_CHECK_URL = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/(?:actions/)?runs/([1-9][0-9]*)(?:/job/([1-9][0-9]*))?\Z")
+_CHECK_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,99}\\Z")
 _STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
 _MAX_REPORT_ITEMS = 5000
 _MAX_REPORT_BYTES = 5_000_000
@@ -45,15 +46,17 @@ def _validate_check_record(check: Any, head_sha: str, repository: str) -> dict[s
     name = check.get("name")
     url = check.get("html_url")
     if (
-        isinstance(check_id, bool) or not isinstance(check_id, int) or check_id < 1
-        or not isinstance(name, str) or not name or len(name) > 100
+        set(check) != {"id", "name", "head_sha", "conclusion", "html_url"}
+        or isinstance(check_id, bool) or not isinstance(check_id, int) or check_id < 1
+        or not isinstance(name, str) or _CHECK_NAME.fullmatch(name) is None
         or check.get("head_sha") != head_sha
         or check.get("conclusion") != "success"
         or not isinstance(url, str) or len(url) > 300
     ):
         raise ProposalArtifactError("CI check evidence is incomplete or mismatched")
     url_match = _CHECK_URL.fullmatch(url)
-    if url_match is None or url_match.group(1) != repository or url_match.group(2) != str(check_id):
+    linked_id = (url_match.group(3) or url_match.group(2)) if url_match else None
+    if url_match is None or url_match.group(1) != repository or linked_id != str(check_id):
         raise ProposalArtifactError("CI check URL does not identify this repository and check-run ID")
     return check
 
@@ -110,7 +113,10 @@ def _render_check_links(evidence: dict[str, Any], repository: str, *, require_co
     )
 
 
-def _validate_evidence(evidence: Any, issue_number: int, repository: str, *, require_done: bool = False) -> dict[str, Any]:
+def _validate_evidence(
+    evidence: Any, issue_number: int, repository: str, *,
+    require_done: bool = False, allow_missing_pr: bool = False,
+) -> dict[str, Any]:
     if not isinstance(evidence, dict) or set(evidence) - _EVIDENCE_FIELDS:
         raise ProposalArtifactError("proposal evidence has an invalid shape")
     evidence_issue = evidence.get("issue_number")
@@ -124,8 +130,10 @@ def _validate_evidence(evidence: Any, issue_number: int, repository: str, *, req
     merge_sha = evidence.get("merge_commit_sha")
     if (
         isinstance(evidence_issue, bool) or not isinstance(evidence_issue, int) or evidence_issue != issue_number
-        or isinstance(linked_pr, bool) or not isinstance(linked_pr, int) or linked_pr < 1
-        or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
+        or not (allow_missing_pr and linked_pr is None and head_sha is None) and (
+            isinstance(linked_pr, bool) or not isinstance(linked_pr, int) or linked_pr < 1
+            or not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None
+        )
         or not isinstance(issue_state, str) or issue_state not in {"open", "closed"}
         or not isinstance(updated_at, str) or len(updated_at) > 64
         or not isinstance(required, list) or len(required) > 10
@@ -139,13 +147,17 @@ def _validate_evidence(evidence: Any, issue_number: int, repository: str, *, req
         or (merge_sha is not None and (not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None))
     ):
         raise ProposalArtifactError("proposal evidence is incomplete or malformed")
+    if linked_pr is None and (checks or merge_sha is not None or evidence["checks_passed"]):
+        raise ProposalArtifactError("PR-less evidence cannot claim CI or merge success")
     if require_done:
-        if merge_sha is None or evidence["checks_passed"] is not True or missing:
+        if linked_pr is None or merge_sha is None or evidence["checks_passed"] is not True or missing:
             raise ProposalArtifactError("done proposal lacks a valid merge commit SHA or CI evidence")
         _validate_check_evidence(evidence, head_sha, repository)
-    else:
+    elif linked_pr is not None:
         for check in checks:
             _validate_check_record(check, head_sha, repository)
+    elif checks:
+        raise ProposalArtifactError("PR-less evidence cannot contain CI check records")
     return evidence
 
 
@@ -177,8 +189,8 @@ def _validate_report(report: Any) -> dict[str, Any]:
 
     proposals = report.get("proposals")
     unchanged = report.get("unchanged")
-    if (not isinstance(repository, str) or not repository) and (proposals or unchanged):
-        raise ProposalArtifactError("repository is required to validate CI evidence")
+    if not isinstance(repository, str) or not repository:
+        raise ProposalArtifactError("repository is required to validate the proposal artifact")
     if not isinstance(proposals, list) or not isinstance(unchanged, list):
         raise ProposalArtifactError("report proposals and unchanged must be lists")
     if len(proposals) + len(unchanged) > _MAX_REPORT_ITEMS:
@@ -243,6 +255,17 @@ def _validate_report(report: Any) -> dict[str, Any]:
             raise ProposalArtifactError("blocked_by must be a unique list of task keys")
         if proposed_status is not None and item.get("requires_owner_approval") is not True:
             raise ProposalArtifactError("unapproved status change must remain owner-gated")
+        if "evidence" in item:
+            raw_unchanged_evidence = item["evidence"]
+            if not isinstance(raw_unchanged_evidence, dict):
+                raise ProposalArtifactError("unchanged evidence must be an object")
+            unchanged_issue = raw_unchanged_evidence.get("issue_number")
+            if isinstance(unchanged_issue, bool) or not isinstance(unchanged_issue, int) or unchanged_issue < 1:
+                raise ProposalArtifactError("unchanged evidence lacks a valid issue reference")
+            _validate_evidence(
+                raw_unchanged_evidence, unchanged_issue, repository,
+                require_done=proposed_status == "done", allow_missing_pr=True,
+            )
         if item.get("requires_owner_approval") is True and proposed_status is not None:
             raw_evidence = item.get("evidence")
             if not isinstance(raw_evidence, dict):
@@ -261,10 +284,15 @@ def _validate_report(report: Any) -> dict[str, Any]:
 def build_proposal_artifact(report: Any) -> dict[str, Any]:
     """Return stable JSON and Markdown artifacts for a validated report."""
     normalized = _validate_report(report)
-    repository = normalized["repository"]
-    canonical = json.dumps(
-        normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
-    ).encode("utf-8")
+    repository = normalized.get("repository")
+    if not isinstance(repository, str) or not repository:
+        raise ProposalArtifactError("repository is required to render the proposal artifact")
+    try:
+        canonical = json.dumps(
+            normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
+        ).encode("utf-8")
+    except (RecursionError, TypeError, ValueError) as exc:
+        raise ProposalArtifactError("report cannot be serialized as safe JSON") from exc
     if len(canonical) > _MAX_REPORT_BYTES:
         raise ProposalArtifactError("report exceeds the artifact size limit")
     digest = hashlib.sha256(canonical).hexdigest()
