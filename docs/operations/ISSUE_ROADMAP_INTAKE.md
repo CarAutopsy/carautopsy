@@ -57,6 +57,19 @@ GitHub evidence in the fixture. A live collector must obtain issue/PR
 cross-reference events, PR metadata, and check-runs from the GitHub API before
 passing projected records to the pure reconciler.
 
+Render the same reconciliation report as a stable Markdown proposal comment
+without publishing it:
+
+```bash
+python scripts/issue_roadmap_controller.py --reconcile-input tests/fixtures/roadmap-reconciliation.example.json --render-proposal
+```
+
+The renderer sorts proposal entries, validates the no-write flags and exact
+PR-head evidence, and computes a content-derived SHA-256 proposal ID. Identical
+reports produce byte-identical Markdown and IDs. The output includes a fixed
+marker for a future idempotent comment publisher, but this command only prints
+to stdout; it never calls the GitHub comments API.
+
 ## Safety and scope
 
 - No issue labels, comments, roadmap files, workflow files, or task queues are
