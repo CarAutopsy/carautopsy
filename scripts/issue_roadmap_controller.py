@@ -193,12 +193,10 @@ def load_reconciliation_fixture(path: str | Path) -> dict[str, Any]:
 
     repository = payload.get("repository", "CarAutopsy/carautopsy")
     _validate_repository(repository)
-    approved = payload.get("approved_task_keys", [])
-    required = payload.get("required_checks", ["audit", "validate"])
-    if not isinstance(approved, list) or any(not isinstance(key, str) for key in approved):
-        raise IntakeControllerError("approved_task_keys must be a list of task-key strings")
-    if not isinstance(required, list) or any(not isinstance(name, str) or not name for name in required):
-        raise IntakeControllerError("required_checks must be a list of non-empty names")
+    if payload.get("approved_task_keys") not in (None, []):
+        raise IntakeControllerError("fixture input cannot assert owner approval")
+    if payload.get("required_checks") not in (None, ["audit", "validate"]):
+        raise IntakeControllerError("fixture input cannot override required CI checks")
 
     return {
         "repository": repository,
@@ -222,8 +220,6 @@ def load_reconciliation_fixture(path: str | Path) -> dict[str, Any]:
             ("name", "head_sha", "conclusion"),
             "check_runs",
         ),
-        "approved_task_keys": approved,
-        "required_checks": required,
     }
 
 
@@ -235,8 +231,7 @@ def build_reconciliation_dry_run_report(payload: dict[str, Any]) -> dict[str, An
             payload["issue_snapshots"],
             payload["pull_request_evidence"],
             payload["check_runs"],
-            approved_task_keys=set(payload["approved_task_keys"]),
-            required_checks=tuple(payload["required_checks"]),
+            approved_task_keys=set(),
         )
     except (KeyError, RoadmapReconciliationError) as exc:
         raise IntakeControllerError(f"reconciliation input rejected ({type(exc).__name__})") from exc
