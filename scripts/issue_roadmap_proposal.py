@@ -37,12 +37,16 @@ def _validate_report(report: Any) -> dict[str, Any]:
     if not isinstance(proposals, list) or not isinstance(unchanged, list):
         raise ProposalArtifactError("report proposals and unchanged must be lists")
 
+    seen_task_keys: set[str] = set()
     for item in proposals:
         if not isinstance(item, dict):
             raise ProposalArtifactError("proposal entry must be an object")
         task_key = item.get("task_key")
         if not isinstance(task_key, str) or _TASK_KEY.fullmatch(task_key) is None:
             raise ProposalArtifactError("proposal has an invalid task_key")
+        if task_key in seen_task_keys:
+            raise ProposalArtifactError("report contains duplicate task entries")
+        seen_task_keys.add(task_key)
         issue_number = item.get("issue_number")
         if isinstance(issue_number, bool) or not isinstance(issue_number, int) or issue_number < 1:
             raise ProposalArtifactError("proposal has an invalid issue_number")
@@ -77,6 +81,20 @@ def _validate_report(report: Any) -> dict[str, Any]:
         task_key = item.get("task_key")
         if not isinstance(task_key, str) or _TASK_KEY.fullmatch(task_key) is None:
             raise ProposalArtifactError("unchanged entry has an invalid task_key")
+        if task_key in seen_task_keys:
+            raise ProposalArtifactError("report contains duplicate task entries")
+        seen_task_keys.add(task_key)
+        if not isinstance(item.get("status"), str) or item["status"] not in _STATUSES:
+            raise ProposalArtifactError("unchanged entry has an unsupported status")
+        if "requires_owner_approval" in item and type(item["requires_owner_approval"]) is not bool:
+            raise ProposalArtifactError("owner approval marker must be boolean")
+        proposed_status = item.get("proposed_status")
+        if proposed_status is not None and (
+            not isinstance(proposed_status, str) or proposed_status not in _STATUSES
+        ):
+            raise ProposalArtifactError("unchanged entry has an unsupported proposed status")
+        if "reason" in item and not isinstance(item["reason"], str):
+            raise ProposalArtifactError("unchanged entry reason must be text")
 
     normalized = copy.deepcopy(report)
     normalized["proposals"] = sorted(normalized["proposals"], key=lambda item: item["task_key"])
