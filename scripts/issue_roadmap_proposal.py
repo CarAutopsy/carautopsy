@@ -142,10 +142,10 @@ def _validate_evidence(evidence: Any, issue_number: int, repository: str, *, req
     if require_done:
         if merge_sha is None or evidence["checks_passed"] is not True or missing:
             raise ProposalArtifactError("done proposal lacks a valid merge commit SHA or CI evidence")
-        _validate_check_evidence(evidence, head_sha)
+        _validate_check_evidence(evidence, head_sha, repository)
     else:
         for check in checks:
-            _validate_check_record(check, head_sha)
+            _validate_check_record(check, head_sha, repository)
     return evidence
 
 
@@ -177,6 +177,8 @@ def _validate_report(report: Any) -> dict[str, Any]:
 
     proposals = report.get("proposals")
     unchanged = report.get("unchanged")
+    if (not isinstance(repository, str) or not repository) and (proposals or unchanged):
+        raise ProposalArtifactError("repository is required to validate CI evidence")
     if not isinstance(proposals, list) or not isinstance(unchanged, list):
         raise ProposalArtifactError("report proposals and unchanged must be lists")
     if len(proposals) + len(unchanged) > _MAX_REPORT_ITEMS:
@@ -204,7 +206,7 @@ def _validate_report(report: Any) -> dict[str, Any]:
             or item.get("requires_owner_approval") is not False
         ):
             raise ProposalArtifactError("proposal has an unsupported status or owner gate")
-        _validate_evidence(item.get("evidence"), issue_number, require_done=item["to_status"] == "done")
+        _validate_evidence(item.get("evidence"), issue_number, repository, require_done=item["to_status"] == "done")
 
     for item in unchanged:
         if not isinstance(item, dict) or set(item) - {
@@ -248,7 +250,7 @@ def _validate_report(report: Any) -> dict[str, Any]:
             evidence_issue = raw_evidence.get("issue_number")
             if isinstance(evidence_issue, bool) or not isinstance(evidence_issue, int) or evidence_issue < 1:
                 raise ProposalArtifactError("pending owner decision lacks a valid issue reference")
-            _validate_evidence(raw_evidence, evidence_issue, require_done=proposed_status == "done")
+            _validate_evidence(raw_evidence, evidence_issue, repository, require_done=proposed_status == "done")
 
     normalized = dict(report)
     normalized["proposals"] = sorted(proposals, key=lambda item: item["task_key"])
@@ -307,7 +309,7 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
         for item in pending:
             evidence = item["evidence"]
             merge_sha = evidence.get("merge_commit_sha", "—")
-            ci_links = _render_check_links(evidence, require_complete=item["proposed_status"] == "done")
+            ci_links = _render_check_links(evidence, repository, require_complete=item["proposed_status"] == "done")
             lines.append(
                 f"- {html.escape(item['task_key'])}: "
                 f"{html.escape(str(item.get('status', 'unknown')))} → "
