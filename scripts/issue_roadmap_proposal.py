@@ -5,6 +5,7 @@ Rendering is side-effect free. It never posts comments or modifies roadmap state
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import html
 import json
@@ -310,7 +311,7 @@ def _validate_report(report: Any) -> dict[str, Any]:
                 raise ProposalArtifactError("pending owner decision lacks a valid issue reference")
             _validate_evidence(raw_evidence, evidence_issue, repository, require_done=proposed_status == "done")
 
-    normalized = dict(report)
+    normalized = copy.deepcopy(report)
     normalized["proposals"] = sorted(proposals, key=lambda item: item["task_key"])
     normalized["unchanged"] = sorted(unchanged, key=lambda item: item["task_key"])
     return normalized
