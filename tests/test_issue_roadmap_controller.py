@@ -15,8 +15,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from issue_roadmap_controller import (
     IntakeControllerError,
     build_dry_run_report,
+    build_reconciliation_dry_run_report,
     fetch_open_issues,
     load_issue_fixture,
+    load_reconciliation_fixture,
     main,
     render_report,
 )
@@ -49,6 +51,45 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertEqual(report["actionable_proposal_count"], 1)
         self.assertEqual(report["owner_triage_count"], 1)
         self.assertTrue(report["requires_owner_approval"])
+
+
+    def test_reconciliation_fixture_projects_untrusted_fields_and_stays_proposal_only(self):
+        payload = load_reconciliation_fixture(
+            ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        )
+        self.assertNotIn("body", payload["issue_snapshots"][0])
+        self.assertNotIn("body", payload["pull_request_evidence"][0])
+        self.assertNotIn("output", payload["check_runs"][0])
+        report = build_reconciliation_dry_run_report(payload)
+        self.assertEqual(report["mode"], "proposal-only")
+        self.assertEqual(report["source"], "fixture")
+        self.assertEqual(report["unchanged"][0]["proposed_status"], "done")
+        self.assertTrue(report["unchanged"][0]["requires_owner_approval"])
+        self.assertFalse(report["roadmap_modified"])
+        self.assertFalse(report["github_modified"])
+        self.assertFalse(report["task_dispatch_performed"])
+
+        payload["approved_task_keys"] = ["issue-10"]
+        approved = build_reconciliation_dry_run_report(payload)
+        self.assertEqual(approved["proposals"][0]["to_status"], "done")
+
+    def test_reconciliation_cli_emits_deterministic_json_to_stdout(self):
+        fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        first = io.StringIO()
+        with redirect_stdout(first):
+            self.assertEqual(main(["--reconcile-input", str(fixture)]), 0)
+        second = io.StringIO()
+        with redirect_stdout(second):
+            self.assertEqual(main(["--reconcile-input", str(fixture)]), 0)
+        self.assertEqual(first.getvalue(), second.getvalue())
+        self.assertEqual(json.loads(first.getvalue())["mode"], "proposal-only")
+
+    def test_reconciliation_fixture_rejects_malformed_sections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.json"
+            path.write_text(json.dumps({"roadmap_tasks": []}), encoding="utf-8")
+            with self.assertRaises(IntakeControllerError):
+                load_reconciliation_fixture(path)
 
     def test_cli_emits_report_to_stdout_and_rejects_output_path(self):
         output = io.StringIO()
