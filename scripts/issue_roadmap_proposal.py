@@ -46,12 +46,23 @@ def _validate_report(report: Any) -> dict[str, Any]:
         issue_number = item.get("issue_number")
         if isinstance(issue_number, bool) or not isinstance(issue_number, int) or issue_number < 1:
             raise ProposalArtifactError("proposal has an invalid issue_number")
-        if item.get("from_status") not in _STATUSES or item.get("to_status") not in _STATUSES:
+        if (
+            not isinstance(item.get("from_status"), str)
+            or item["from_status"] not in _STATUSES
+            or not isinstance(item.get("to_status"), str)
+            or item["to_status"] not in _STATUSES
+        ):
             raise ProposalArtifactError("proposal has an unsupported status")
         if item.get("requires_owner_approval") is not False:
             raise ProposalArtifactError("renderable proposal must already have explicit owner approval")
         evidence = item.get("evidence")
-        if not isinstance(evidence, dict) or evidence.get("issue_number") != issue_number:
+        evidence_issue = evidence.get("issue_number") if isinstance(evidence, dict) else None
+        if (
+            not isinstance(evidence, dict)
+            or isinstance(evidence_issue, bool)
+            or not isinstance(evidence_issue, int)
+            or evidence_issue != issue_number
+        ):
             raise ProposalArtifactError("proposal evidence does not match its issue")
         head_sha = evidence.get("head_sha")
         if not isinstance(head_sha, str) or _SHA.fullmatch(head_sha) is None:
