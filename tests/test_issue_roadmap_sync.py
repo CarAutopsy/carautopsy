@@ -182,6 +182,24 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual((tasks, issues, prs, run_checks), before)
 
+
+    def test_future_roadmap_timestamp_is_stale_not_a_freshness_bypass(self):
+        future = "2026-11-17T12:00:00Z"
+        report = build_reconciliation_proposal(
+            [task(source_updated_at=future)], [issue()], [pr()], checks(),
+            approved_task_keys={"issue-10"},
+        )
+        self.assertTrue(report["unchanged"][0]["stale"])
+        self.assertEqual(report["proposals"], [])
+
+    def test_long_dependency_chain_does_not_recurse(self):
+        tasks = []
+        for index in range(1200):
+            key = f"task-{index:04d}"
+            dependencies = [] if index == 0 else [f"task-{index - 1:04d}"]
+            tasks.append(task(key, index + 1, dependencies=dependencies))
+        self.assertEqual(len(validate_task_graph(tasks)), 1200)
+
     def test_invalid_timestamps_and_approval_inputs_fail_closed(self):
         with self.assertRaisesRegex(RoadmapReconciliationError, "timezone"):
             validate_task_graph([task(source_updated_at="2026-11-16T12:00:00")])
