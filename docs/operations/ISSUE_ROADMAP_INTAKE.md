@@ -75,6 +75,22 @@ passing projected records to the pure reconciler.
 - No second scheduler is introduced; the existing 15-minute pipeline is
   unchanged.
 
+
+## Render a deterministic proposal comment (stdout only)
+
+To render a reconciliation report as a stable Markdown proposal comment:
+
+```bash
+python scripts/issue_roadmap_controller.py --reconcile-input tests/fixtures/roadmap-reconciliation.example.json --render-proposal
+```
+
+The renderer validates proposal-only/no-write flags, owner approval, unique
+task identities, exact PR-head evidence, and the merge commit SHA for any
+`done` proposal. It sorts entries and computes a content-derived SHA-256
+proposal ID, so identical reports produce byte-identical Markdown and IDs.
+The fixed comment marker is groundwork for a future idempotent publisher.
+This command only prints to stdout; it never calls the GitHub comments API.
+
 Issue #86 remains open. Live GitHub evidence collection, idempotent proposal
 publishing, a separately owner-authorized apply path, and workflow wiring
 remain future integration work.
