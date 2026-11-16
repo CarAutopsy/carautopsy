@@ -80,9 +80,13 @@ async function getPublicationIssues(data: Payload): Promise<string[]> {
     return ["The current country-pack manifest or TCO contract could not be read; published figures are hidden."];
   }
 
-  let contract: { engine_version?: unknown; max_artifact_age_days?: unknown; max_future_skew_minutes?: unknown };
+  let contract: Record<string, unknown>;
   try {
-    contract = JSON.parse(contractRaw);
+    const parsedContract: unknown = JSON.parse(contractRaw);
+    if (typeof parsedContract !== "object" || parsedContract === null || Array.isArray(parsedContract)) {
+      return ["The shared TCO contract is invalid; published figures are hidden."];
+    }
+    contract = parsedContract as Record<string, unknown>;
   } catch {
     return ["The shared TCO contract is invalid; published figures are hidden."];
   }
@@ -139,24 +143,73 @@ async function getPublicationIssues(data: Payload): Promise<string[]> {
   return issues;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isNullableFiniteNumber(value: unknown): value is number | null {
+  return value === null || isFiniteNumber(value);
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isResult(value: unknown): value is Result {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.variant_id === "string" &&
+    isNullableString(value.make) &&
+    isNullableString(value.model) &&
+    isNullableString(value.variant_name) &&
+    typeof value.powertrain === "string" &&
+    isFiniteNumber(value.power_kw) &&
+    isNullableFiniteNumber(value.co2_gkm) &&
+    isNullableFiniteNumber(value.list_price_eur) &&
+    isFiniteNumber(value.nova_eur) &&
+    isFiniteNumber(value.motor_tax_monthly_eur) &&
+    isFiniteNumber(value.energy_5y_eur) &&
+    isFiniteNumber(value.maintenance_5y_eur) &&
+    isFiniteNumber(value.insurance_5y_eur) &&
+    isFiniteNumber(value.tyres_5y_eur) &&
+    isFiniteNumber(value.inspection_5y_eur) &&
+    isFiniteNumber(value.total_5y_eur) &&
+    isFiniteNumber(value.monthly_eur) &&
+    isNullableString(value.data_confidence)
+  );
+}
+
+function isPayload(value: unknown): value is Payload {
+  if (!isRecord(value) || !Array.isArray(value.results) || !value.results.every(isResult)) return false;
+  if (!isRecord(value.summary) || !isRecord(value.envelope)) return false;
+  const { summary, envelope } = value;
+  return (
+    Number.isSafeInteger(summary.variants) &&
+    (summary.variants as number) >= 0 &&
+    isNullableFiniteNumber(summary.bev_avg_monthly_eur) &&
+    isNullableFiniteNumber(summary.ice_avg_monthly_eur) &&
+    typeof envelope.engine_version === "string" &&
+    typeof envelope.country_pack === "string" &&
+    typeof envelope.country_pack_status === "string" &&
+    typeof envelope.generated_utc === "string" &&
+    (envelope.note === undefined || typeof envelope.note === "string")
+  );
+}
+
 export default async function Home() {
   let data: Payload | null = null;
   let loadError = false;
   try {
     const raw = await fs.readFile(path.join(process.cwd(), "public", "data", "autopsies.json"), "utf8");
     const parsed: unknown = JSON.parse(raw);
-    if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      !Array.isArray((parsed as Payload).results) ||
-      typeof (parsed as Payload).summary !== "object" ||
-      (parsed as Payload).summary === null ||
-      typeof (parsed as Payload).envelope !== "object" ||
-      (parsed as Payload).envelope === null
-    ) {
+    if (!isPayload(parsed)) {
       throw new Error("Invalid TCO publication payload");
     }
-    data = parsed as Payload;
+    data = parsed;
   } catch {
     loadError = true;
   }
