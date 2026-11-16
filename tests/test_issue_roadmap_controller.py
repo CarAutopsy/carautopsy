@@ -70,6 +70,43 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertFalse(report["task_dispatch_performed"])
 
 
+
+    def test_reconciliation_cli_preserves_blocked_and_owner_triage_statuses(self):
+        payload = load_reconciliation_fixture(
+            ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        )
+        payload["roadmap_tasks"][0]["status"] = "blocked"
+        payload["roadmap_tasks"].append({
+            "task_key": "issue-11",
+            "issue_number": 11,
+            "status": "needs-owner-triage",
+            "dependencies": [],
+            "source_updated_at": "2026-11-16T12:00:00Z",
+        })
+        payload["issue_snapshots"].append({
+            "number": 11,
+            "state": "closed",
+            "updated_at": "2026-11-16T12:00:00Z",
+        })
+        payload["pull_request_evidence"].append({
+            "number": 111,
+            "issue_number": 11,
+            "state": "closed",
+            "merged": True,
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "merge_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "link_evidence": "github-cross-reference-event",
+        })
+        before = json.loads(json.dumps(payload))
+        report = build_reconciliation_dry_run_report(payload)
+        self.assertEqual(report["proposals"], [])
+        unchanged = {item["task_key"]: item for item in report["unchanged"]}
+        self.assertEqual(unchanged["issue-10"]["status"], "blocked")
+        self.assertEqual(unchanged["issue-11"]["status"], "needs-owner-triage")
+        self.assertEqual(payload, before)
+        self.assertFalse(report["roadmap_modified"])
+        self.assertFalse(report["github_modified"])
+
     def test_reconciliation_cli_emits_deterministic_json_to_stdout(self):
         fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
         first = io.StringIO()
