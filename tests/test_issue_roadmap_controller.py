@@ -69,9 +69,6 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertFalse(report["github_modified"])
         self.assertFalse(report["task_dispatch_performed"])
 
-        payload["approved_task_keys"] = ["issue-10"]
-        approved = build_reconciliation_dry_run_report(payload)
-        self.assertEqual(approved["proposals"][0]["to_status"], "done")
 
     def test_reconciliation_cli_emits_deterministic_json_to_stdout(self):
         fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
@@ -83,6 +80,23 @@ class IssueRoadmapControllerTests(unittest.TestCase):
             self.assertEqual(main(["--reconcile-input", str(fixture)]), 0)
         self.assertEqual(first.getvalue(), second.getvalue())
         self.assertEqual(json.loads(first.getvalue())["mode"], "proposal-only")
+
+
+    def test_reconciliation_fixture_cannot_self_approve_or_weaken_required_checks(self):
+        fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        payload = json.loads(fixture.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "approval.json"
+            payload["approved_task_keys"] = ["issue-10"]
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(IntakeControllerError, "cannot assert owner approval"):
+                load_reconciliation_fixture(path)
+
+            payload.pop("approved_task_keys")
+            payload["required_checks"] = ["audit"]
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(IntakeControllerError, "cannot override required CI checks"):
+                load_reconciliation_fixture(path)
 
     def test_reconciliation_fixture_rejects_malformed_sections(self):
         with tempfile.TemporaryDirectory() as directory:
