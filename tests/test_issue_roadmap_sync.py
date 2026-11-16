@@ -50,8 +50,20 @@ def pr(number=110, issue_number=10, state="closed", merged=True, **overrides):
 
 def checks(sha=SHA_A):
     return [
-        {"name": "audit", "head_sha": sha, "conclusion": "success"},
-        {"name": "validate", "head_sha": sha, "conclusion": "success"},
+        {
+            "id": 1001,
+            "name": "audit",
+            "head_sha": sha,
+            "conclusion": "success",
+            "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1001",
+        },
+        {
+            "id": 1002,
+            "name": "validate",
+            "head_sha": sha,
+            "conclusion": "success",
+            "html_url": "https://github.com/CarAutopsy/carautopsy/runs/1002",
+        },
     ]
 
 
@@ -73,6 +85,10 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(approved["proposals"][0]["to_status"], "done")
         self.assertEqual(approved["proposals"][0]["evidence"]["head_sha"], SHA_A)
         self.assertEqual(approved["proposals"][0]["evidence"]["merge_commit_sha"], SHA_B)
+        self.assertEqual(
+            [item["name"] for item in approved["proposals"][0]["evidence"]["check_evidence"]],
+            ["audit", "validate"],
+        )
         self.assertFalse(approved["proposals"][0]["requires_owner_approval"])
 
     def test_check_runs_for_different_sha_do_not_complete_task(self):
