@@ -228,7 +228,11 @@ class RoadmapSyncTests(unittest.TestCase):
 
     def test_protected_roadmap_states_survive_without_owner_approval(self):
         tasks = [
-            task("issue-10", 10, status="blocked"),
+            task("issue-10", 10, status="blocked", protected_hive_gates={
+                "HIVE_RESEARCH_PAUSED": True,
+                "VERIFIED_RETRIEVAL_AVAILABLE": False,
+                "approved_source_manifest": [],
+            }),
             task("issue-11", 11, status="needs-owner-triage"),
         ]
         before = copy.deepcopy(tasks)
@@ -243,7 +247,11 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(unchanged["issue-10"]["status"], "blocked")
         self.assertEqual(unchanged["issue-11"]["status"], "needs-owner-triage")
         self.assertTrue(unchanged["issue-10"]["requires_owner_approval"])
-        self.assertEqual([item["status"] for item in tasks], [item["status"] for item in before])
+        self.assertEqual(tasks, before)
+        self.assertEqual(
+            tasks[0]["protected_hive_gates"],
+            {"HIVE_RESEARCH_PAUSED": True, "VERIFIED_RETRIEVAL_AVAILABLE": False, "approved_source_manifest": []},
+        )
 
     def test_ambiguous_pr_links_do_not_suppress_independent_tasks(self):
         report = build_reconciliation_proposal(
