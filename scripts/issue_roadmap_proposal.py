@@ -339,7 +339,26 @@ def build_proposal_artifact(report: Any) -> dict[str, Any]:
     ])
     markdown = "\n".join(lines) + "\n"
     if len(markdown.encode("utf-8")) > _MAX_MARKDOWN_BYTES:
-        raise ProposalArtifactError("Markdown proposal exceeds the safe comment size limit")
+        pending_count = sum(
+            item.get("requires_owner_approval") is True and item.get("proposed_status") is not None
+            for item in normalized["unchanged"]
+        )
+        blocked_count = sum(item.get("proposed_status") is None for item in normalized["unchanged"])
+        markdown = "\n".join([
+            "# Roadmap reconciliation proposal",
+            "",
+            f"- Proposal ID: `{proposal_id}`",
+            f"- Proposed status changes: {len(normalized['proposals'])}",
+            f"- Pending owner decisions: {pending_count}",
+            f"- Unchanged / blocked tasks: {blocked_count}",
+            "",
+            "The full deterministic JSON artifact contains every task, evidence record, blocker, and CI reference. "
+            "This compact comment is used because the detailed Markdown would exceed the safe comment-size limit.",
+            "",
+            "This artifact is informational. It is not an approval, merge request, or activation signal.",
+        ]) + "\n"
+    if len(markdown.encode("utf-8")) > _MAX_MARKDOWN_BYTES:
+        raise ProposalArtifactError("summary Markdown exceeds the safe comment size limit")
     return {
         "schema_version": 1,
         "proposal_id": proposal_id,
