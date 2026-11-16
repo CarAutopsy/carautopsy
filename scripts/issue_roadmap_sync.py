@@ -20,7 +20,7 @@ class RoadmapReconciliationError(ValueError):
 _TASK_KEY = re.compile(r"[a-z0-9][a-z0-9-]{1,63}\Z")
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
 _ALLOWED_STATUSES = {"proposed", "approved", "blocked", "in_progress", "done", "needs-owner-triage"}
-_DEFAULT_REQUIRED_CHECKS = ("audit", "validate")
+_MANDATORY_REQUIRED_CHECKS = ("audit", "validate")
 _MAX_ROADMAP_TASKS = 5000
 _MAX_DEPENDENCIES_PER_TASK = 100
 
@@ -123,23 +123,28 @@ def validate_task_graph(tasks: Any) -> dict[str, dict[str, Any]]:
     return indexed
 
 
-def _index_unique(records: Any, field: str, label: str) -> dict[int, dict[str, Any]]:
+def _index_unique(records: Any, field: str, label: str) -> tuple[dict[int, dict[str, Any]], set[int]]:
     if not isinstance(records, list):
         raise RoadmapReconciliationError(f"{label} must be a list")
     indexed: dict[int, dict[str, Any]] = {}
+    ambiguous: set[int] = set()
     for record in records:
         if not isinstance(record, dict):
             raise RoadmapReconciliationError(f"{label} entry must be an object")
         number = record.get(field)
         if isinstance(number, bool) or not isinstance(number, int) or number < 1:
             raise RoadmapReconciliationError(f"{label} entry has an invalid {field}")
+        if number in ambiguous:
+            continue
         if number in indexed:
-            raise RoadmapReconciliationError(f"duplicate {label} record: {number}")
+            del indexed[number]
+            ambiguous.add(number)
+            continue
         indexed[number] = record
-    return indexed
+    return indexed, ambiguous
 
 
-def _index_linked_prs(records: Any) -> dict[int, dict[str, Any]]:
+def _index_linked_prs(records: Any) -> tuple[dict[int, dict[str, Any]], set[int]]:
     if not isinstance(records, list) or len(records) > 20_000:
         raise RoadmapReconciliationError("pull-request evidence must be a bounded list")
     by_issue: dict[int, list[dict[str, Any]]] = {}
@@ -158,13 +163,10 @@ def _index_linked_prs(records: Any) -> dict[int, dict[str, Any]]:
         if pr.get("link_evidence") == "github-cross-reference-event":
             by_issue.setdefault(issue_number, []).append(pr)
 
-    ambiguous = [number for number, matches in by_issue.items() if len(matches) > 1]
-    if ambiguous:
-        raise RoadmapReconciliationError(
-            "multiple linked PR evidence records for issue(s): "
-            + ", ".join(str(number) for number in sorted(ambiguous)[:5])
-        )
-    return {number: matches[0] for number, matches in by_issue.items()}
+    ambiguous = {number for number, matches in by_issue.items() if len(matches) > 1}
+    return {
+        number: matches[0] for number, matches in by_issue.items() if number not in ambiguous
+    }, ambiguous
 
 
 def _index_check_runs(checks: Any, required_checks: tuple[str, ...]) -> dict[str, dict[str, list[Any]]]:
@@ -201,7 +203,7 @@ def build_reconciliation_proposal(
     check_runs: Any,
     *,
     approved_task_keys: set[str] | None = None,
-    required_checks: tuple[str, ...] = _DEFAULT_REQUIRED_CHECKS,
+    required_checks: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Build a deterministic reconciliation proposal without applying changes.
 
@@ -210,13 +212,14 @@ def build_reconciliation_proposal(
     all dependencies are done, and its task key is explicitly owner-approved.
     """
     tasks = validate_task_graph(roadmap_tasks)
-    issues = _index_unique(issue_snapshots, "number", "issue snapshot")
-    if not isinstance(required_checks, tuple) or not required_checks or any(
+    issues, ambiguous_issue_snapshots = _index_unique(issue_snapshots, "number", "issue snapshot")
+    if not isinstance(required_checks, tuple) or any(
         not isinstance(name, str) or not name for name in required_checks
     ):
-        raise RoadmapReconciliationError("required_checks must be a non-empty tuple of names")
-    linked_prs = _index_linked_prs(pull_request_evidence)
-    checks_by_sha = _index_check_runs(check_runs, required_checks)
+        raise RoadmapReconciliationError("additional required checks must be a tuple of names")
+    effective_required_checks = tuple(dict.fromkeys((*_MANDATORY_REQUIRED_CHECKS, *required_checks)))
+    linked_prs, ambiguous_linked_prs = _index_linked_prs(pull_request_evidence)
+    checks_by_sha = _index_check_runs(check_runs, effective_required_checks)
     approved = set() if approved_task_keys is None else approved_task_keys
     if not isinstance(approved, set) or any(
         not isinstance(key, str) or key not in tasks for key in approved
@@ -227,7 +230,16 @@ def build_reconciliation_proposal(
     unchanged: list[dict[str, Any]] = []
     for key in sorted(tasks):
         task = tasks[key]
-        issue = issues.get(task["issue_number"])
+        issue_number = task["issue_number"]
+        if issue_number in ambiguous_issue_snapshots:
+            unchanged.append({
+                "task_key": key,
+                "status": task["status"],
+                "reason": "duplicate issue snapshots; no status inferred",
+                "stale": True,
+            })
+            continue
+        issue = issues.get(issue_number)
         if issue is None:
             unchanged.append({
                 "task_key": key,
@@ -246,15 +258,33 @@ def build_reconciliation_proposal(
             source_updated_at, f"{key}.source_updated_at"
         )
 
-        pr = linked_prs.get(task["issue_number"])
+        if issue_number in ambiguous_linked_prs:
+            unchanged.append({
+                "task_key": key,
+                "status": task["status"],
+                "reason": "multiple linked PR records; no status inferred",
+                "stale": stale,
+                "evidence": {
+                    "issue_number": issue_number,
+                    "issue_state": issue["state"],
+                    "issue_updated_at": issue["updated_at"],
+                    "linked_pr_number": None,
+                    "head_sha": None,
+                    "required_checks": list(effective_required_checks),
+                    "checks_passed": False,
+                },
+            })
+            continue
+
+        pr = linked_prs.get(issue_number)
         desired_status = None
         evidence: dict[str, Any] = {
-            "issue_number": task["issue_number"],
+            "issue_number": issue_number,
             "issue_state": issue["state"],
             "issue_updated_at": issue["updated_at"],
             "linked_pr_number": None,
             "head_sha": None,
-            "required_checks": list(required_checks),
+            "required_checks": list(effective_required_checks),
             "checks_passed": False,
         }
         reason = "insufficient verified PR/CI evidence; preserve current status"
@@ -278,17 +308,18 @@ def build_reconciliation_proposal(
                 merge_sha = pr.get("merge_commit_sha")
                 if not isinstance(merge_sha, str) or _SHA.fullmatch(merge_sha) is None:
                     raise RoadmapReconciliationError(f"{key}: merged PR lacks merge commit SHA")
-                passed, missing = _checks_pass_for_sha(checks_by_sha, head_sha, required_checks)
+                evidence["merge_commit_sha"] = merge_sha
+                passed, missing = _checks_pass_for_sha(checks_by_sha, head_sha, effective_required_checks)
                 evidence["checks_passed"] = passed
                 evidence["missing_checks"] = missing
-                if issue["state"] == "closed" and passed:
-                    desired_status = "done"
-                    reason = "issue closed; linked PR merged; required checks passed on exact PR head"
-                elif issue["state"] == "open" and passed:
+                if issue["state"] == "open":
                     desired_status = "needs-owner-triage"
                     reason = "linked PR merged but issue remains open"
+                elif passed:
+                    desired_status = "done"
+                    reason = "issue closed; linked PR merged; required checks passed on exact PR head"
                 else:
-                    reason = "merged PR lacks exact-head required CI evidence or issue closure"
+                    reason = "closed issue and merged PR lack exact-head required CI evidence"
             elif pr["state"] == "open" and issue["state"] == "open":
                 desired_status = "in_progress"
                 reason = "open issue has a GitHub cross-referenced open PR"
