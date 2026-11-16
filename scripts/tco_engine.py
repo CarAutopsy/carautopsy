@@ -30,13 +30,28 @@ def publication_metadata(taxes):
 
 
 
+def _json_values_equal(left, right):
+    """Compare decoded JSON values without Python's bool/int equality coercion."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            _json_values_equal(left[key], right[key]) for key in left
+        )
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            _json_values_equal(a, b) for a, b in zip(left, right)
+        )
+    return left == right
+
+
 def publication_artifact_is_current(existing, candidate, now=None):
     """Return True only when the stored artifact is identical and still fresh."""
     if not isinstance(existing, dict) or not isinstance(candidate, dict):
         return False
-    if existing.get("results") != candidate.get("results"):
+    if not _json_values_equal(existing.get("results"), candidate.get("results")):
         return False
-    if existing.get("summary") != candidate.get("summary"):
+    if not _json_values_equal(existing.get("summary"), candidate.get("summary")):
         return False
 
     old_envelope = existing.get("envelope")
@@ -52,7 +67,7 @@ def publication_artifact_is_current(existing, candidate, now=None):
     if (
         not isinstance(generated, str)
         or re.fullmatch(
-            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})",
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:[0-5]\d)",
             generated,
         ) is None
     ):
