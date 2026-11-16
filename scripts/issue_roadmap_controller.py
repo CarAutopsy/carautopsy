@@ -102,15 +102,18 @@ def _next_page_from_link(link: Any, *, owner: str, repository: str, current_page
     return next_page
 
 
-def fetch_open_issues(
+def fetch_issue_snapshots(
     repository: str,
     token: str | None = None,
     *,
+    state: str = "open",
     session: Any = requests,
     per_page: int = 100,
 ) -> list[dict[str, Any]]:
-    """Fetch open issue snapshots from the fixed GitHub API endpoint."""
+    """Fetch issue snapshots for one explicit GitHub state filter."""
     owner, name = _validate_repository(repository)
+    if state not in {"open", "closed", "all"}:
+        raise IntakeControllerError("state must be open, closed, or all")
     if isinstance(per_page, bool) or not isinstance(per_page, int) or not 1 <= per_page <= 100:
         raise IntakeControllerError("per_page must be an integer from 1 to 100")
 
@@ -127,7 +130,7 @@ def fetch_open_issues(
         try:
             response = session.get(
                 f"{GITHUB_API}/repos/{owner}/{name}/issues",
-                params={"state": "open", "per_page": per_page, "page": page},
+                params={"state": state, "per_page": per_page, "page": page},
                 headers=headers,
                 timeout=20,
             )
@@ -155,6 +158,19 @@ def fetch_open_issues(
         )
 
     raise IntakeControllerError(f"GitHub pagination exceeded {MAX_PAGES} pages")
+
+
+def fetch_open_issues(
+    repository: str,
+    token: str | None = None,
+    *,
+    session: Any = requests,
+    per_page: int = 100,
+) -> list[dict[str, Any]]:
+    """Backward-compatible open-issues fetch helper."""
+    return fetch_issue_snapshots(
+        repository, token, state="open", session=session, per_page=per_page
+    )
 
 
 def load_issue_fixture(path: str | Path) -> list[dict[str, Any]]:
@@ -250,7 +266,7 @@ def build_dry_run_report(
     source: str,
 ) -> dict[str, Any]:
     _validate_repository(repository)
-    if source not in {"fixture", "github-open-issues"}:
+    if source not in {"fixture", "github-open-issues", "github-closed-issues", "github-all-issues"}:
         raise IntakeControllerError("unsupported intake source")
 
     proposals = build_issue_proposals(issues)
@@ -314,17 +330,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--render-proposal", action="store_true", help="render reconciliation report as a stable Markdown proposal comment (stdout only)")
     parser.add_argument("--repo", default="CarAutopsy/carautopsy", help="GitHub repository owner/name")
+    parser.add_argument("--state", choices=("open", "closed", "all"), default="open", help="issue state filter for --fetch-github (default: open)")
     args = parser.parse_args(argv)
 
     try:
         if args.render_proposal and not args.reconcile_input:
             raise IntakeControllerError("--render-proposal requires --reconcile-input")
+        if args.state != "open" and not args.fetch_github:
+            raise IntakeControllerError("--state is only valid with --fetch-github")
         if args.reconcile_input:
             reconciliation = load_reconciliation_fixture(args.reconcile_input)
             report = build_reconciliation_dry_run_report(reconciliation)
         elif args.fetch_github:
-            issues = fetch_open_issues(args.repo, os.environ.get("GITHUB_TOKEN"))
-            source_name = "github-open-issues"
+            issues = fetch_issue_snapshots(
+                args.repo, os.environ.get("GITHUB_TOKEN"), state=args.state
+            )
+            source_name = f"github-{args.state}-issues"
             report = build_dry_run_report(issues, repository=args.repo, source=source_name)
         else:
             issues = load_issue_fixture(args.input)
