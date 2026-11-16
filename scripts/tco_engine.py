@@ -60,7 +60,7 @@ def publication_artifact_is_current(existing, candidate, now=None):
         return False
     stable_old = {key: value for key, value in old_envelope.items() if key != "generated_utc"}
     stable_new = {key: value for key, value in new_envelope.items() if key != "generated_utc"}
-    if stable_old != stable_new:
+    if not _json_values_equal(stable_old, stable_new):
         return False
 
     generated = old_envelope.get("generated_utc")
