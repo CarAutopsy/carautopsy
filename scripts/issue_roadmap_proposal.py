@@ -139,7 +139,7 @@ def _validate_evidence(evidence: Any, issue_number: int, *, require_done: bool =
         raise ProposalArtifactError("proposal evidence is incomplete or malformed")
     if require_done:
         if merge_sha is None or evidence["checks_passed"] is not True or missing:
-            raise ProposalArtifactError("done proposal lacks merge or CI evidence")
+            raise ProposalArtifactError("done proposal lacks a valid merge commit SHA or CI evidence")
         _validate_check_evidence(evidence, head_sha)
     else:
         for check in checks:
