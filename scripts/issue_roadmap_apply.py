@@ -190,7 +190,7 @@ def _load_managed_state(markdown: str) -> tuple[dict[str, Any], str | None]:
     except (KeyError, RoadmapReconciliationError) as exc:
         raise RoadmapApplyError("managed roadmap dependency graph is invalid") from exc
     if _render_managed_block(state) != block:
-        raise RoadmapApplyError("managed roadmap block was edited outside the apply controller")
+        raise RoadmapApplyError("managed roadmap block does not match its canonical task state")
     return state, block
 
 
