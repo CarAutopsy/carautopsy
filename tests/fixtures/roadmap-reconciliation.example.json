@@ -42,7 +42,5 @@
       "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "conclusion": "success"
     }
-  ],
-  "approved_task_keys": [],
-  "required_checks": ["audit", "validate"]
+  ]
 }
