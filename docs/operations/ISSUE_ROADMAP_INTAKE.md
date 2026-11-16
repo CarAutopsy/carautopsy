@@ -54,3 +54,25 @@ discarded.
   cycle detection, and an owner-gated apply path remain future integration work.
   This CLI is a proposal-only first controller slice, not completion of issue
   #86.
+
+## Reconciliation dry-run with a local evidence fixture
+
+The proposal-only reconciliation core can also be exercised against a local
+fixture:
+
+```bash
+python scripts/issue_roadmap_controller.py --reconcile-input tests/fixtures/roadmap-reconciliation.example.json
+```
+
+The fixture contains `roadmap_tasks`, `issue_snapshots`,
+`pull_request_evidence`, and `check_runs`, plus an optional explicit
+`approved_task_keys` list. The CLI projects each record to a fixed metadata
+allowlist and discards issue bodies, PR bodies, check output, and unrelated
+fields. The reconciliation core validates dependencies/cycles, stale source
+timestamps, cross-reference markers, exact PR-head checks, and owner approval.
+
+This mode is an offline test harness: it does not fetch or authenticate the
+GitHub evidence in the fixture. A live collector must obtain issue/PR
+cross-reference events, PR metadata, and check-runs from the GitHub API before
+passing projected records to the pure reconciler. The report is printed to
+stdout and never applies changes.
