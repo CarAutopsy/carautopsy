@@ -132,7 +132,7 @@ class RoadmapProposalArtifactTests(unittest.TestCase):
                 "status": "approved",
                 "reason": "x" * 120,
             }
-            for index in range(800)
+            for index in range(1200)
         ]
         with self.assertRaisesRegex(ProposalArtifactError, "comment size limit"):
             build_proposal_artifact(report)
