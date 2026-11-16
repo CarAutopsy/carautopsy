@@ -330,22 +330,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--render-proposal", action="store_true", help="render reconciliation report as a stable Markdown proposal comment (stdout only)")
     parser.add_argument("--repo", default="CarAutopsy/carautopsy", help="GitHub repository owner/name")
-    parser.add_argument("--state", choices=("open", "closed", "all"), default="open", help="issue state filter for --fetch-github (default: open)")
+    parser.add_argument("--state", choices=("open", "closed", "all"), default=None, help="issue state filter for --fetch-github (default: open)")
     args = parser.parse_args(argv)
 
     try:
         if args.render_proposal and not args.reconcile_input:
             raise IntakeControllerError("--render-proposal requires --reconcile-input")
-        if args.state != "open" and not args.fetch_github:
+        if args.state is not None and not args.fetch_github:
             raise IntakeControllerError("--state is only valid with --fetch-github")
         if args.reconcile_input:
             reconciliation = load_reconciliation_fixture(args.reconcile_input)
             report = build_reconciliation_dry_run_report(reconciliation)
         elif args.fetch_github:
             issues = fetch_issue_snapshots(
-                args.repo, os.environ.get("GITHUB_TOKEN"), state=args.state
+                args.repo, os.environ.get("GITHUB_TOKEN"), state=args.state or "open"
             )
-            source_name = f"github-{args.state}-issues"
+            source_name = f"github-{args.state or 'open'}-issues"
             report = build_dry_run_report(issues, repository=args.repo, source=source_name)
         else:
             issues = load_issue_fixture(args.input)
