@@ -67,6 +67,14 @@ class TcoConfigTests(unittest.TestCase):
         malformed_timestamp["envelope"]["generated_utc"] = "not-a-date"
         self.assertFalse(publication_artifact_is_current(malformed_timestamp, candidate, now=now))
 
+        space_separated_timestamp = copy.deepcopy(fresh)
+        space_separated_timestamp["envelope"]["generated_utc"] = "2026-11-14 12:00:00+00:00"
+        self.assertFalse(publication_artifact_is_current(space_separated_timestamp, candidate, now=now))
+
+        impossible_calendar_date = copy.deepcopy(fresh)
+        impossible_calendar_date["envelope"]["generated_utc"] = "2026-11-31T12:00:00Z"
+        self.assertFalse(publication_artifact_is_current(impossible_calendar_date, candidate, now=now))
+
     def test_publication_artifact_refreshes_when_results_or_summary_change(self):
         now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
         candidate = {
