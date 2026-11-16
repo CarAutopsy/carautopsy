@@ -7,7 +7,7 @@
 - Roadmap tasks: stable `task_key`, unique `issue_number`, current `status`, dependency task keys, and the last reconciled `source_updated_at`.
 - Issue snapshots: GitHub issue number, open/closed state, and `updated_at`. Issue bodies and comments are not accepted.
 - Linked PR evidence: PR metadata plus an explicit `github-cross-reference-event` marker produced only by a future GitHub timeline collector. PR body text, issue text, labels, and AI claims are not linkage evidence.
-- Check runs: name, conclusion, and exact `head_sha`. A successful check on another SHA does not count.
+- Check runs: name, conclusion, and exact `head_sha`. A successful check on another SHA does not count; duplicate required check-runs on the same SHA are treated as ambiguous and block completion.
 - `approved_task_keys`: an explicit owner-supplied set. Without it, all proposed status changes remain pending owner approval.
 
 ## Status evidence rules
@@ -16,7 +16,7 @@
 - A closed issue may propose `done` only when its linked PR is merged, the merge commit SHA is valid, and the `audit` (Repository Audit) and `validate` (Validate Catalog) check-runs succeeded on the exact PR head SHA.
 - A merged PR with an issue still open, or a closed issue with an open PR, is sent to owner triage.
 - Missing issue/PR/check evidence preserves the current roadmap status. An issue being closed or a PR merely being opened never proves completion.
-- A newer GitHub `updated_at` than the roadmap's `source_updated_at` marks the record stale and blocks a status proposal until the roadmap snapshot is refreshed.
+- Any mismatch between GitHub `updated_at` and the roadmap's `source_updated_at` (including a future roadmap timestamp) marks the record stale and blocks a status proposal until the roadmap snapshot is refreshed.
 - Dependencies must exist, be unique, and form an acyclic graph. A task cannot advance while any dependency is not `done`.
 
 ## Safety and non-goals
