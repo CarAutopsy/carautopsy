@@ -7,8 +7,8 @@ The `issue-roadmap-crawler` job is a read-only intake monitor attached to the ex
 
 - Runs whenever the existing autonomous pipeline schedule fires (currently every 15 minutes).
 - Can also be started manually with the `crawler-only` workflow-dispatch mode.
-- The scheduled job currently reads open GitHub issue metadata using the run-scoped `GITHUB_TOKEN`.
-- The controller also supports explicit `--state closed` and `--state all` snapshots for later reconciliation; the default remains `open`.
+- The scheduled job reads all GitHub issue states (open and closed) using the run-scoped `GITHUB_TOKEN`.
+- The controller supports `--state open`, `--state closed`, and `--state all`; the default remains `open` for compatibility.
 - Projects issue snapshots to a strict metadata allowlist; issue bodies and comments are not
   interpreted or retained.
 - Classifies only from maintainer-controlled `roadmap:*` labels and basic issue metadata.
