@@ -247,7 +247,7 @@ def _checks_pass_for_sha(
             check.get('conclusion') != 'success'
             or isinstance(check_id, bool) or not isinstance(check_id, int) or check_id < 1
             or url_match is None
-            or url_match.group(1) != repository
+            or url_match.group(1).casefold() != repository.casefold()
             or (url_match.group(3) or url_match.group(2)) != str(check_id)
         ):
             missing.append(name)
