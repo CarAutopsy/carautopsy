@@ -19,7 +19,8 @@ The `issue-roadmap-crawler` job is a read-only intake monitor attached to the ex
 
 ## Safety boundary
 
-This job has only `contents: read` and `issues: read` permissions. It does not:
+This job has only `contents: read`, `issues: read`, `pull-requests: read`, and
+`checks: read` permissions. It does not:
 
 - create or edit issues, labels, comments, pull requests, branches, or roadmap files;
 - read pull-request or CI evidence or infer task completion;
