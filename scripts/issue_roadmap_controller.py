@@ -355,14 +355,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="fetch open issue metadata from the GitHub API (read-only)",
     )
-    parser.add_argument("--render-proposal", action="store_true", help="render reconciliation report as a stable Markdown proposal comment (stdout only)")
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("--render-proposal", action="store_true", help="render reconciliation report as stable Markdown (stdout only)")
+    output.add_argument("--render-artifact-json", action="store_true", help="render the complete deterministic proposal artifact JSON (stdout only)")
     parser.add_argument("--repo", default="CarAutopsy/carautopsy", help="GitHub repository owner/name")
     parser.add_argument("--state", choices=("open", "closed", "all"), default=None, help="issue state filter for --fetch-github (default: open)")
     args = parser.parse_args(argv)
 
     try:
-        if args.render_proposal and not args.reconcile_input:
-            raise IntakeControllerError("--render-proposal requires --reconcile-input")
+        if (args.render_proposal or args.render_artifact_json) and not args.reconcile_input:
+            raise IntakeControllerError("proposal rendering requires --reconcile-input")
         if args.state is not None and not args.fetch_github:
             raise IntakeControllerError("--state is only valid with --fetch-github")
         if args.reconcile_input:
@@ -381,7 +383,12 @@ def main(argv: list[str] | None = None) -> int:
                 issues, repository=args.repo, source=source_name
             )
         try:
-            rendered = render_proposal_comment(report) if args.render_proposal else render_report(report)
+            if args.render_artifact_json:
+                rendered = render_proposal_artifact_json(report)
+            elif args.render_proposal:
+                rendered = render_proposal_comment(report)
+            else:
+                rendered = render_report(report)
             sys.stdout.write(rendered)
             sys.stdout.flush()
         except (OSError, UnicodeError) as exc:
