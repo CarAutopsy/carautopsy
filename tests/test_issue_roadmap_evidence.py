@@ -161,6 +161,26 @@ class EvidenceCollectorTests(unittest.TestCase):
             "approved_source_manifest": [],
         })
 
+
+    def test_reopened_issue_routes_to_owner_triage_not_done(self):
+        reopened_at = "2026-11-17T12:00:00Z"
+        task = {"task_key": "issue-10", "issue_number": 10, "status": "in_progress",
+                "dependencies": [], "source_updated_at": reopened_at}
+        issue = {"number": 10, "state": "open", "updated_at": reopened_at}
+        pr = {"number": 22, "issue_number": 10, "state": "closed", "merged": True,
+              "head_sha": SHA, "merge_commit_sha": MERGE_SHA,
+              "link_evidence": "github-cross-reference-event"}
+        check_runs = [
+            {"id": 101, "name": "audit", "head_sha": SHA, "conclusion": "success",
+             "html_url": "https://github.com/CarAutopsy/carautopsy/runs/101"},
+            {"id": 102, "name": "validate", "head_sha": SHA, "conclusion": "success",
+             "html_url": "https://github.com/CarAutopsy/carautopsy/runs/102"},
+        ]
+        report = build_reconciliation_proposal([task], [issue], [pr], check_runs,
+                                               approved_task_keys={"issue-10"})
+        self.assertEqual(report["proposals"][0]["to_status"], "needs-owner-triage")
+        self.assertNotEqual(report["proposals"][0]["to_status"], "done")
+
     def test_reconciliation_rejects_duplicate_task_ids_and_dependency_cycles(self):
         task = {"task_key": "task-one", "issue_number": 10, "status": "approved",
                 "dependencies": [], "source_updated_at": "2026-11-17T10:00:00Z"}
