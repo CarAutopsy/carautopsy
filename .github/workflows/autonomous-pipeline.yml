@@ -164,10 +164,12 @@ jobs:
       group: autonomous-pipeline-issue-crawler-${{ github.run_id }}
       cancel-in-progress: false
     runs-on: ubuntu-26.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
       issues: read
+      pull-requests: read
+      checks: read
     steps:
       - uses: actions/checkout@v6
         with:
@@ -211,5 +213,62 @@ jobs:
         with:
           name: issue-roadmap-dry-run
           path: ${{ runner.temp }}/issue-roadmap-dry-run.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Prepare scoped reconciliation input
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python scripts/issue_roadmap_workflow_input.py \
+            --crawler-report "$RUNNER_TEMP/issue-roadmap-dry-run.json" \
+            --roadmap-state docs/operations/issue-roadmap-state.json \
+            --repo "$GITHUB_REPOSITORY" \
+            > "$RUNNER_TEMP/issue-roadmap-reconciliation-input.json"
+      - name: Collect read-only PR and exact-head CI evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python scripts/issue_roadmap_evidence.py \
+            --input "$RUNNER_TEMP/issue-roadmap-reconciliation-input.json" \
+            --render-artifact-json \
+            > "$RUNNER_TEMP/issue-roadmap-reconciliation-proposal.json"
+      - name: Summarize reconciliation proposal
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          artifact = json.loads(
+              Path(os.environ["RUNNER_TEMP"] + "/issue-roadmap-reconciliation-proposal.json").read_text(encoding="utf-8")
+          )
+          report = artifact["report"]
+          pending = sum(
+              item.get("requires_owner_approval") is True and item.get("proposed_status") is not None
+              for item in report["unchanged"]
+          )
+          summary = [
+              "## Issue roadmap reconciliation",
+              "",
+              "- Mode: **read-only proposal**",
+              f"- Canonical tasks checked: **{len(report['proposals']) + len(report['unchanged'])}**",
+              f"- Eligible status proposals: **{len(report['proposals'])}**",
+              f"- Pending owner decisions: **{pending}**",
+              "- Roadmap/GitHub writes: **none**",
+              "- Task dispatch: **none**",
+              f"- Proposal ID: `{artifact['proposal_id']}`",
+              "",
+              "The complete deterministic JSON is available as the issue-roadmap-reconciliation-proposal workflow artifact.",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
+              stream.write("\\n".join(summary) + "\\n")
+          PY
+      - name: Upload reconciliation proposal
+        uses: actions/upload-artifact@v6
+        with:
+          name: issue-roadmap-reconciliation-proposal
+          path: ${{ runner.temp }}/issue-roadmap-reconciliation-proposal.json
           if-no-files-found: error
           retention-days: 7
