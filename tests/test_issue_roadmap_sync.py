@@ -196,6 +196,23 @@ class RoadmapSyncTests(unittest.TestCase):
         self.assertEqual(report["proposals"], [])
         self.assertEqual(report["unchanged"][0]["evidence"]["missing_checks"], ["audit"])
 
+    def test_check_link_repository_matching_is_case_insensitive(self):
+        payload = {
+            "roadmap_tasks": [task()],
+            "issue_snapshots": [issue(state="closed")],
+            "pull_request_evidence": [pr(merged=True)],
+            "check_runs": [
+                {**checks()[0], "html_url": "https://github.com/carautopsy/carautopsy/runs/1001"},
+                {**checks()[1], "html_url": "https://github.com/CARAUTOPSY/CARAUTOPSY/runs/1002"},
+            ],
+        }
+        report = build_reconciliation_proposal(
+            payload["roadmap_tasks"], payload["issue_snapshots"],
+            payload["pull_request_evidence"], payload["check_runs"],
+            repository="CarAutopsy/carautopsy",
+        )
+        self.assertTrue(report["proposals"][0]["evidence"]["checks_passed"])
+
     def test_check_links_must_match_repository_run_id_and_unique_identity(self):
         bad_cases = (
             [
