@@ -33,7 +33,9 @@ jobs:
         run: python scripts/repo_audit.py
 
       - name: Upload audit report
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: repo-audit-report
           path: reports/repo_audit.md
+          if-no-files-found: warn
