@@ -22,6 +22,7 @@ from issue_roadmap_controller import (
     main,
     render_report,
 )
+from issue_roadmap_proposal import build_proposal_artifact
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -132,6 +133,28 @@ class IssueRoadmapControllerTests(unittest.TestCase):
         self.assertIn("Roadmap reconciliation proposal", first.getvalue())
         self.assertIn("Pending owner approval", first.getvalue())
         self.assertIn("No roadmap, GitHub", first.getvalue())
+
+    def test_cli_renders_complete_deterministic_proposal_artifact_json(self):
+        fixture = ROOT / "tests/fixtures/roadmap-reconciliation.example.json"
+        outputs = []
+        for _ in range(2):
+            stream = io.StringIO()
+            with redirect_stdout(stream):
+                self.assertEqual(main(["--reconcile-input", str(fixture), "--render-artifact-json"]), 0)
+            outputs.append(stream.getvalue())
+        self.assertEqual(outputs[0], outputs[1])
+        artifact = json.loads(outputs[0])
+        self.assertEqual(artifact["schema_version"], 1)
+        self.assertTrue(artifact["proposal_id"].startswith("sha256:"))
+        self.assertFalse(artifact["report"]["roadmap_modified"])
+        self.assertFalse(artifact["report"]["github_modified"])
+        self.assertFalse(artifact["report"]["task_dispatch_performed"])
+        self.assertEqual(artifact["proposal_id"], build_proposal_artifact(artifact["report"])["proposal_id"])
+
+    def test_render_artifact_json_requires_reconciliation_fixture(self):
+        with self.assertRaises(SystemExit) as raised:
+            main(["--input", str(ROOT / "tests/fixtures/issue-intake.example.json"), "--render-artifact-json"])
+        self.assertEqual(raised.exception.code, 2)
 
     def test_render_proposal_requires_reconciliation_fixture(self):
         with self.assertRaises(SystemExit) as raised:
