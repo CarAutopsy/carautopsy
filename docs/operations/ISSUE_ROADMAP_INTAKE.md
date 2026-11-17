@@ -53,9 +53,11 @@ alone never marks a task done. The report is deterministic and printed only
 to stdout.
 
 This mode is an offline test harness: it does not fetch or authenticate the
-GitHub evidence in the fixture. A live collector must obtain issue/PR
-cross-reference events, PR metadata, and check-runs from the GitHub API before
-passing projected records to the pure reconciler.
+GitHub evidence in the fixture. The bounded live collector obtains issue/PR
+cross-reference events, PR metadata, and exact-head check-runs. It is wired into
+the existing schedule and receives only issue numbers explicitly mapped in
+[issue-roadmap-state.json](issue-roadmap-state.json); see
+[ISSUE-ROADMAP-STATE.md](ISSUE-ROADMAP-STATE.md) for the canonical mapping contract.
 
 ## Safety and scope
 
