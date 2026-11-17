@@ -9,7 +9,7 @@
   separately supplied structured roadmap task list.
 - Uses the GitHub issue timeline API and accepts linkage only from
   `cross-referenced` events whose source issue contains a pull-request marker
-  and a structured `repository.full_name` matching the configured repository.
+  and a canonical `repository_url` (or structured `repository.full_name`) matching the configured repository.
   Cross-repository references are ignored; missing or malformed repository
   identity fails closed.
 - Fetches PR state, merged state, head SHA, and merge commit SHA from the PR API.
