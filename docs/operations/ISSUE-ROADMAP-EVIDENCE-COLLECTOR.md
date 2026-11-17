@@ -10,13 +10,14 @@
 - Uses the GitHub issue timeline API and accepts linkage only from
   `cross-referenced` events whose source issue contains a pull-request marker.
 - Fetches PR state, merged state, head SHA, and merge commit SHA from the PR API.
-- Fetches check runs for each distinct PR head SHA and projects only check ID,
-  name, conclusion, exact head SHA, and run URL.
+- Fetches check runs for each distinct PR head SHA, independently verifies every
+  returned check run's own `head_sha` against the requested PR head, and projects
+  only check ID, name, conclusion, exact head SHA, and run URL.
 - Bounds issue, PR, page, and check-run counts; validates pagination hosts,
   endpoint paths, and sequential page numbers; sanitizes request failures.
 - Emits a deterministic proposal-only reconciliation report to stdout.
 
-Issue/PR bodies, comments, labels, and AI-generated claims are never read as
+Issue/PR bodies, comments, labels, and AI-generated claims are never used as
 linkage or completion evidence. The collector performs no writes, does not
 self-approve tasks, and cannot activate task dispatch or research.
 
