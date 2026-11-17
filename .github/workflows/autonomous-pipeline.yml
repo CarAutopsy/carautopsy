@@ -156,8 +156,7 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
         run: python scripts/autonomous_pipeline.py
-  # Read-only issue crawler: manual dispatch only until its dry-run audit is complete.
-  # No comments, roadmap writes, or task dispatch; report is a short-lived artifact.
+  # Read-only issue crawler and mapped-task reconciliation; no comments, roadmap writes, or dispatch.
   issue-roadmap-crawler:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_mode == 'crawler-only')
     concurrency:
@@ -263,7 +262,7 @@ jobs:
               "The complete deterministic JSON is available as the issue-roadmap-reconciliation-proposal workflow artifact.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
-              stream.write("\\n".join(summary) + "\\n")
+              stream.write("\n".join(summary) + "\n")
           PY
       - name: Upload reconciliation proposal
         uses: actions/upload-artifact@v6
