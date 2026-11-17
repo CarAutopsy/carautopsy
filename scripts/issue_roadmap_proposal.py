@@ -58,7 +58,7 @@ def _validate_check_record(check: Any, head_sha: str, repository: str) -> dict[s
         raise ProposalArtifactError("CI check evidence is incomplete or mismatched")
     url_match = _CHECK_URL.fullmatch(url)
     linked_id = (url_match.group(3) or url_match.group(2)) if url_match else None
-    if url_match is None or url_match.group(1) != repository or linked_id != str(check_id):
+    if url_match is None or url_match.group(1).casefold() != repository.casefold() or linked_id != str(check_id):
         raise ProposalArtifactError("CI check URL does not identify this repository and check-run ID")
     return check
 
