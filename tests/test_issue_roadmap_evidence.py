@@ -34,15 +34,19 @@ class EvidenceCollectorTests(unittest.TestCase):
                 "roadmap_tasks": [],
                 "issue_snapshots": [],
             }), encoding="utf-8")
-            output = io.StringIO()
-            with patch.object(evidence_module, "collect_github_evidence", return_value={
-                "pull_request_evidence": [], "check_runs": [],
-            }):
-                with redirect_stdout(output):
-                    self.assertEqual(evidence_module.main([
-                        "--input", str(input_path), "--render-artifact-json"
-                    ]), 0)
-        artifact = json.loads(output.getvalue())
+            outputs = []
+            for _ in range(2):
+                output = io.StringIO()
+                with patch.object(evidence_module, "collect_github_evidence", return_value={
+                    "pull_request_evidence": [], "check_runs": [],
+                }):
+                    with redirect_stdout(output):
+                        self.assertEqual(evidence_module.main([
+                            "--input", str(input_path), "--render-artifact-json"
+                        ]), 0)
+                outputs.append(output.getvalue())
+        self.assertEqual(outputs[0], outputs[1])
+        artifact = json.loads(outputs[0])
         self.assertTrue(artifact["proposal_id"].startswith("sha256:"))
         self.assertEqual(artifact["report"]["mode"], "proposal-only")
         self.assertFalse(artifact["report"]["roadmap_modified"])
