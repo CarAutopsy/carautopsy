@@ -22,7 +22,7 @@ def response(payload, links=None):
 class EvidenceCollectorTests(unittest.TestCase):
     def test_collects_only_timeline_cross_referenced_pr_and_exact_head_checks(self):
         timeline = [
-            {"event": "cross-referenced", "source": {"issue": {"number": 22, "repository": {"full_name": "CarAutopsy/carautopsy"}, "pull_request": {"url": "ignored"}}},
+            {"event": "cross-referenced", "source": {"issue": {"number": 22, "repository_url": "https://api.github.com/repos/CarAutopsy/carautopsy", "pull_request": {"url": "ignored"}}},
              "body": "untrusted comment must not be retained"},
             {"event": "commented", "source": {"issue": {"number": 23, "pull_request": {"url": "ignored"}}}},
             {"event": "cross-referenced", "source": {"issue": {"number": 24}}},
@@ -55,7 +55,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(session.get.call_args_list[0].kwargs["headers"]["Authorization"], "Bearer secret")
 
     def test_multiple_issues_referencing_same_pr_fetch_pr_and_checks_once(self):
-        timeline = response([{"event": "cross-referenced", "source": {"issue": {"number": 22, "repository": {"full_name": "owner/repo"}, "pull_request": {}}}}])
+        timeline = response([{"event": "cross-referenced", "source": {"issue": {"number": 22, "repository_url": "https://api.github.com/repos/owner/repo", "pull_request": {}}}}])
         pr = response({"number": 22, "state": "open", "merged": False, "head": {"sha": SHA}, "merge_commit_sha": None})
         checks = response({"check_runs": []})
         session = Mock()
@@ -98,7 +98,7 @@ class EvidenceCollectorTests(unittest.TestCase):
     def test_fetches_check_runs_once_for_distinct_shared_head_sha(self):
         timeline = response([
             {"event": "cross-referenced", "source": {"issue": {"number": number,
-             "repository": {"full_name": "owner/repo"}, "pull_request": {}}}}
+             "repository_url": "https://api.github.com/repos/owner/repo", "pull_request": {}}}}
             for number in (22, 23)
         ])
         pr22 = response({"number": 22, "state": "open", "merged": False,
@@ -118,7 +118,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(sum("/check-runs" in call.args[0] for call in session.get.call_args_list), 1)
 
     def test_rejects_check_run_sha_that_differs_from_requested_pr_head(self):
-        timeline = response([{"event": "cross-referenced", "source": {"issue": {"number": 22, "repository": {"full_name": "owner/repo"}, "pull_request": {}}}}])
+        timeline = response([{"event": "cross-referenced", "source": {"issue": {"number": 22, "repository_url": "https://api.github.com/repos/owner/repo", "pull_request": {}}}}])
         pr = response({"number": 22, "state": "open", "merged": False, "head": {"sha": SHA}, "merge_commit_sha": None})
         checks = response({"check_runs": [{"id": 101, "name": "audit", "head_sha": MERGE_SHA,
                                            "conclusion": "success", "html_url": "https://github.com/owner/repo/runs/101"}]})
@@ -230,7 +230,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         self.assertEqual(session.get.call_count, 1)
 
     def test_rejects_malformed_pr_head_and_merge_metadata(self):
-        timeline = response([{"event": "cross-referenced", "source": {"issue": {"number": 22, "repository": {"full_name": "owner/repo"}, "pull_request": {}}}}])
+        timeline = response([{"event": "cross-referenced", "source": {"issue": {"number": 22, "repository_url": "https://api.github.com/repos/owner/repo", "pull_request": {}}}}])
         for payload in (
             {"number": 22, "state": "open", "merged": False, "head": {"sha": "bad"}},
             {"number": 22, "state": "open", "merged": 1, "head": {"sha": SHA}},
