@@ -22,7 +22,11 @@ import requests
 
 from issue_roadmap import IssueClassificationError, build_issue_proposals, classify_issue
 from issue_roadmap_sync import RoadmapReconciliationError, build_reconciliation_proposal
-from issue_roadmap_proposal import ProposalArtifactError, render_proposal_comment
+from issue_roadmap_proposal import (
+    ProposalArtifactError,
+    render_proposal_artifact_json,
+    render_proposal_comment,
+)
 
 
 GITHUB_API = "https://api.github.com"
