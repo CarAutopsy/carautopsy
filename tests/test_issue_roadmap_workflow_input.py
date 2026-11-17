@@ -16,6 +16,7 @@ def crawler(issues=None):
     return {
         "schema_version": 1,
         "mode": "dry-run",
+        "source": "github-all-issues",
         "repository": REPOSITORY,
         "roadmap_modified": False,
         "github_modified": False,
@@ -76,6 +77,14 @@ class RoadmapWorkflowInputTests(unittest.TestCase):
         tasks = [task(number) for number in range(1, 502)]
         with self.assertRaisesRegex(WorkflowInputError, "collector limit"):
             build_evidence_input(crawler(), roadmap(tasks), repository=REPOSITORY)
+
+    def test_rejects_filtered_or_fixture_crawler_sources(self):
+        for source in ("github-open-issues", "github-closed-issues", "fixture"):
+            with self.subTest(source=source):
+                report = crawler()
+                report["source"] = source
+                with self.assertRaisesRegex(WorkflowInputError, "all-state snapshot"):
+                    build_evidence_input(report, roadmap(), repository=REPOSITORY)
 
     def test_rejects_repository_mismatch(self):
         with self.assertRaisesRegex(WorkflowInputError, "identity or schema"):
