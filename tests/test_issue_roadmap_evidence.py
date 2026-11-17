@@ -3,9 +3,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import issue_roadmap_evidence as evidence_module
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+
+import issue_roadmap_evidence as evidence_module
 from issue_roadmap_evidence import EvidenceCollectionError, collect_github_evidence
 from issue_roadmap_sync import RoadmapReconciliationError, build_reconciliation_proposal
 
