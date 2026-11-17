@@ -49,7 +49,8 @@ def build_evidence_input(crawler: Any, roadmap: Any, *, repository: str) -> dict
     ) is None:
         raise WorkflowInputError("repository must use owner/name form")
     if not isinstance(crawler, dict) or (
-        crawler.get("schema_version") != 1
+        type(crawler.get("schema_version")) is not int
+        or crawler.get("schema_version") != 1
         or crawler.get("mode") != "dry-run"
         or crawler.get("repository") != repository
         or crawler.get("roadmap_modified") is not False
