@@ -23,6 +23,7 @@ GITHUB_API = "https://api.github.com"
 MAX_PAGES = 100
 MAX_ISSUES = 500
 MAX_PRS = 1000
+MAX_LINKED_PR_EVIDENCE = 20_000
 MAX_CHECK_RUNS = 10000
 
 
@@ -194,6 +195,8 @@ def collect_github_evidence(repository: str, issue_snapshots: list[dict[str, Any
     for issue_number in sorted(issue_numbers):
         for pr_number in _fetch_timeline_links(owner, repo, issue_number, headers, session):
             links.add((issue_number, pr_number))
+            if len(links) > MAX_LINKED_PR_EVIDENCE:
+                raise EvidenceCollectionError("issue-to-PR evidence link count exceeds the safety limit")
             distinct_pr_numbers.add(pr_number)
             if len(distinct_pr_numbers) > MAX_PRS:
                 raise EvidenceCollectionError("linked PR count exceeds the safety limit")
