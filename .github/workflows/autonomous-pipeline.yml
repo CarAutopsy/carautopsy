@@ -253,7 +253,7 @@ jobs:
               "",
               "- Mode: **read-only proposal**",
               f"- Canonical tasks checked: **{len(report['proposals']) + len(report['unchanged'])}**",
-              f"- Eligible status proposals: **{len(report['proposals'])}**",
+              f"- Status changes with prior owner approval: **{len(report['proposals'])}**",
               f"- Pending owner decisions: **{pending}**",
               "- Roadmap/GitHub writes: **none**",
               "- Task dispatch: **none**",
