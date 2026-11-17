@@ -107,7 +107,36 @@ def _fetch_timeline_links(owner: str, repo: str, issue_number: int, headers: dic
             continue
         source_repository = source_issue.get("repository")
         source_full_name = source_repository.get("full_name") if isinstance(source_repository, dict) else None
-        if not isinstance(source_full_name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", source_full_name):
+        source_repository_url = source_issue.get("repository_url")
+        url_full_name = None
+        if source_repository_url is not None:
+            if not isinstance(source_repository_url, str):
+                raise EvidenceCollectionError("GitHub cross-reference event has an invalid source repository URL")
+            parsed_repository_url = urlsplit(source_repository_url)
+            expected_path = f"/repos/{owner}/{repo}"
+            if (
+                parsed_repository_url.scheme != "https"
+                or parsed_repository_url.netloc != "api.github.com"
+                or parsed_repository_url.path.count("/") != 3
+                or parsed_repository_url.query
+                or parsed_repository_url.fragment
+            ):
+                raise EvidenceCollectionError("GitHub cross-reference event has an invalid source repository URL")
+            parts = parsed_repository_url.path.split("/")
+            if len(parts) == 4 and parts[1] == "repos":
+                url_full_name = f"{parts[2]}/{parts[3]}"
+            else:
+                raise EvidenceCollectionError("GitHub cross-reference event has an invalid source repository URL")
+        if source_full_name is not None and (
+            not isinstance(source_full_name, str)
+            or re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", source_full_name) is None
+        ):
+            raise EvidenceCollectionError("GitHub cross-reference event has an invalid source repository identity")
+        if source_full_name is None:
+            source_full_name = url_full_name
+        elif url_full_name is not None and source_full_name.casefold() != url_full_name.casefold():
+            raise EvidenceCollectionError("GitHub cross-reference repository identities conflict")
+        if source_full_name is None:
             raise EvidenceCollectionError("GitHub cross-reference event lacks a valid source repository identity")
         if source_full_name.casefold() != f"{owner}/{repo}".casefold():
             continue
