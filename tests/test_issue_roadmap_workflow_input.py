@@ -42,7 +42,7 @@ class RoadmapWorkflowInputTests(unittest.TestCase):
     def test_selects_only_explicitly_mapped_issues_and_projects_allowlist(self):
         result = build_evidence_input(
             crawler([
-                {"number": 11, "state": "open", "updated_at": STAMP, "body": "ignored"},
+                {"number": 11, "state": "open", "updated_at": STAMP},
                 {"number": 10, "state": "closed", "updated_at": STAMP},
             ]),
             roadmap([task()]),
