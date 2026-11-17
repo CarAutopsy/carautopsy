@@ -105,6 +105,12 @@ def _fetch_timeline_links(owner: str, repo: str, issue_number: int, headers: dic
         source_issue = source.get("issue") if isinstance(source, dict) else None
         if not isinstance(source_issue, dict) or not isinstance(source_issue.get("pull_request"), dict):
             continue
+        source_repository = source_issue.get("repository")
+        source_full_name = source_repository.get("full_name") if isinstance(source_repository, dict) else None
+        if not isinstance(source_full_name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", source_full_name):
+            raise EvidenceCollectionError("GitHub cross-reference event lacks a valid source repository identity")
+        if source_full_name.casefold() != f"{owner}/{repo}".casefold():
+            continue
         number = source_issue.get("number")
         if isinstance(number, bool) or not isinstance(number, int) or number < 1:
             raise EvidenceCollectionError("GitHub cross-reference event has an invalid PR number")
@@ -155,10 +161,12 @@ def collect_github_evidence(repository: str, issue_snapshots: list[dict[str, Any
         issue_numbers.add(number)
 
     links: set[tuple[int, int]] = set()
+    distinct_pr_numbers: set[int] = set()
     for issue_number in sorted(issue_numbers):
         for pr_number in _fetch_timeline_links(owner, repo, issue_number, headers, session):
             links.add((issue_number, pr_number))
-            if len({number for _, number in links}) > MAX_PRS:
+            distinct_pr_numbers.add(pr_number)
+            if len(distinct_pr_numbers) > MAX_PRS:
                 raise EvidenceCollectionError("linked PR count exceeds the safety limit")
 
     pr_numbers = sorted({number for _, number in links})
@@ -170,20 +178,25 @@ def collect_github_evidence(repository: str, issue_snapshots: list[dict[str, Any
     ]
 
     all_checks: list[dict[str, Any]] = []
-    for pr_number in pr_numbers:
-        head_sha = pr_records[pr_number]["head_sha"]
+    # A commit may be the head of several PRs. Fetch its check snapshot once so
+    # duplicate PR references cannot observe different in-flight conclusions.
+    checks_by_sha: dict[str, list[dict[str, Any]]] = {}
+    for head_sha in sorted({record["head_sha"] for record in pr_records.values()}):
         endpoint = f"/repos/{owner}/{repo}/commits/{head_sha}/check-runs"
         runs = _paginate(session, f"{GITHUB_API}{endpoint}", endpoint, headers, array_key="check_runs")
+        projected_runs: list[dict[str, Any]] = []
         for run in runs:
             observed_sha = run.get("head_sha")
             if observed_sha != head_sha:
                 raise EvidenceCollectionError("check-run head SHA does not match the requested PR head")
-            all_checks.append({
+            projected_runs.append({
                 "id": run.get("id"), "name": run.get("name"), "head_sha": observed_sha,
                 "conclusion": run.get("conclusion"), "html_url": run.get("html_url"),
             })
-            if len(all_checks) > MAX_CHECK_RUNS:
-                raise EvidenceCollectionError("check-run count exceeds the safety limit")
+        checks_by_sha[head_sha] = projected_runs
+        all_checks.extend(projected_runs)
+        if len(all_checks) > MAX_CHECK_RUNS:
+            raise EvidenceCollectionError("check-run count exceeds the safety limit")
     unique_checks: dict[int, dict[str, Any]] = {}
     for item in all_checks:
         check_id = item["id"]
