@@ -23,7 +23,7 @@ This job has only `contents: read`, `issues: read`, `pull-requests: read`, and
 `checks: read` permissions. It does not:
 
 - create or edit issues, labels, comments, pull requests, branches, or roadmap files;
-- read pull-request or CI evidence or infer task completion;
+- read PR/CI evidence for unmapped issues, or infer a status transition without verified exact-head evidence and owner approval;
 - dispatch, reserve, generate, or publish tasks;
 - modify `tasks/queue.json`, `tasks/failed.json`, owner policy, Hive gates, or source manifests;
 - call AI providers, access OEM sources, or activate research/readiness.
