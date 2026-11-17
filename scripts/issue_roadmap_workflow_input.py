@@ -52,6 +52,7 @@ def build_evidence_input(crawler: Any, roadmap: Any, *, repository: str) -> dict
         type(crawler.get("schema_version")) is not int
         or crawler.get("schema_version") != 1
         or crawler.get("mode") != "dry-run"
+        or crawler.get("source") != "github-all-issues"
         or not isinstance(crawler.get("repository"), str)
         or crawler.get("repository").casefold() != repository.casefold()
         or crawler.get("roadmap_modified") is not False
