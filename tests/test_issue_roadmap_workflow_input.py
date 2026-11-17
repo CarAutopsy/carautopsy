@@ -63,6 +63,20 @@ class RoadmapWorkflowInputTests(unittest.TestCase):
         self.assertEqual(result["roadmap_tasks"], [])
         self.assertEqual(result["issue_snapshots"], [])
 
+    def test_repository_identity_is_case_insensitive(self):
+        lower = "carautopsy/carautopsy"
+        crawler_report = crawler()
+        crawler_report["repository"] = lower
+        roadmap_state = roadmap()
+        roadmap_state["repository"] = REPOSITORY.swapcase()
+        result = build_evidence_input(crawler_report, roadmap_state, repository=REPOSITORY)
+        self.assertEqual(result["repository"], REPOSITORY)
+
+    def test_rejects_more_than_collector_issue_limit(self):
+        tasks = [task(number) for number in range(1, 502)]
+        with self.assertRaisesRegex(WorkflowInputError, "collector limit"):
+            build_evidence_input(crawler(), roadmap(tasks), repository=REPOSITORY)
+
     def test_rejects_repository_mismatch(self):
         with self.assertRaisesRegex(WorkflowInputError, "identity or schema"):
             build_evidence_input(crawler(), {
