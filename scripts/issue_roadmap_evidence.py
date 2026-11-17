@@ -68,12 +68,19 @@ def _get(session: Any, url: str, *, params: dict[str, Any] | None, headers: dict
         raise EvidenceCollectionError(f"GitHub evidence request failed ({type(exc).__name__})") from exc
 
 
+def _json(response: Any) -> Any:
+    try:
+        return response.json()
+    except (ValueError, TypeError) as exc:
+        raise EvidenceCollectionError("GitHub evidence endpoint returned invalid JSON") from exc
+
+
 def _paginate(session: Any, url: str, endpoint: str, headers: dict[str, str], *, array_key: str | None = None) -> list[dict[str, Any]]:
     output: list[dict[str, Any]] = []
     page = 1
     while page <= MAX_PAGES:
         response = _get(session, url, params={"per_page": 100, "page": page}, headers=headers)
-        payload = response.json()
+        payload = _json(response)
         records = payload if array_key is None else (payload.get(array_key) if isinstance(payload, dict) else None)
         if not isinstance(records, list) or any(not isinstance(item, dict) for item in records):
             raise EvidenceCollectionError("GitHub evidence endpoint returned an invalid collection")
@@ -106,8 +113,9 @@ def _fetch_timeline_links(owner: str, repo: str, issue_number: int, headers: dic
 
 
 def _fetch_pr(owner: str, repo: str, number: int, headers: dict[str, str], session: Any) -> dict[str, Any]:
-    payload = _get(session, f"{GITHUB_API}/repos/{owner}/{repo}/pulls/{number}", params=None, headers=headers).json()
-    if not isinstance(payload, dict):
+    response = _get(session, f"{GITHUB_API}/repos/{owner}/{repo}/pulls/{number}", params=None, headers=headers)
+    payload = _json(response)
+    if not isinstance(payload, dict) or payload.get("number") != number:
         raise EvidenceCollectionError("GitHub pull request endpoint returned an invalid object")
     head = payload.get("head")
     head_sha = head.get("sha") if isinstance(head, dict) else None
@@ -162,19 +170,29 @@ def collect_github_evidence(repository: str, issue_snapshots: list[dict[str, Any
     ]
 
     all_checks: list[dict[str, Any]] = []
-    # A PR can cross-reference multiple issues; collect its exact-head checks once.
     for pr_number in pr_numbers:
         head_sha = pr_records[pr_number]["head_sha"]
         endpoint = f"/repos/{owner}/{repo}/commits/{head_sha}/check-runs"
         runs = _paginate(session, f"{GITHUB_API}{endpoint}", endpoint, headers, array_key="check_runs")
         for run in runs:
+            observed_sha = run.get("head_sha")
+            if observed_sha != head_sha:
+                raise EvidenceCollectionError("check-run head SHA does not match the requested PR head")
             all_checks.append({
-                "id": run.get("id"), "name": run.get("name"), "head_sha": head_sha,
+                "id": run.get("id"), "name": run.get("name"), "head_sha": observed_sha,
                 "conclusion": run.get("conclusion"), "html_url": run.get("html_url"),
             })
             if len(all_checks) > MAX_CHECK_RUNS:
                 raise EvidenceCollectionError("check-run count exceeds the safety limit")
-    unique_checks = {item["id"]: item for item in all_checks if isinstance(item["id"], int) and not isinstance(item["id"], bool)}
+    unique_checks: dict[int, dict[str, Any]] = {}
+    for item in all_checks:
+        check_id = item["id"]
+        if isinstance(check_id, bool) or not isinstance(check_id, int) or check_id < 1:
+            continue
+        previous = unique_checks.get(check_id)
+        if previous is not None and previous != item:
+            raise EvidenceCollectionError("GitHub returned conflicting records for one check-run ID")
+        unique_checks[check_id] = item
     return {"pull_request_evidence": evidence, "check_runs": [unique_checks[key] for key in sorted(unique_checks)]}
 
 
