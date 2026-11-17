@@ -3,7 +3,6 @@
 Only GitHub timeline cross-reference events establish issue-to-PR linkage.
 Issue/PR bodies, comments, labels, and AI output are never interpreted.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -20,7 +19,6 @@ import requests
 from issue_roadmap_controller import IntakeControllerError, _validate_repository
 from issue_roadmap_sync import build_reconciliation_proposal
 
-
 GITHUB_API = "https://api.github.com"
 MAX_PAGES = 100
 MAX_ISSUES = 500
@@ -33,10 +31,7 @@ class EvidenceCollectionError(RuntimeError):
 
 
 def _headers(token: str | None) -> dict[str, str]:
-    result = {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
+    result = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
     if token:
         result["Authorization"] = f"Bearer {token}"
     return result
@@ -70,29 +65,16 @@ def _get(session: Any, url: str, *, params: dict[str, Any] | None, headers: dict
         response.raise_for_status()
         return response
     except (requests.RequestException, ValueError) as exc:
-        raise EvidenceCollectionError(
-            f"GitHub evidence request failed ({type(exc).__name__})"
-        ) from exc
+        raise EvidenceCollectionError(f"GitHub evidence request failed ({type(exc).__name__})") from exc
 
 
-def _paginate(
-    session: Any,
-    url: str,
-    endpoint: str,
-    headers: dict[str, str],
-    *,
-    array_key: str | None = None,
-) -> list[dict[str, Any]]:
+def _paginate(session: Any, url: str, endpoint: str, headers: dict[str, str], *, array_key: str | None = None) -> list[dict[str, Any]]:
     output: list[dict[str, Any]] = []
     page = 1
     while page <= MAX_PAGES:
-        response = _get(
-            session, url, params={"per_page": 100, "page": page}, headers=headers
-        )
+        response = _get(session, url, params={"per_page": 100, "page": page}, headers=headers)
         payload = response.json()
-        records = payload if array_key is None else (
-            payload.get(array_key) if isinstance(payload, dict) else None
-        )
+        records = payload if array_key is None else (payload.get(array_key) if isinstance(payload, dict) else None)
         if not isinstance(records, list) or any(not isinstance(item, dict) for item in records):
             raise EvidenceCollectionError("GitHub evidence endpoint returned an invalid collection")
         output.extend(records)
@@ -105,13 +87,9 @@ def _paginate(
     raise EvidenceCollectionError("GitHub evidence pagination exceeded its limit")
 
 
-def _fetch_timeline_links(
-    owner: str, repo: str, issue_number: int, headers: dict[str, str], session: Any
-) -> list[int]:
+def _fetch_timeline_links(owner: str, repo: str, issue_number: int, headers: dict[str, str], session: Any) -> list[int]:
     endpoint = f"/repos/{owner}/{repo}/issues/{issue_number}/timeline"
-    records = _paginate(
-        session, f"{GITHUB_API}{endpoint}", endpoint, headers
-    )
+    records = _paginate(session, f"{GITHUB_API}{endpoint}", endpoint, headers)
     linked: set[int] = set()
     for event in records:
         if event.get("event") != "cross-referenced":
@@ -127,48 +105,25 @@ def _fetch_timeline_links(
     return sorted(linked)
 
 
-def _fetch_pr(
-    owner: str, repo: str, number: int, headers: dict[str, str], session: Any
-) -> dict[str, Any]:
-    url = f"{GITHUB_API}/repos/{owner}/{repo}/pulls/{number}"
-    payload = _get(session, url, params=None, headers=headers).json()
+def _fetch_pr(owner: str, repo: str, number: int, headers: dict[str, str], session: Any) -> dict[str, Any]:
+    payload = _get(session, f"{GITHUB_API}/repos/{owner}/{repo}/pulls/{number}", params=None, headers=headers).json()
     if not isinstance(payload, dict):
         raise EvidenceCollectionError("GitHub pull request endpoint returned an invalid object")
     head = payload.get("head")
     head_sha = head.get("sha") if isinstance(head, dict) else None
-    state = payload.get("state")
-    merged = payload.get("merged")
-    merge_sha = payload.get("merge_commit_sha")
+    state, merged, merge_sha = payload.get("state"), payload.get("merged"), payload.get("merge_commit_sha")
     if (
-        isinstance(head_sha, str) is False
-        or re.fullmatch(r"[0-9a-f]{40}", head_sha) is None
-        or state not in {"open", "closed"}
-        or type(merged) is not bool
+        not isinstance(head_sha, str) or re.fullmatch(r"[0-9a-f]{40}", head_sha) is None
+        or state not in {"open", "closed"} or type(merged) is not bool
         or (merged and (state != "closed" or not isinstance(merge_sha, str)
                         or re.fullmatch(r"[0-9a-f]{40}", merge_sha) is None))
     ):
         raise EvidenceCollectionError("GitHub pull request metadata is malformed")
-    return {
-        "number": number,
-        "state": state,
-        "merged": merged,
-        "head_sha": head_sha,
-        "merge_commit_sha": merge_sha,
-    }
+    return {"number": number, "state": state, "merged": merged, "head_sha": head_sha, "merge_commit_sha": merge_sha}
 
 
-def collect_github_evidence(
-    repository: str,
-    issue_snapshots: list[dict[str, Any]],
-    *,
-    token: str | None = None,
-    session: Any = requests,
-) -> dict[str, list[dict[str, Any]]]:
-    """Collect timeline-linked PR metadata and exact-head check runs.
-
-    Input issue snapshots must already be projected to number/state/updated_at.
-    No body, comment, label, or arbitrary issue field is accepted.
-    """
+def collect_github_evidence(repository: str, issue_snapshots: list[dict[str, Any]], *, token: str | None = None, session: Any = requests) -> dict[str, list[dict[str, Any]]]:
+    """Collect timeline-linked PR metadata and exact-head check runs."""
     try:
         owner, repo = _validate_repository(repository)
     except IntakeControllerError as exc:
@@ -199,48 +154,32 @@ def collect_github_evidence(
                 raise EvidenceCollectionError("linked PR count exceeds the safety limit")
 
     pr_numbers = sorted({number for _, number in links})
-    pr_records: dict[int, dict[str, Any]] = {}
-    for number in pr_numbers:
-        pr_records[number] = _fetch_pr(owner, repo, number, headers, session)
+    pr_records = {number: _fetch_pr(owner, repo, number, headers, session) for number in pr_numbers}
+    evidence = [
+        {**pr_records[pr_number], "issue_number": issue_number,
+         "link_evidence": "github-cross-reference-event"}
+        for issue_number, pr_number in sorted(links)
+    ]
 
-    evidence = []
     all_checks: list[dict[str, Any]] = []
-    for issue_number, pr_number in sorted(links):
-        pr = pr_records[pr_number]
-        evidence.append({
-            **pr,
-            "issue_number": issue_number,
-            "link_evidence": "github-cross-reference-event",
-        })
-        endpoint = f"/repos/{owner}/{repo}/commits/{pr['head_sha']}/check-runs"
-        runs = _paginate(
-            session, f"{GITHUB_API}{endpoint}", endpoint, headers,
-            array_key="check_runs",
-        )
+    # A PR can cross-reference multiple issues; collect its exact-head checks once.
+    for pr_number in pr_numbers:
+        head_sha = pr_records[pr_number]["head_sha"]
+        endpoint = f"/repos/{owner}/{repo}/commits/{head_sha}/check-runs"
+        runs = _paginate(session, f"{GITHUB_API}{endpoint}", endpoint, headers, array_key="check_runs")
         for run in runs:
             all_checks.append({
-                "id": run.get("id"),
-                "name": run.get("name"),
-                "head_sha": pr["head_sha"],
-                "conclusion": run.get("conclusion"),
-                "html_url": run.get("html_url"),
+                "id": run.get("id"), "name": run.get("name"), "head_sha": head_sha,
+                "conclusion": run.get("conclusion"), "html_url": run.get("html_url"),
             })
             if len(all_checks) > MAX_CHECK_RUNS:
                 raise EvidenceCollectionError("check-run count exceeds the safety limit")
-
-    # Multiple issues may legitimately reference one PR; its check runs are
-    # fetched once per PR and deduplicated by immutable check-run ID.
-    unique_checks = {item["id"]: item for item in all_checks if isinstance(item["id"], int)}
-    return {
-        "pull_request_evidence": evidence,
-        "check_runs": [unique_checks[key] for key in sorted(unique_checks)],
-    }
+    unique_checks = {item["id"]: item for item in all_checks if isinstance(item["id"], int) and not isinstance(item["id"], bool)}
+    return {"pull_request_evidence": evidence, "check_runs": [unique_checks[key] for key in sorted(unique_checks)]}
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Collect read-only GitHub evidence for roadmap reconciliation."
-    )
+    parser = argparse.ArgumentParser(description="Collect read-only GitHub evidence for roadmap reconciliation.")
     parser.add_argument("--input", required=True, help="JSON with repository, roadmap_tasks, and issue_snapshots")
     args = parser.parse_args(argv)
     try:
@@ -248,31 +187,19 @@ def main(argv: list[str] | None = None) -> int:
         if not isinstance(payload, dict):
             raise EvidenceCollectionError("input must be a JSON object")
         repository = payload.get("repository", "CarAutopsy/carautopsy")
-        tasks = payload.get("roadmap_tasks")
-        issues = payload.get("issue_snapshots")
+        tasks, issues = payload.get("roadmap_tasks"), payload.get("issue_snapshots")
         if not isinstance(tasks, list) or not isinstance(issues, list):
             raise EvidenceCollectionError("input requires roadmap_tasks and issue_snapshots arrays")
-        projected_issues = [
-            {key: item[key] for key in ("number", "state", "updated_at") if key in item}
-            for item in issues if isinstance(item, dict)
-        ]
-        if len(projected_issues) != len(issues):
-            raise EvidenceCollectionError("issue snapshots must be objects")
-        evidence = collect_github_evidence(
-            repository, projected_issues, token=os.environ.get("GITHUB_TOKEN")
-        )
-        report = build_reconciliation_proposal(
-            tasks, projected_issues, evidence["pull_request_evidence"],
-            evidence["check_runs"], repository=repository,
-        )
-        report.update({
-            "repository": repository,
-            "source": "github-live-evidence",
-            "issue_snapshots_seen": len(projected_issues),
-            "roadmap_modified": False,
-            "github_modified": False,
-            "task_dispatch_performed": False,
-        })
+        projected = []
+        for item in issues:
+            if not isinstance(item, dict):
+                raise EvidenceCollectionError("issue snapshots must be objects")
+            projected.append({key: item[key] for key in ("number", "state", "updated_at") if key in item})
+        evidence = collect_github_evidence(repository, projected, token=os.environ.get("GITHUB_TOKEN"))
+        report = build_reconciliation_proposal(tasks, projected, evidence["pull_request_evidence"], evidence["check_runs"], repository=repository)
+        report.update({"repository": repository, "source": "github-live-evidence",
+                       "issue_snapshots_seen": len(projected), "roadmap_modified": False,
+                       "github_modified": False, "task_dispatch_performed": False})
         sys.stdout.write(json.dumps(report, sort_keys=True, indent=2, ensure_ascii=True) + "\n")
         return 0
     except (OSError, UnicodeError, ValueError, TypeError, RecursionError, EvidenceCollectionError) as exc:
