@@ -8,10 +8,14 @@
 - Accepts only projected issue records (`number`, `state`, `updated_at`) and a
   separately supplied structured roadmap task list.
 - Uses the GitHub issue timeline API and accepts linkage only from
-  `cross-referenced` events whose source issue contains a pull-request marker.
+  `cross-referenced` events whose source issue contains a pull-request marker
+  and a structured `repository.full_name` matching the configured repository.
+  Cross-repository references are ignored; missing or malformed repository
+  identity fails closed.
 - Fetches PR state, merged state, head SHA, and merge commit SHA from the PR API.
-- Fetches check runs for each distinct PR head SHA, independently verifies every
-  returned check run's own `head_sha` against the requested PR head, and projects
+- Fetches check runs once per distinct PR head SHA (even when several PRs share
+  that commit), independently verifies every returned check run's own `head_sha`
+  against the requested PR head, and projects
   only check ID, name, conclusion, exact head SHA, and run URL.
 - Bounds issue, PR, page, and check-run counts; validates pagination hosts,
   endpoint paths, and sequential page numbers; sanitizes request failures.
