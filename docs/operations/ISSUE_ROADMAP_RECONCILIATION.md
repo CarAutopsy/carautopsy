@@ -23,7 +23,7 @@
 
 - Output is deterministic and proposal-only; no roadmap, GitHub, workflow, label, comment, or task-queue writes occur.
 - No automatic apply path is included in this slice. Any future apply path must consume an explicit owner approval and revalidate the source evidence immediately before writing.
-- GitHub evidence must be collected from API metadata/timeline/check-run endpoints by a separate bounded read-only collector. This pure module does not authenticate GitHub claims or fetch data.
+- GitHub evidence is collected by the bounded read-only `issue_roadmap_evidence.py` collector from API metadata, timeline, and exact-head check-run endpoints. The collector is wired to the existing schedule and receives only issues explicitly mapped in `issue-roadmap-state.json`. This pure module does not authenticate GitHub claims or fetch data.
 - The controller does not introduce a scheduler and does not change the existing 15-minute autonomous pipeline.
 - Hive remains paused. No source-manifest change, live retrieval, OEM access, provider call, queue dispatch, or readiness activation is permitted.
 

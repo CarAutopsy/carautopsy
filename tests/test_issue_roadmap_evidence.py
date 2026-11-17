@@ -1,5 +1,9 @@
 import sys
 import unittest
+import io
+import json
+import tempfile
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -22,6 +26,33 @@ def response(payload, links=None):
 
 
 class EvidenceCollectorTests(unittest.TestCase):
+    def test_cli_renders_deterministic_proposal_artifact_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "input.json"
+            input_path.write_text(json.dumps({
+                "repository": "CarAutopsy/carautopsy",
+                "roadmap_tasks": [],
+                "issue_snapshots": [],
+            }), encoding="utf-8")
+            outputs = []
+            for _ in range(2):
+                output = io.StringIO()
+                with patch.object(evidence_module, "collect_github_evidence", return_value={
+                    "pull_request_evidence": [], "check_runs": [],
+                }):
+                    with redirect_stdout(output):
+                        self.assertEqual(evidence_module.main([
+                            "--input", str(input_path), "--render-artifact-json"
+                        ]), 0)
+                outputs.append(output.getvalue())
+        self.assertEqual(outputs[0], outputs[1])
+        artifact = json.loads(outputs[0])
+        self.assertTrue(artifact["proposal_id"].startswith("sha256:"))
+        self.assertEqual(artifact["report"]["mode"], "proposal-only")
+        self.assertFalse(artifact["report"]["roadmap_modified"])
+        self.assertFalse(artifact["report"]["github_modified"])
+        self.assertFalse(artifact["report"]["task_dispatch_performed"])
+
     def test_collects_only_timeline_cross_referenced_pr_and_exact_head_checks(self):
         timeline = [
             {"event": "cross-referenced", "source": {"issue": {"number": 22, "repository_url": "https://api.github.com/repos/CarAutopsy/carautopsy", "pull_request": {"url": "ignored"}}},

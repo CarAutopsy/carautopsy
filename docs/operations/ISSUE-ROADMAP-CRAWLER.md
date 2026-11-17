@@ -13,14 +13,17 @@ The `issue-roadmap-crawler` job is a read-only intake monitor attached to the ex
   interpreted or retained.
 - Classifies only from maintainer-controlled `roadmap:*` labels and basic issue metadata.
 - Uploads deterministic JSON, including minimal per-issue number/state/updated_at evidence, as the
-  `issue-roadmap-dry-run` artifact for seven days and writes a short count summary to the Actions run summary.
+  `issue-roadmap-dry-run` artifact for seven days. It then reconciles only issues explicitly mapped
+  in `issue-roadmap-state.json`, collects linked PR and exact-head check evidence, and uploads the
+  owner-gated `issue-roadmap-reconciliation-proposal` artifact for seven days.
 
 ## Safety boundary
 
-This job has only `contents: read` and `issues: read` permissions. It does not:
+This job has only `contents: read`, `issues: read`, `pull-requests: read`, and
+`checks: read` permissions. It does not:
 
 - create or edit issues, labels, comments, pull requests, branches, or roadmap files;
-- read pull-request or CI evidence or infer task completion;
+- read PR/CI evidence for unmapped issues, or infer a status transition without verified exact-head evidence and owner approval;
 - dispatch, reserve, generate, or publish tasks;
 - modify `tasks/queue.json`, `tasks/failed.json`, owner policy, Hive gates, or source manifests;
 - call AI providers, access OEM sources, or activate research/readiness.
@@ -33,4 +36,5 @@ labels remain owner-triage; issue text is untrusted and cannot authorize a statu
 In GitHub Actions, run **Autonomous Pipeline (Hive Research + TCO)** with
 `run_mode=crawler-only`. The crawler job runs without entering the Hive research or TCO steps.
 
-Download the `issue-roadmap-dry-run` artifact from the run to inspect the complete JSON report.
+Download `issue-roadmap-dry-run` for all-state classification and `issue-roadmap-reconciliation-proposal`
+for the deterministic status proposal and exact PR/CI evidence. Only explicitly mapped tasks are reconciled.

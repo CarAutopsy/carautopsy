@@ -18,6 +18,7 @@ import requests
 
 from issue_roadmap_controller import IntakeControllerError, _validate_repository
 from issue_roadmap_sync import build_reconciliation_proposal
+from issue_roadmap_proposal import render_proposal_artifact_json
 
 GITHUB_API = "https://api.github.com"
 MAX_PAGES = 100
@@ -242,6 +243,7 @@ def collect_github_evidence(repository: str, issue_snapshots: list[dict[str, Any
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Collect read-only GitHub evidence for roadmap reconciliation.")
     parser.add_argument("--input", required=True, help="JSON with repository, roadmap_tasks, and issue_snapshots")
+    parser.add_argument("--render-artifact-json", action="store_true", help="render the deterministic owner-gated proposal artifact JSON")
     args = parser.parse_args(argv)
     try:
         payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
@@ -261,7 +263,8 @@ def main(argv: list[str] | None = None) -> int:
         report.update({"repository": repository, "source": "github-live-evidence",
                        "issue_snapshots_seen": len(projected), "roadmap_modified": False,
                        "github_modified": False, "task_dispatch_performed": False})
-        sys.stdout.write(json.dumps(report, sort_keys=True, indent=2, ensure_ascii=True) + "\n")
+        rendered = render_proposal_artifact_json(report) if args.render_artifact_json else json.dumps(report, sort_keys=True, indent=2, ensure_ascii=True) + "\n"
+        sys.stdout.write(rendered)
         return 0
     except (OSError, UnicodeError, ValueError, TypeError, RecursionError, EvidenceCollectionError) as exc:
         parser.exit(2, f"error: {exc}\n")
