@@ -1,7 +1,9 @@
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+
+import issue_roadmap_evidence as evidence_module
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from issue_roadmap_evidence import EvidenceCollectionError, collect_github_evidence
@@ -94,6 +96,25 @@ class EvidenceCollectorTests(unittest.TestCase):
             collect_github_evidence("owner/repo", [
                 {"number": 10, "state": "open", "updated_at": "2026-11-17T10:00:00Z"}
             ], session=session)
+
+    def test_rejects_too_many_issue_to_pr_links_before_fetching_pr_metadata(self):
+        timeline = response([
+            {"event": "cross-referenced", "source": {"issue": {
+                "number": number,
+                "repository_url": "https://api.github.com/repos/owner/repo",
+                "pull_request": {},
+            }}}
+            for number in (22, 23)
+        ])
+        session = Mock()
+        session.get.return_value = timeline
+        with patch.object(evidence_module, "MAX_LINKED_PR_EVIDENCE", 1):
+            with self.assertRaisesRegex(EvidenceCollectionError, "evidence link count"):
+                collect_github_evidence("owner/repo", [
+                    {"number": 10, "state": "open", "updated_at": "2026-11-17T10:00:00Z"}
+                ], session=session)
+        # The collector rejects the oversized link set before any PR/check API calls.
+        self.assertEqual(session.get.call_count, 1)
 
     def test_fetches_check_runs_once_for_distinct_shared_head_sha(self):
         timeline = response([
