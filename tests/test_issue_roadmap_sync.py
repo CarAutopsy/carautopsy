@@ -209,7 +209,7 @@ class RoadmapSyncTests(unittest.TestCase):
         report = build_reconciliation_proposal(
             payload["roadmap_tasks"], payload["issue_snapshots"],
             payload["pull_request_evidence"], payload["check_runs"],
-            repository="CarAutopsy/carautopsy",
+            approved_task_keys={"issue-10"}, repository="CarAutopsy/carautopsy",
         )
         self.assertTrue(report["proposals"][0]["evidence"]["checks_passed"])
 
