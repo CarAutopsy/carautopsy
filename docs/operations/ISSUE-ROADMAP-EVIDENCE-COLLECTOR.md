@@ -33,6 +33,11 @@ Each issue snapshot must contain only `number`, `state`, and timezone-aware
 `ISSUE_ROADMAP_RECONCILIATION.md`. Owner approvals are deliberately absent
 from the live collector input.
 
-The collector is a separately testable component. It is not yet enabled in the
-15-minute workflow: that integration requires a reviewed, canonical structured
-roadmap task source and a separate owner decision for any write-capable workflow.
+The collector is enabled in the existing 15-minute crawler job as a read-only
+reconciliation stage. Its issue scope is restricted to tasks explicitly mapped
+in `docs/operations/issue-roadmap-state.json`; an empty mapping produces an
+empty, deterministic proposal without timeline or PR lookups. The workflow
+publishes the full deterministic proposal JSON as the
+`issue-roadmap-reconciliation-proposal` artifact for seven days. The separate
+owner-authorized apply path remains disabled and requires its own explicit
+decision and protected workflow.
