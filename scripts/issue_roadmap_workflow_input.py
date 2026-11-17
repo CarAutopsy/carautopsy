@@ -52,7 +52,8 @@ def build_evidence_input(crawler: Any, roadmap: Any, *, repository: str) -> dict
         type(crawler.get("schema_version")) is not int
         or crawler.get("schema_version") != 1
         or crawler.get("mode") != "dry-run"
-        or crawler.get("repository") != repository
+        or not isinstance(crawler.get("repository"), str)
+        or crawler.get("repository").casefold() != repository.casefold()
         or crawler.get("roadmap_modified") is not False
         or crawler.get("github_modified") is not False
         or crawler.get("task_dispatch_performed") is not False
@@ -66,12 +67,15 @@ def build_evidence_input(crawler: Any, roadmap: Any, *, repository: str) -> dict
     if (
         type(roadmap.get("schema_version")) is not int
         or roadmap["schema_version"] != 1
-        or roadmap.get("repository") != repository
+        or not isinstance(roadmap.get("repository"), str)
+        or roadmap.get("repository").casefold() != repository.casefold()
         or not isinstance(roadmap.get("tasks"), list)
     ):
         raise WorkflowInputError("canonical roadmap snapshot identity or schema is invalid")
 
     tasks = roadmap["tasks"]
+    if len(tasks) > 500:
+        raise WorkflowInputError("canonical roadmap task count exceeds the evidence collector limit (500)")
     for task in tasks:
         if not isinstance(task, dict) or set(task) != {
             "task_key", "issue_number", "status", "dependencies", "source_updated_at"
