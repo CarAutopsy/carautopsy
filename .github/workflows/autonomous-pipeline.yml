@@ -18,13 +18,16 @@ on:
           - crawler-only
           - full
 
+# Least privilege by default; the research/TCO job opts in to write access below.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   run:
     if: github.event_name != 'workflow_dispatch' || inputs.run_mode != 'crawler-only'
+    permissions:
+      contents: write
+      pull-requests: write
     concurrency:
       group: autonomous-pipeline-research
       cancel-in-progress: false
@@ -48,13 +51,33 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: true
+      # The script-level gate (scripts/hive_research_gate.py) stays authoritative.
+      # This preflight only avoids installing dependencies and requiring secrets on
+      # runs that the gate is guaranteed to stop. If the flag is changed or renamed,
+      # the preflight does not match and the normal path (and gate) runs unchanged.
+      - name: Preflight - research pause
+        id: preflight
+        if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
+        run: |
+          if grep -qE '^VERIFIED_RETRIEVAL_AVAILABLE = False[[:space:]]*$' scripts/autonomous_pipeline.py; then
+            {
+              echo "### Research outcome"
+              echo "**PAUSED - expected security gate (preflight)**"
+              echo "- VERIFIED_RETRIEVAL_AVAILABLE is False; dependency install, token check and provider calls were skipped."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "paused=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "paused=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-python@v6
+        if: steps.preflight.outputs.paused != 'true'
         with:
           python-version: "3.12"
       - name: Install deps
+        if: steps.preflight.outputs.paused != 'true'
         run: pip install -r requirements.txt
       - name: Require PR automation token
-        if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
+        if: (github.event_name == 'schedule' || inputs.run_mode == 'research-only') && steps.preflight.outputs.paused != 'true'
         env:
           GH_TOKEN: ${{ secrets.CARAUTOPSY_PR_TOKEN }}
         run: |
@@ -63,7 +86,7 @@ jobs:
             exit 1
           fi
       - name: Hive research + two independent AI audits
-        if: github.event_name == 'schedule' || inputs.run_mode == 'research-only'
+        if: (github.event_name == 'schedule' || inputs.run_mode == 'research-only') && steps.preflight.outputs.paused != 'true'
         env:
           GH_TOKEN: ${{ secrets.CARAUTOPSY_PR_TOKEN }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
@@ -138,7 +161,7 @@ jobs:
   issue-roadmap-crawler:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_mode == 'crawler-only')
     concurrency:
-      group: autonomous-pipeline-issue-crawler-${{ github.run_id }}
+      group: autonomous-pipeline-issue-crawler
       cancel-in-progress: false
     runs-on: ubuntu-26.04
     timeout-minutes: 5
