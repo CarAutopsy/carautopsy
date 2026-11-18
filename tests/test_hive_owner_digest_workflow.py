@@ -33,7 +33,10 @@ class HiveOwnerDigestWorkflowTests(unittest.TestCase):
         self.assertIn("Hive-Ledger-SHA256", snapshot_helper)
         self.assertIn("interpret-trailers", snapshot_helper)
         self.assertIn("hive-state-branch-absent", snapshot_helper)
-        self.assertIn("persist-credentials: false", source)
+        self.assertIn("branch", snapshot_helper)
+        self.assertIn("main checkout", snapshot_helper)
+        self.assertIn("ref: main", source)
+        self.assertIn("persist-credentials: true", source)
         self.assertIn("retention-days: 14", source)
 
     def test_digest_workflow_does_not_expand_existing_research_or_tco_permissions(self):
