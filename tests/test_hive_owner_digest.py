@@ -241,6 +241,35 @@ class HiveOwnerDigestTests(unittest.TestCase):
         self.assertIn("main checkout", fallback["snapshot"]["authority_note"])
         self.assertIn("not a verified remote", fallback["snapshot"]["authority_note"])
 
+    def test_surrogate_identifier_is_rejected(self):
+        report = digest.build_digest(
+            [{"variant_id": "bad\\ud800"}, {"variant_id": "valid.🚗"}],
+            [],
+            generated_at="2026-11-18T05:02:00Z",
+        )
+        self.assertEqual(report["summary"]["malformed_queue_records"], 1)
+        self.assertEqual(report["queue"][0]["variant_id"], "valid.🚗")
+
+    def test_markdown_details_are_bounded_by_utf8_byte_budget(self):
+        old_budget = digest.MAX_MARKDOWN_DETAIL_BYTES
+        digest.MAX_MARKDOWN_DETAIL_BYTES = 30
+        try:
+            report = digest.build_digest(
+                [{"variant_id": "queued.vehicle.1"}, {"variant_id": "queued.vehicle.2"}],
+                [{"task": {"variant_id": "failed.vehicle.1"}}],
+                generated_at="2026-11-18T05:02:00Z",
+            )
+            rendered = digest.render_markdown(report)
+            self.assertIn("Details omitted due to Markdown byte budget", rendered)
+        finally:
+            digest.MAX_MARKDOWN_DETAIL_BYTES = old_budget
+
+    def test_failed_identifier_uses_inline_code_helper(self):
+        report = digest.build_digest([], [{"task": {"variant_id": "skoda.enyaq"}}],
+            generated_at="2026-11-18T05:02:00Z")
+        rendered = digest.render_markdown(report)
+        self.assertIn("`skoda.enyaq`:", rendered)
+
     def test_timezone_is_required_for_generated_timestamp(self):
         with self.assertRaises(digest.OwnerDigestError):
             digest.build_digest([], [], generated_at="2026-11-18T05:02:00")
