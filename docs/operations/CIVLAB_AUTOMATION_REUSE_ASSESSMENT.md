@@ -166,6 +166,22 @@ The inspected full TCO path in `scripts/autonomous_pipeline.py` commits and push
 
 The owner-digest PR adds initial workflow-contract tests: the issue crawler remains read-only, research and TCO routes remain distinct, and the digest job has only `contents: read`. Broader workflow-graph and artifact-boundary tests across every autonomous-pipeline path remain a follow-up.
 
+### 5.5 Failure taxonomy crosswalk: preserve domain boundaries
+
+| CivLab class / state | Hive mapping | Decision |
+|---|---|---|
+| `provider_error` | `provider_transport_failure` | **Preserve separation.** Provider transport attempts have their own bounded counter and do not consume candidate quality attempts. |
+| `review_rejection` | `provenance_rejection` or `vehicle_quality_rejection` | **Split by cause.** Hive keeps provenance defects distinct from technical/data-quality defects because their retry budgets differ. |
+| `verification_failure` | None in Hive research | **Do not add to Hive.** This is a code-sandbox verification result for a future engineering-agent pipeline, not a vehicle-research candidate failure. |
+| `contract_invalid` | No direct equivalent; malformed provider output may be `response_format_failure` | **Keep separate concepts.** A future engineering task-contract violation should stop before generation; a malformed researcher/auditor response consumes the format budget. |
+| `sandbox_failure` | None in Hive research | **Reject for Hive.** Hive does not execute generated repository code in a sandbox. |
+| `infrastructure_error` | No direct candidate outcome | **Keep operational.** Provider transport is already classified separately; runner/filesystem/state failures should fail closed rather than consume a vehicle's quality budget. Add a run-level status only if operational reporting later proves it necessary. |
+| `budget_exhausted` | None in Hive | **Do not claim or add a hard budget gate.** CarAutopsy has not established a hard monetary ceiling for provider calls; any future spend gate needs an independently tested reservation/settlement contract. |
+| `reserve_conflict` | `StateNotReconciled` / state ancestry conflict | **Keep as a state-control failure.** Reconcile the state branch; do not write it into a vehicle's failed-candidate ledger. |
+| `cancelled`, `stale_reservation`, `failure_limit` | No direct candidate outcome | **Keep as attempt/owner lifecycle.** They are not vehicle data defects and should not inflate candidate failure counters. Hive's branch reconciliation model remains authoritative. |
+
+This crosswalk identifies no missing Hive candidate-outcome code that justifies expanding the current schema. The missing verification, sandbox, contract and budget classes belong only in a separately designed engineering-agent pipeline.
+
 ## 6. Recommended migration sequence
 
 ### Phase 0 — inventory and evidence map
@@ -206,7 +222,7 @@ The owner-digest PR adds initial workflow-contract tests: the issue crawler rema
 1. **Read-only Hive owner digest** — implemented in draft CarAutopsy PR #116, adapted from CivLab W6 (#180–185) to Hive JSON state without introducing SQLite.
 2. **Workflow contract tests** — assert that research stays paused until readiness is explicit, crawler permissions remain read-only, and the TCO write path stays isolated.
 3. **Engineering task contract + sandbox design** — reuse CivLab #26/#32/#57/#92/#123 concepts for a separate engineering-code pipeline.
-4. **Outcome taxonomy crosswalk** — compare Hive's existing outcome codes to CivLab's failure classes; only add missing distinctions that materially improve retry or stop decisions.
+4. **Outcome taxonomy crosswalk** — completed in Section 5.5; preserve Hive's existing outcome schema and keep engineering-pipeline failure classes separate.
 5. **Provider registry review** — decide whether to centralize the existing provider list without changing vendor independence, provider fallback, or model defaults.
 
 ## 8. Source references
