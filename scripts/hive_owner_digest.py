@@ -332,7 +332,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         suffix = f" ({label})" if label else ""
         queue_details.append(f"- {_markdown_code(task['variant_id'])}{suffix}")
     for detail in queue_details:
-        size = len((detail + "\\n").encode("utf-8"))
+        size = len((detail + "\n").encode("utf-8"))
         if size <= budget:
             lines.append(detail)
             budget -= size
