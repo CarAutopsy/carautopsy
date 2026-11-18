@@ -56,6 +56,9 @@ def final_trailer(root: Path, message: bytes, key: str) -> str | None:
 def select_snapshot(root: Path) -> tuple[bytes, bytes, str, str]:
     """Return queue bytes, failed bytes, source label and integrity label."""
     root = Path(root).resolve()
+    checked_out_branch = _git(root, "branch", "--show-current").decode("utf-8").strip()
+    if checked_out_branch != "main":
+        raise SnapshotError("Owner digest snapshots must be prepared from the main checkout")
     try:
         remote = subprocess.run(
             ["git", "ls-remote", "--exit-code", "--heads", "origin", STATE_BRANCH],
