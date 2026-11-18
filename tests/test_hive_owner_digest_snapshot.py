@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from scripts import hive_owner_digest_snapshot as snapshot
 
@@ -29,6 +30,19 @@ class HiveOwnerDigestSnapshotTests(unittest.TestCase):
                 snapshot.final_trailer(root, final, snapshot.DIGEST_TRAILER),
                 digest,
             )
+
+    @patch("scripts.hive_owner_digest_snapshot.subprocess.run")
+    def test_non_main_checkout_is_rejected_before_snapshot_selection(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            ["git", "branch", "--show-current"],
+            0,
+            stdout=b"feature/test-branch\\n",
+            stderr=b"",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(snapshot.SnapshotError):
+                snapshot.select_snapshot(Path(directory))
+        run.assert_called_once()
 
     def test_duplicate_final_digest_trailers_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
