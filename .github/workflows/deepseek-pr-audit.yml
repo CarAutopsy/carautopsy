@@ -6,15 +6,12 @@ on:
         description: Pull request number
         required: true
         type: string
-
 permissions:
   contents: read
   pull-requests: read
-
 concurrency:
   group: deepseek-audit-${{ inputs.pr_number }}
   cancel-in-progress: false
-
 jobs:
   audit:
     runs-on: ubuntu-26.04
@@ -25,20 +22,20 @@ jobs:
           ref: main
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate PR and fetch diff
+      - name: Validate PR and fetch pinned diff
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ inputs.pr_number }}
         run: |
           set -euo pipefail
           [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
-          gh pr view "$PR_NUMBER" --json headRefOid,baseRefName > "$RUNNER_TEMP/pr.json"
+          gh pr view "$PR_NUMBER" --json headRefOid,baseRefOid > "$RUNNER_TEMP/pr.json"
           SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["headRefOid"])' "$RUNNER_TEMP/pr.json")
-          BASE=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["baseRefName"])' "$RUNNER_TEMP/pr.json")
-          [[ "$BASE" =~ ^[A-Za-z0-9._/-]+$ ]] || exit 1
-          git fetch --no-tags origin "$SHA" "refs/heads/$BASE:refs/remotes/origin/$BASE"
-          git diff --no-ext-diff --unified=3 "origin/$BASE...$SHA" > "$RUNNER_TEMP/pr.diff"
+          BASE_SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["baseRefOid"])' "$RUNNER_TEMP/pr.json")
+          git fetch --no-tags origin "$SHA" "$BASE_SHA"
+          git diff --no-ext-diff --unified=3 "$BASE_SHA...$SHA" > "$RUNNER_TEMP/pr.diff"
           echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
         id: pr
       - name: Install Python
         uses: actions/setup-python@v6
@@ -51,7 +48,7 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
           set -euo pipefail
-          python scripts/deepseek_pr_audit.py --diff "$RUNNER_TEMP/pr.diff" --head-sha "${{ steps.pr.outputs.head_sha }}" --json-output "$RUNNER_TEMP/audit.json" --summary-output "$RUNNER_TEMP/audit.md" >> "$GITHUB_STEP_SUMMARY"
+          python scripts/deepseek_pr_audit.py --diff "$RUNNER_TEMP/pr.diff" --head-sha "${{ steps.pr.outputs.head_sha }}" --base-sha "${{ steps.pr.outputs.base_sha }}" --json-output "$RUNNER_TEMP/audit.json" --summary-output "$RUNNER_TEMP/audit.md" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload audit report
         uses: actions/upload-artifact@v6
         with:
