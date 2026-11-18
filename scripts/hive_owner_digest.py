@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from datetime import datetime, timezone
+import html
 import json
 from pathlib import Path
 import sys
@@ -202,6 +203,11 @@ def build_digest(
     }
 
 
+def _markdown_text(value: Any) -> str:
+    """Escape untrusted snapshot labels before placing them in Markdown."""
+    return html.escape(str(value), quote=True).replace("`", "&#96;")
+
+
 def render_markdown(report: dict[str, Any]) -> str:
     """Render a concise owner-facing digest without untrusted raw text."""
     summary = report["summary"]
@@ -210,8 +216,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "# Hive Owner Digest",
         "",
         f"- Generated: {report['generated_at']}",
-        f"- Snapshot: `{snapshot['source']}`",
-        f"- State integrity: `{snapshot['state_integrity']}`",
+        f"- Snapshot: `{_markdown_text(snapshot['source'])}`",
+        f"- State integrity: `{_markdown_text(snapshot['state_integrity'])}`",
         "- Mode: **read-only; no fetch, reconciliation, dispatch, or provider calls**",
         "",
         "## Summary",
@@ -235,9 +241,9 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.extend(["", "## Queued tasks", ""])
     if report["queue"]:
         for task in report["queue"]:
-            label = " — ".join(task.get(field, "") for field in ("make", "model") if task.get(field))
+            label = " — ".join(_markdown_text(task.get(field, "")) for field in ("make", "model") if task.get(field))
             suffix = f" ({label})" if label else ""
-            lines.append(f"- `{task['variant_id']}`{suffix}")
+            lines.append(f"- `{_markdown_text(task['variant_id'])}`{suffix}")
     else:
         lines.append("- None")
     lines.extend(["", "## Failed tasks", ""])
@@ -245,14 +251,14 @@ def render_markdown(report: dict[str, Any]) -> str:
         for item in report["failed"]:
             task = item["task"]
             lines.append(
-                f"- `{task['variant_id']}`: `{item['outcome_code']}`; "
+                f"- `{_markdown_text(task['variant_id'])}`: `{item['outcome_code']}`; "
                 f"retryable={str(item['retryable']).lower()}; "
                 f"exhausted={str(item['exhausted']).lower()}; "
                 f"manual_review={str(item['manual_review_required']).lower()}"
             )
     else:
         lines.append("- None")
-    lines.extend(["", f"> {snapshot['authority_note']}", ""])
+    lines.extend(["", f"> {_markdown_text(snapshot['authority_note'])}", ""])
     return "\n".join(lines)
 
 
