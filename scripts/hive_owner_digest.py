@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 import html
 import json
 from pathlib import Path
-import re
 import sys
 from typing import Any
 
@@ -265,7 +264,8 @@ def build_digest(
 def _markdown_text(value: Any) -> str:
     """Escape untrusted text so it cannot introduce Markdown or HTML syntax."""
     escaped = html.escape(str(value), quote=True)
-    return re.sub(r"([\\\\`*_{}\\[\\]()#+\\-.!|>])", r"\\\\\\1", escaped)
+    special = set("\\\\`*_{}[]()#+-.!|>")
+    return "".join("\\\\" + char if char in special else char for char in escaped)
 
 
 def _markdown_code(value: Any) -> str:
