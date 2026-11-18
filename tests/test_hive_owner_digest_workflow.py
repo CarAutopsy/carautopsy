@@ -32,7 +32,7 @@ class HiveOwnerDigestWorkflowTests(unittest.TestCase):
         snapshot_helper = (ROOT / "scripts" / "hive_owner_digest_snapshot.py").read_text(encoding="utf-8")
         self.assertIn("Hive-Ledger-SHA256", snapshot_helper)
         self.assertIn("interpret-trailers", snapshot_helper)
-        self.assertIn("hive-state-branch-absent", source)
+        self.assertIn("hive-state-branch-absent", snapshot_helper)
         self.assertIn("persist-credentials: false", source)
         self.assertIn("retention-days: 14", source)
 
