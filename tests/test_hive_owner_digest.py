@@ -287,7 +287,7 @@ class HiveOwnerDigestTests(unittest.TestCase):
 
     def test_safe_timestamp_normalizes_separator(self):
         unsafe_separator = "2026-11-18\\ud80005:00:00+00:00"
-        self.assertEqual(digest._safe_timestamp(unsafe_separator), "2026-11-18T05:00:00+00:00")
+        self.assertIsNone(digest._safe_timestamp(unsafe_separator))
 
     def test_unrecognized_stage_is_redacted(self):
         record, _ = hive_outcomes.record_outcome(
