@@ -1,0 +1,65 @@
+name: Hive Owner Digest
+
+on:
+  # Separate, read-only operational snapshot every 15 minutes.
+  schedule:
+    - cron: '12,27,42,57 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hive-owner-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Prepare and verify Hive snapshot
+        id: snapshot
+        run: |
+          set -euo pipefail
+          python scripts/hive_owner_digest_snapshot.py \
+            --output "$RUNNER_TEMP/hive-owner-digest-snapshot"
+
+      - name: Render owner digest
+        env:
+          SNAPSHOT_ROOT: ${{ steps.snapshot.outputs.root }}
+          SNAPSHOT_SOURCE: ${{ steps.snapshot.outputs.source }}
+          STATE_INTEGRITY: ${{ steps.snapshot.outputs.integrity }}
+        run: |
+          set -euo pipefail
+          python scripts/hive_owner_digest.py \
+            --root "$SNAPSHOT_ROOT" \
+            --snapshot-source "$SNAPSHOT_SOURCE" \
+            --state-integrity "$STATE_INTEGRITY" \
+            >> "$GITHUB_STEP_SUMMARY"
+          python scripts/hive_owner_digest.py \
+            --root "$SNAPSHOT_ROOT" \
+            --snapshot-source "$SNAPSHOT_SOURCE" \
+            --state-integrity "$STATE_INTEGRITY" \
+            --format json > "$RUNNER_TEMP/hive-owner-digest.json"
+
+      - name: Upload sanitized digest artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: hive-owner-digest
+          path: ${{ runner.temp }}/hive-owner-digest.json
+          if-no-files-found: error
+          retention-days: 14
