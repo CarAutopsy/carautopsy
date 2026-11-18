@@ -106,7 +106,7 @@ jobs:
           python scripts/hive_owner_digest.py \
             --root "$SNAPSHOT_ROOT" \
             --snapshot-source "$SNAPSHOT_SOURCE" \
-            --state-integrity "$STATE_INTEGRITY" \\
+            --state-integrity "$STATE_INTEGRITY" \
             >> "$GITHUB_STEP_SUMMARY"
           python scripts/hive_owner_digest.py \
             --root "$SNAPSHOT_ROOT" \
