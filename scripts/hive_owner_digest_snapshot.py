@@ -1,8 +1,9 @@
 """Select a trusted Hive ledger snapshot for the read-only owner digest.
 
-This workflow helper may fetch origin/hive/state, but it never mutates Git refs,
-the working tree, Hive state, or the repository. The digest renderer itself
-remains offline and receives only the verified files copied into a temp folder.
+This workflow helper may fetch origin/hive/state, updating only the ephemeral
+checkout's remote-tracking ref. It never pushes, changes the working tree, or
+mutates Hive state. The digest renderer itself remains offline and receives
+only the selected files copied into a temporary folder.
 """
 from __future__ import annotations
 
