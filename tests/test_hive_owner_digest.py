@@ -270,6 +270,36 @@ class HiveOwnerDigestTests(unittest.TestCase):
         rendered = digest.render_markdown(report)
         self.assertIn("`skoda.enyaq`:", rendered)
 
+    def test_utf8_byte_budget_omits_accented_row_and_keeps_ascii(self):
+        old_budget = digest.MAX_MARKDOWN_DETAIL_BYTES
+        digest.MAX_MARKDOWN_DETAIL_BYTES = 6
+        try:
+            report = digest.build_digest(
+                [{"variant_id": "é"}, {"variant_id": "a"}], [],
+                generated_at="2026-11-18T05:02:00Z",
+            )
+            rendered = digest.render_markdown(report)
+            self.assertNotIn("- `é`", rendered)
+            self.assertIn("- `a`", rendered)
+            self.assertIn("Details omitted due to Markdown byte budget: **1**", rendered)
+        finally:
+            digest.MAX_MARKDOWN_DETAIL_BYTES = old_budget
+
+    def test_safe_timestamp_normalizes_separator(self):
+        unsafe_separator = "2026-11-18\\ud80005:00:00+00:00"
+        self.assertEqual(digest._safe_timestamp(unsafe_separator), "2026-11-18T05:00:00+00:00")
+
+    def test_unrecognized_stage_is_redacted(self):
+        record, _ = hive_outcomes.record_outcome(
+            {"variant_id": "safe.vehicle"}, None,
+            hive_outcomes.PROVENANCE_REJECTION, stage="audit",
+            now="2026-11-18T05:00:00Z",
+        )
+        record["outcome"]["stage"] = "https://private.example"
+        report = digest.build_digest([], [record], generated_at="2026-11-18T05:02:00Z")
+        self.assertIsNone(report["failed"][0]["stage"])
+        self.assertNotIn("private.example", json.dumps(report))
+
     def test_timezone_is_required_for_generated_timestamp(self):
         with self.assertRaises(digest.OwnerDigestError):
             digest.build_digest([], [], generated_at="2026-11-18T05:02:00")
