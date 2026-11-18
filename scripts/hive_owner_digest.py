@@ -263,8 +263,15 @@ def build_digest(
 
 
 def _markdown_text(value: Any) -> str:
-    """Escape untrusted snapshot labels before placing them in Markdown."""
-    return html.escape(str(value), quote=True).replace("`", "&#96;")
+    """Escape untrusted text so it cannot introduce Markdown or HTML syntax."""
+    escaped = html.escape(str(value), quote=True)
+    return re.sub(r"([\\\\`*_{}\\[\\]()#+\\-.!|>])", r"\\\\\\1", escaped)
+
+
+def _markdown_code(value: Any) -> str:
+    """Render untrusted values in inline code without allowing delimiter breakout."""
+    safe = html.escape(str(value).replace("`", "ˋ"), quote=True)
+    return f"`{safe}`"
 
 
 def render_markdown(report: dict[str, Any]) -> str:
@@ -275,8 +282,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "# Hive Owner Digest",
         "",
         f"- Generated: {report['generated_at']}",
-        f"- Snapshot: `{_markdown_text(snapshot['source'])}`",
-        f"- State integrity: `{_markdown_text(snapshot['state_integrity'])}`",
+        f"- Snapshot: {_markdown_code(snapshot['source'])}",
+        f"- State integrity: {_markdown_code(snapshot['state_integrity'])}",
         "- Mode: **read-only; no fetch, reconciliation, dispatch, or provider calls**",
         "",
         "## Summary",
@@ -302,7 +309,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         for task in report["queue"]:
             label = " — ".join(_markdown_text(task.get(field, "")) for field in ("make", "model") if task.get(field))
             suffix = f" ({label})" if label else ""
-            lines.append(f"- `{_markdown_text(task['variant_id'])}`{suffix}")
+            lines.append(f"- {_markdown_code(task['variant_id'])}{suffix}")
     else:
         lines.append("- None")
     lines.extend(["", "## Failed tasks", ""])
