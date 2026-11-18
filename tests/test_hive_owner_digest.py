@@ -63,9 +63,10 @@ class HiveOwnerDigestTests(unittest.TestCase):
             [legacy, {"task": {"make": "missing-id"}}],
             generated_at="2026-11-18T05:02:00Z",
         )
-        self.assertEqual(report["summary"]["manual_review_required"], 1)
+        self.assertEqual(report["summary"]["manual_review_required"], 2)
         self.assertEqual(report["summary"]["malformed_queue_records"], 1)
         self.assertEqual(report["summary"]["malformed_failed_records"], 1)
+        self.assertEqual(report["summary"]["failed_records"], 2)
         self.assertNotIn("private raw auditor response", json.dumps(report))
         self.assertIn("manual_review_required", json.dumps(report))
 
@@ -96,14 +97,15 @@ class HiveOwnerDigestTests(unittest.TestCase):
             now="2026-11-18T05:00:00Z",
         )
         report = digest.build_digest(
-            [{"variant_id": "b.vehicle", "make": "B", "model": "Vehicle"}],
+            [{"variant_id": "<script>alert(1)</script>", "make": "B", "model": "Vehicle"}],
             [record],
             generated_at="2026-11-18T05:02:00Z",
         )
         rendered = digest.render_markdown(report)
         self.assertIn("read-only; no fetch, reconciliation, dispatch, or provider calls", rendered)
         self.assertIn("provenance_rejection", rendered)
-        self.assertIn("b.vehicle", rendered)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", rendered)
+        self.assertNotIn("<script>", rendered)
 
     def test_invalid_json_constants_and_oversized_files_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
