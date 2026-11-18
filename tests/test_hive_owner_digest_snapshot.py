@@ -36,7 +36,7 @@ class HiveOwnerDigestSnapshotTests(unittest.TestCase):
         run.return_value = subprocess.CompletedProcess(
             ["git", "branch", "--show-current"],
             0,
-            stdout=b"feature/test-branch\\n",
+            stdout=b"feature/test-branch\n",
             stderr=b"",
         )
         with tempfile.TemporaryDirectory() as directory:
