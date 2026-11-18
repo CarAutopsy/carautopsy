@@ -32,7 +32,8 @@ jobs:
           gh pr view "$PR_NUMBER" --json headRefOid,baseRefOid > "$RUNNER_TEMP/pr.json"
           SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["headRefOid"])' "$RUNNER_TEMP/pr.json")
           BASE_SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["baseRefOid"])' "$RUNNER_TEMP/pr.json")
-          git fetch --no-tags origin "$SHA" "$BASE_SHA"
+          AUTH="AUTHORIZATION: bearer $GH_TOKEN"
+          git -c http.extraheader="$AUTH" fetch --no-tags origin "$SHA" "$BASE_SHA"
           git diff --no-ext-diff --unified=3 "$BASE_SHA...$SHA" > "$RUNNER_TEMP/pr.diff"
           echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "base_sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
