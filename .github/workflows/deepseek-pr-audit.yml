@@ -1,0 +1,55 @@
+name: DeepSeek PR Audit
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: deepseek-audit-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Validate PR and fetch diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          gh pr view "$PR_NUMBER" --json headRefOid,baseRefName,headRefName,headRepository > "$RUNNER_TEMP/pr.json"
+          python -c 'import json,sys; p=json.load(open(sys.argv[1])); print(p["headRefOid"])' "$RUNNER_TEMP/pr.json" > "$RUNNER_TEMP/head.sha"
+          SHA=$(cat "$RUNNER_TEMP/head.sha")
+          git fetch --no-tags origin "$SHA"
+          git diff --no-ext-diff --unified=3 "origin/main...$SHA" > "$RUNNER_TEMP/pr.diff"
+          echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
+        id: pr
+      - name: Run DeepSeek audit
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/deepseek_pr_audit.py --diff "$RUNNER_TEMP/pr.diff" --head-sha "${{ steps.pr.outputs.head_sha }}" --json-output "$RUNNER_TEMP/audit.json" --summary-output "$RUNNER_TEMP/audit.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload audit report
+        uses: actions/upload-artifact@v6
+        with:
+          name: deepseek-pr-audit-${{ inputs.pr_number }}
+          path: |
+            ${{ runner.temp }}/audit.json
+            ${{ runner.temp }}/audit.md
+          if-no-files-found: error
+          retention-days: 14
