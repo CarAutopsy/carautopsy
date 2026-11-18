@@ -61,7 +61,7 @@ def run(diff, sha, key):
     data=response.json()
     content=data["choices"][0]["message"]["content"]
     result=parse_response(content)
-    result.update({"audit_status":"COMPLETED","model":MODEL,"head_sha":sha,"diff_truncated":len(raw)>=MAX_DIFF_BYTES})
+    result.update({"audit_status":"COMPLETED","model":MODEL,"head_sha":sha,"diff_truncated":truncated})
     return result
 
 def render(result):
