@@ -243,7 +243,7 @@ class HiveOwnerDigestTests(unittest.TestCase):
 
     def test_surrogate_identifier_is_rejected(self):
         report = digest.build_digest(
-            [{"variant_id": "bad\\ud800"}, {"variant_id": "valid.🚗"}],
+            [{"variant_id": "bad\ud800"}, {"variant_id": "valid.🚗"}],
             [],
             generated_at="2026-11-18T05:02:00Z",
         )
