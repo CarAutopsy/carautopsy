@@ -173,8 +173,8 @@ def build_digest(
         safe_failed.append(safe)
         counts[code] += 1
 
-    manual_count = sum(item["manual_review_required"] for item in safe_failed)
-    exhausted_count = sum(item["exhausted"] for item in safe_failed)
+    manual_count = sum(item["manual_review_required"] for item in safe_failed) + malformed_failed
+    exhausted_count = sum(item["exhausted"] for item in safe_failed) + malformed_failed
     retryable_count = sum(item["retryable"] for item in safe_failed)
     return {
         "schema_version": 1,
@@ -189,7 +189,7 @@ def build_digest(
         },
         "summary": {
             "queued": len(safe_queue),
-            "failed_records": len(safe_failed),
+            "failed_records": len(safe_failed) + malformed_failed,
             "retryable": retryable_count,
             "exhausted": exhausted_count,
             "manual_review_required": manual_count,
