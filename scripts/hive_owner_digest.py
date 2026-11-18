@@ -98,18 +98,20 @@ def _safe_timestamp(value: Any) -> str | None:
 
 
 def _state_attempt_limits_exhausted(entry: dict[str, Any]) -> bool:
-    """Mirror hive_state.exhausted_ids() top-level retry ceilings."""
-    try:
-        audit_limit = int(entry.get("max_attempts") or 3)
-        research_limit = int(entry.get("max_research_attempts") or 3)
-        attempts = int(entry.get("attempts") or 0)
-        research_attempts = int(entry.get("research_attempts") or 0)
-    except (TypeError, ValueError, OverflowError):
-        raise OwnerDigestError("invalid top-level Hive attempt counters")
-    if min(audit_limit, research_limit, attempts, research_attempts) < 0:
-        raise OwnerDigestError("negative top-level Hive attempt counter")
-    return attempts >= audit_limit or research_attempts >= research_limit
+    """Mirror Hive state ceilings while rejecting coerced/corrupt counters."""
+    def read_counter(field: str, default: int, *, zero_uses_default: bool = False) -> int:
+        value = entry.get(field)
+        if value is None or (zero_uses_default and type(value) is int and value == 0):
+            return default
+        if type(value) is not int or value < 0:
+            raise OwnerDigestError("invalid top-level Hive attempt counter")
+        return value
 
+    audit_limit = read_counter("max_attempts", 3, zero_uses_default=True)
+    research_limit = read_counter("max_research_attempts", 3, zero_uses_default=True)
+    attempts = read_counter("attempts", 0)
+    research_attempts = read_counter("research_attempts", 0)
+    return attempts >= audit_limit or research_attempts >= research_limit
 
 def _safe_failed_record(entry: Any) -> tuple[dict[str, Any] | None, str]:
     if not isinstance(entry, dict):
