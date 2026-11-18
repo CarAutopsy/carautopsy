@@ -39,7 +39,10 @@ def _git(root: Path, *args: str, input_bytes: bytes | None = None) -> bytes:
 
 def final_trailer(root: Path, message: bytes, key: str) -> str | None:
     """Read a value only from Git's parsed final trailer block."""
-    parsed = _git(root, "interpret-trailers", "--parse", input_bytes=message).decode("utf-8")
+    try:
+        parsed = _git(root, "interpret-trailers", "--parse", input_bytes=message).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise SnapshotError("Hive state commit message is not valid UTF-8") from exc
     prefix = key + ":"
     values = [
         line[len(prefix):].strip()
@@ -96,16 +99,19 @@ def select_snapshot(root: Path) -> tuple[bytes, bytes, str, str]:
 def prepare_snapshot(root: Path, output: Path) -> tuple[str, str]:
     queue, failed, source, integrity = select_snapshot(root)
     tasks = Path(output).resolve() / "tasks"
-    tasks.mkdir(parents=True, exist_ok=True)
-    (tasks / "queue.json").write_bytes(queue)
-    (tasks / "failed.json").write_bytes(failed)
+    try:
+        tasks.mkdir(parents=True, exist_ok=True)
+        (tasks / "queue.json").write_bytes(queue)
+        (tasks / "failed.json").write_bytes(failed)
 
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a", encoding="utf-8") as stream:
-            stream.write(f"root={tasks.parent}\n")
-            stream.write(f"source={source}\n")
-            stream.write(f"integrity={integrity}\n")
+        github_output = os.environ.get("GITHUB_OUTPUT")
+        if github_output:
+            with open(github_output, "a", encoding="utf-8") as stream:
+                stream.write(f"root={tasks.parent}\n")
+                stream.write(f"source={source}\n")
+                stream.write(f"integrity={integrity}\n")
+    except OSError as exc:
+        raise SnapshotError("Could not write the temporary Hive digest snapshot") from exc
     return source, integrity
 
 
