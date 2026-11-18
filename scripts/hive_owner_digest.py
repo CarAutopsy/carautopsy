@@ -85,6 +85,33 @@ def _safe_task(task: Any) -> dict[str, str] | None:
     return result
 
 
+def _safe_timestamp(value: Any) -> str | None:
+    """Return only timezone-aware ISO-8601 timestamps."""
+    if not isinstance(value, str) or not value or len(value) > 64:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return None
+    return value
+
+
+def _state_attempt_limits_exhausted(entry: dict[str, Any]) -> bool:
+    """Mirror hive_state.exhausted_ids() top-level retry ceilings."""
+    try:
+        audit_limit = int(entry.get("max_attempts") or 3)
+        research_limit = int(entry.get("max_research_attempts") or 3)
+        attempts = int(entry.get("attempts") or 0)
+        research_attempts = int(entry.get("research_attempts") or 0)
+    except (TypeError, ValueError, OverflowError):
+        raise OwnerDigestError("invalid top-level Hive attempt counters")
+    if min(audit_limit, research_limit, attempts, research_attempts) < 0:
+        raise OwnerDigestError("negative top-level Hive attempt counter")
+    return attempts >= audit_limit or research_attempts >= research_limit
+
+
 def _safe_failed_record(entry: Any) -> tuple[dict[str, Any] | None, str]:
     if not isinstance(entry, dict):
         return None, "malformed"
@@ -92,43 +119,63 @@ def _safe_failed_record(entry: Any) -> tuple[dict[str, Any] | None, str]:
     if task is None:
         return None, "malformed"
 
+    effective = entry
+    legacy_migrated = False
     manual = hive_outcomes.requires_manual_review(entry)
-    outcome = entry.get("outcome") if isinstance(entry.get("outcome"), dict) else {}
+    if manual:
+        migrated, recognized = hive_outcomes.migrate_legacy_entry(entry)
+        if recognized:
+            effective = migrated
+            manual = False
+            legacy_migrated = True
+
+    outcome = effective.get("outcome") if isinstance(effective.get("outcome"), dict) else {}
     code = outcome.get("code") if not manual else hive_outcomes.MANUAL_REVIEW_REQUIRED
     if not isinstance(code, str) or code not in hive_outcomes.OUTCOME_CODES:
         code = hive_outcomes.MANUAL_REVIEW_REQUIRED
         manual = True
 
-    counters = outcome.get("counters") if isinstance(outcome.get("counters"), dict) else {}
-    safe_counters = {}
-    for field in (
-        "provider_attempts", "format_attempts", "provenance_attempts",
-        "attempts", "research_attempts",
-    ):
-        value = counters.get(field)
-        if type(value) is int and value >= 0:
-            safe_counters[field] = value
+    state_exhausted = False
+    if not manual:
+        try:
+            state_exhausted = _state_attempt_limits_exhausted(effective)
+        except OwnerDigestError:
+            manual = True
+            code = hive_outcomes.MANUAL_REVIEW_REQUIRED
+            outcome = {}
 
-    retryable = outcome.get("retryable") is True and not manual
-    exhausted = manual or hive_outcomes.exhausted_outcome(entry)
+    safe_counters = {}
+    if not manual:
+        counters = outcome["counters"]
+        safe_counters = {
+            field: counters[field]
+            for field in (
+                "provider_attempts", "format_attempts", "provenance_attempts",
+                "attempts", "research_attempts",
+            )
+        }
+
+    retryable = not manual and not state_exhausted and outcome.get("retryable") is True
+    exhausted = manual or state_exhausted or hive_outcomes.exhausted_outcome(effective)
     safe = {
         "task": task,
         "outcome_code": code,
         "stage": _safe_text(outcome.get("stage"), 40) if not manual else "manual_review",
-        "at": _safe_text(outcome.get("at", entry.get("at")), 64),
+        "at": _safe_timestamp(outcome.get("at")) if not manual else None,
         "retryable": retryable,
         "exhausted": exhausted,
         "manual_review_required": manual,
         "counters": safe_counters,
     }
-    categories = entry.get("defect_categories")
-    if isinstance(categories, list):
+    if legacy_migrated:
+        safe["legacy_migrated"] = True
+    categories = effective.get("defect_categories")
+    if not manual and isinstance(categories, list):
         allowed = set(hive_outcomes.DEFECT_CATEGORY_MARKERS) | {"unspecified_quality_defect"}
         safe["defect_categories"] = sorted({
             item for item in categories if isinstance(item, str) and item in allowed
         })
     return safe, code
-
 
 def build_digest(
     queue: list[Any],
