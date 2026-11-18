@@ -220,6 +220,27 @@ class HiveOwnerDigestTests(unittest.TestCase):
                 self.assertEqual(item["counters"], {})
                 self.assertIsNone(item["at"])
 
+    def test_authority_note_matches_verified_remote_or_main_fallback(self):
+        remote = digest.build_digest(
+            [],
+            [],
+            snapshot_source="origin/hive/state",
+            state_integrity="verified-ledger-sha256",
+            generated_at="2026-11-18T05:02:00Z",
+        )
+        self.assertIn("fetched origin/hive/state", remote["snapshot"]["authority_note"])
+        self.assertIn("renderer itself is offline", remote["snapshot"]["authority_note"])
+
+        fallback = digest.build_digest(
+            [],
+            [],
+            snapshot_source="main-working-tree",
+            state_integrity="hive-state-branch-absent",
+            generated_at="2026-11-18T05:02:00Z",
+        )
+        self.assertIn("main checkout", fallback["snapshot"]["authority_note"])
+        self.assertIn("not a verified remote", fallback["snapshot"]["authority_note"])
+
     def test_timezone_is_required_for_generated_timestamp(self):
         with self.assertRaises(digest.OwnerDigestError):
             digest.build_digest([], [], generated_at="2026-11-18T05:02:00")
