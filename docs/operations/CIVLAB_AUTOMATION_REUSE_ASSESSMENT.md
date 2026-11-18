@@ -87,7 +87,7 @@ The following categories are overlapping title-keyword groupings, not exclusive 
 | Sandbox | `pipeline_security.py` stages allow-listed files and runs isolated typecheck/tests | Hive validates research candidates/evidence; it is not an engineering-code execution sandbox | **Reuse for a separate code-generation pipeline**, not Hive research |
 | Independent review | Provider audit bound to proposal digest | Hive runs two independent vendor audits over validated candidate/evidence | **Preserve** Hive quorum; engineering-code audit needs its own contract |
 | Publication | `candidate_publisher.py`, `pilot_publish.py`, separate publish job | Hive research branch/PR workflow; TCO full route has a separate publication/commit path | **Adapt** evidence-bound draft PR for engineering code; do not conflate with research PRs |
-| Owner digest | `owner_digest.py`, read-only SQLite query | Workflow summaries and read-only issue-roadmap reconciliation artifacts; no equivalent unified Hive operations digest found | **High-value adaptation** for Hive state |
+| Owner digest | `owner_digest.py`, read-only SQLite query | At the inspected baseline, workflow summaries and read-only issue-roadmap artifacts; the additive Hive JSON digest is now proposed in CarAutopsy PR #116 | **Adapted** without introducing SQLite |
 | Roadmap sync | `roadmap_sync.py`, proposes status from merged PRs/owner decisions/ledger | `issue_roadmap_sync.py`, evidence collector and owner-approved apply plan | **Preserve CarAutopsy design**; borrow report and evidence discipline |
 | Workflow tests | Pipeline gate tests assert job graph, permission boundaries and artifact contracts | Existing Hive schema, gate, retry, state, and issue-roadmap tests | **Extend** with workflow contract tests |
 
@@ -112,6 +112,17 @@ CivLab intentionally leaves an attempt unresolved when a branch update or PR sub
 ### 4.4 Keep candidate code away from credentials
 
 CivLab separates the candidate verification container from provider secrets and GitHub write credentials. Its security status also distinguishes mocked boundary tests from proof of real Docker isolation or end-to-end readiness. CarAutopsy should adopt the separation and preserve the distinction between test evidence and live proof.
+
+### 4.5 Follow-up PR lineage: what was corrected after the first design
+
+The selected PRs are a sequence of design corrections, not independent features to copy:
+
+- **One controller, with explicit permission review (#123–#127).** #123 removed the competing hourly workflow after its gates diverged and made `agent-pipeline.yml` canonical. The same change explicitly granted `contents: write` to generation and failure-finalization jobs, so the lesson is not simply “one workflow”: job-level write permissions still need narrow justification. #124 recorded that monetary enforcement remained false rather than claiming it was complete. #125 documented that its exit criterion was only partially proven; #126 added rerun-refusal tests but explicitly left existing-draft detection open. #127 then added an existing-publication check before writes and left uncertain publication attempts unresolved for reconciliation.
+- **Provider faults are not task defects (#87, #136).** The failure taxonomy was refined so transient provider errors are retried separately and do not consume the code-revision allowance. CarAutopsy already distinguishes provider transport, response format, provenance and quality outcomes; compare semantics rather than transplanting CivLab's classes wholesale.
+- **Verification feedback is evidence-bound (#177–#179).** The sequence added a distinct verification-failure class, bounded feedback, exhausted-task skipping, and durable failure evidence. The reusable principle is that a correction attempt must be grounded in a specific verification result, not a generic retry prompt.
+- **Owner reporting and roadmap decisions are separate, read-only proposals (#180–#185).** #180 specified the digest/sync behavior; #181 added attempt timestamps and a cancelled outcome; #182 created a deterministic roadmap proposal script; #183 persisted explicit owner decisions; #184 added a read-only digest; and #185 added those files/tests to the security-check path. This sequence supports the additive Hive digest, while CarAutopsy keeps its JSON state branch and owner-approved roadmap apply path.
+
+The follow-up history also shows why a checked box or a successful unit test must not be treated as proof of live branch protection, hard monetary enforcement, sandbox isolation, or publication safety. Those claims require their own observable evidence.
 
 ## 5. CarAutopsy-specific observations
 
@@ -147,7 +158,7 @@ The inspected full TCO path in `scripts/autonomous_pipeline.py` commits and push
 - [x] Categorize the PR history by major automation themes.
 - [x] Select high-value source PRs and inspect their changed-file lists.
 - [x] Compare CivLab core components against current CarAutopsy modules.
-- [ ] Complete follow-up/fix lineage review for the shortlisted PRs.
+- [x] Complete follow-up/fix lineage review for the shortlisted PRs, including #123–#127, #136, #177–#185.
 
 ### Phase 1 — architecture reuse matrix
 - [ ] Map each shortlisted CivLab component to exact CarAutopsy modules and tests.
@@ -177,7 +188,7 @@ The inspected full TCO path in `scripts/autonomous_pipeline.py` commits and push
 
 ## 7. Initial recommended priorities
 
-1. **Read-only Hive owner digest** — the clearest additive reuse from CivLab W6 (#180–185), adapted to Hive JSON state rather than introducing SQLite.
+1. **Read-only Hive owner digest** — implemented in draft CarAutopsy PR #116, adapted from CivLab W6 (#180–185) to Hive JSON state without introducing SQLite.
 2. **Workflow contract tests** — assert that research stays paused until readiness is explicit, crawler permissions remain read-only, and the TCO write path stays isolated.
 3. **Engineering task contract + sandbox design** — reuse CivLab #26/#32/#57/#92/#123 concepts for a separate engineering-code pipeline.
 4. **Outcome taxonomy crosswalk** — compare Hive's existing outcome codes to CivLab's failure classes; only add missing distinctions that materially improve retry or stop decisions.
