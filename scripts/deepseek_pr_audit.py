@@ -63,9 +63,15 @@ def main():
     p=argparse.ArgumentParser(); p.add_argument("--diff",required=True); p.add_argument("--head-sha",required=True); p.add_argument("--base-sha",required=True); p.add_argument("--json-output",required=True); p.add_argument("--summary-output",required=True); a=p.parse_args()
     key=os.getenv("DEEPSEEK_API_KEY")
     if not key: print("AUDIT_BLOCKED: missing API secret",file=sys.stderr); return 2
+    operation="reading bounded diff"
     try:
-        diff,truncated=bounded_diff(a.diff); result=run(diff,a.head_sha,a.base_sha,key,truncated)
+        diff,truncated=bounded_diff(a.diff)
+        operation="calling DeepSeek provider"
+        result=run(diff,a.head_sha,a.base_sha,key,truncated)
+        operation="writing audit reports"
         Path(a.json_output).write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8"); Path(a.summary_output).write_text(render(result)+"\n",encoding="utf-8"); print(render(result))
-    except Exception as exc: print("AUDIT_FAILED: "+type(exc).__name__,file=sys.stderr); return 2
+    except Exception as exc:
+        detail=str(exc).replace(key,"[REDACTED]") if key else str(exc)
+        print(f"AUDIT_FAILED during {operation}: {type(exc).__name__}: {detail}",file=sys.stderr); return 2
     return 0
 if __name__=="__main__": sys.exit(main())
