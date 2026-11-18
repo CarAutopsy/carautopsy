@@ -197,10 +197,10 @@ The inspected full TCO path in `scripts/autonomous_pipeline.py` commits and push
 - [Security status](https://github.com/CivLab-Project/civlab/blob/main/automation/PIPELINE_SECURITY_STATUS.md)
 
 ### CarAutopsy code
-- [Hive orchestration](https://github.com/CarAutopsy/carautopsy/blob/main/scripts/hive_orchestration.py)
-- [Hive state](https://github.com/CarAutopsy/carautopsy/blob/main/scripts/hive_state.py)
-- [Hive outcomes](https://github.com/CarAutopsy/carautopsy/blob/main/scripts/hive_outcomes.py)
-- [Issue roadmap evidence](https://github.com/CarAutopsy/carautopsy/blob/main/scripts/issue_roadmap_evidence.py)
-- [Issue roadmap sync](https://github.com/CarAutopsy/carautopsy/blob/main/scripts/issue_roadmap_sync.py)
-- [Autonomous workflow](https://github.com/CarAutopsy/carautopsy/blob/main/.github/workflows/autonomous-pipeline.yml)
-- [Autonomous pipeline](https://github.com/CarAutopsy/carautopsy/blob/main/scripts/autonomous_pipeline.py)
+- [Hive orchestration](https://github.com/CarAutopsy/carautopsy/blob/0933695c814d452be3943a778177d06bf492ebfb/scripts/hive_orchestration.py)
+- [Hive state](https://github.com/CarAutopsy/carautopsy/blob/0933695c814d452be3943a778177d06bf492ebfb/scripts/hive_state.py)
+- [Hive outcomes](https://github.com/CarAutopsy/carautopsy/blob/0933695c814d452be3943a778177d06bf492ebfb/scripts/hive_outcomes.py)
+- [Issue roadmap evidence](https://github.com/CarAutopsy/carautopsy/blob/0933695c814d452be3943a778177d06bf492ebfb/scripts/issue_roadmap_evidence.py)
+- [Issue roadmap sync](https://github.com/CarAutopsy/carautopsy/blob/0933695c814d452be3943a778177d06bf492ebfb/scripts/issue_roadmap_sync.py)
+- [Autonomous workflow](https://github.com/CarAutopsy/carautopsy/blob/0933695c814d452be3943a778177d06bf492ebfb/.github/workflows/autonomous-pipeline.yml)
+- [Autonomous pipeline](https://github.com/CarAutopsy/carautopsy/blob/0933695c814d452be3943a778177d06bf492ebfb/scripts/autonomous_pipeline.py)
