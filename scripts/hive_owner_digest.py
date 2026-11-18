@@ -264,7 +264,7 @@ def build_digest(
 def _markdown_text(value: Any) -> str:
     """Escape untrusted text so it cannot introduce Markdown or HTML syntax."""
     escaped = html.escape(str(value), quote=True)
-    special = set("\\\\`*_{}[]()#+-.!|>")
+    special = set("\\\\`*_{}[]()#+-.!|")
     return "".join("\\\\" + char if char in special else char for char in escaped)
 
 
