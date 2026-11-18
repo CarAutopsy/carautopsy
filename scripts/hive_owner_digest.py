@@ -95,7 +95,7 @@ def _safe_timestamp(value: Any) -> str | None:
         return None
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         return None
-    return value
+    return parsed.isoformat()
 
 
 def _state_attempt_limits_exhausted(entry: dict[str, Any]) -> bool:
@@ -128,7 +128,7 @@ def _safe_failed_record(entry: Any) -> tuple[dict[str, Any] | None, str]:
         migrated, recognized = hive_outcomes.migrate_legacy_entry(entry)
         if recognized:
             effective = migrated
-            manual = False
+            manual = hive_outcomes.requires_manual_review(migrated)
             legacy_migrated = True
 
     outcome = effective.get("outcome") if isinstance(effective.get("outcome"), dict) else {}
@@ -162,7 +162,7 @@ def _safe_failed_record(entry: Any) -> tuple[dict[str, Any] | None, str]:
     safe = {
         "task": task,
         "outcome_code": code,
-        "stage": _safe_text(outcome.get("stage"), 40) if not manual else "manual_review",
+        "stage": (outcome.get("stage") if outcome.get("stage") in {"research", "audit"} else None) if not manual else "manual_review",
         "at": _safe_timestamp(outcome.get("at")) if not manual else None,
         "retryable": retryable,
         "exhausted": exhausted,
@@ -324,13 +324,23 @@ def render_markdown(report: dict[str, Any]) -> str:
     else:
         lines.append("- None")
     lines.extend(["", "## Queued tasks", ""])
-    details = []
+    budget = MAX_MARKDOWN_DETAIL_BYTES
+    omitted = 0
+    queue_details = []
     for task in report["queue"]:
         label = " — ".join(_markdown_text(task.get(field, "")) for field in ("make", "model") if task.get(field))
         suffix = f" ({label})" if label else ""
-        details.append(f"- {_markdown_code(task['variant_id'])}{suffix}")
-    if not details:
-        details.append("- None")
+        queue_details.append(f"- {_markdown_code(task['variant_id'])}{suffix}")
+    for detail in queue_details:
+        size = len((detail + "\\n").encode("utf-8"))
+        if size <= budget:
+            lines.append(detail)
+            budget -= size
+        else:
+            omitted += 1
+    if not queue_details:
+        lines.append("- None")
+
     lines.extend(["", "## Failed tasks", ""])
     failed_details = []
     for item in report["failed"]:
@@ -341,17 +351,15 @@ def render_markdown(report: dict[str, Any]) -> str:
             f"exhausted={str(item['exhausted']).lower()}; "
             f"manual_review={str(item['manual_review_required']).lower()}"
         )
-    if not failed_details:
-        failed_details.append("- None")
-    budget = MAX_MARKDOWN_DETAIL_BYTES
-    omitted = 0
-    for detail in details + failed_details:
-        size = len((detail + "\n").encode("utf-8"))
+    for detail in failed_details:
+        size = len((detail + "\\n").encode("utf-8"))
         if size <= budget:
             lines.append(detail)
             budget -= size
         else:
             omitted += 1
+    if not failed_details:
+        lines.append("- None")
     if omitted:
         lines.append(f"- Details omitted due to Markdown byte budget: **{omitted}** (full details remain in JSON artifact)")
     lines.extend(["", f"> {_markdown_text(snapshot['authority_note'])}", ""])
