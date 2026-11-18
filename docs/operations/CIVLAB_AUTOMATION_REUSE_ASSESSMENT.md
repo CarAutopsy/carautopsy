@@ -182,6 +182,14 @@ The owner-digest PR adds initial workflow-contract tests: the issue crawler rema
 
 This crosswalk identifies no missing Hive candidate-outcome code that justifies expanding the current schema. The missing verification, sandbox, contract and budget classes belong only in a separately designed engineering-agent pipeline.
 
+### 5.6 Provider registry: defer centralization
+
+CarAutopsy's current `PROVIDERS` list in `scripts/autonomous_pipeline.py` contains Qwen International and China endpoints (same vendor), DeepSeek, and Gemini. The researcher path iterates configured endpoints; the auditor path filters by vendor and enforces independent-vendor selection. Gemini has a separate native-API retry/fallback helper in `provider_retry.py`.
+
+CivLab's registry adds role ordering, endpoint validation and provider capability metadata, but a new abstraction is not yet justified by CarAutopsy's small static provider set. A refactor now risks changing vendor deduplication, audit independence, model defaults or fallback semantics without adding a demonstrated capability.
+
+**Decision: defer.** Revisit centralization only when another provider/role or endpoint policy creates duplicated configuration. Any later registry must preserve the current two-independent-vendor audit quorum and test that Qwen's two endpoints still count as one vendor.
+
 ## 6. Recommended migration sequence
 
 ### Phase 0 — inventory and evidence map
@@ -193,8 +201,8 @@ This crosswalk identifies no missing Hive candidate-outcome code that justifies 
 
 ### Phase 1 — architecture reuse matrix
 - [x] Map shortlisted CivLab components to exact CarAutopsy modules and existing tests; record the remaining workflow-contract coverage gap.
-- [ ] Mark each candidate as reuse, adapt, preserve, or reject.
-- [ ] Identify duplicate state, provider, retry, workflow, and roadmap capabilities before implementation.
+- [x] Mark each candidate as reuse, adapt, preserve, or reject in the component and failure-taxonomy matrices.
+- [x] Identify duplicate state, provider, retry, workflow, and roadmap capabilities before implementation; defer provider-registry centralization until justified.
 
 ### Phase 2 — design
 - [ ] Define a separate CarAutopsy engineering-agent workflow.
@@ -223,7 +231,7 @@ This crosswalk identifies no missing Hive candidate-outcome code that justifies 
 2. **Workflow contract tests** — assert that research stays paused until readiness is explicit, crawler permissions remain read-only, and the TCO write path stays isolated.
 3. **Engineering task contract + sandbox design** — reuse CivLab #26/#32/#57/#92/#123 concepts for a separate engineering-code pipeline.
 4. **Outcome taxonomy crosswalk** — completed in Section 5.5; preserve Hive's existing outcome schema and keep engineering-pipeline failure classes separate.
-5. **Provider registry review** — decide whether to centralize the existing provider list without changing vendor independence, provider fallback, or model defaults.
+5. **Provider registry review** — deferred: the current provider list is small and static; retain it until additional roles/endpoints justify an abstraction.
 
 ## 8. Source references
 
