@@ -116,6 +116,86 @@ class HiveOwnerDigestTests(unittest.TestCase):
             path.write_bytes(b" " * (digest.MAX_INPUT_BYTES + 1))
             with self.assertRaises(digest.OwnerDigestError):
                 digest._read_array(path)
+            path.write_text("[" + ("9" * 4301) + "]", encoding="utf-8")
+            with self.assertRaises(digest.OwnerDigestError):
+                digest._read_array(path)
+
+    def test_markdown_link_syntax_in_queue_labels_is_escaped(self):
+        report = digest.build_digest(
+            [{
+                "variant_id": "safe.vehicle",
+                "make": "[click](https://attacker.example)",
+                "model": "Model",
+            }],
+            [],
+            generated_at="2026-11-18T05:02:00Z",
+        )
+        rendered = digest.render_markdown(report)
+        self.assertIn(r"\\[click\\]\\(https://attacker\\.example\\)", rendered)
+        self.assertNotIn("[click](https://attacker.example)", rendered)
+
+    def test_quarantined_outcome_does_not_expose_counters_or_timestamp(self):
+        record = {
+            "task": {"variant_id": "unknown.vehicle"},
+            "at": "private prose should not be a timestamp",
+            "outcome": {
+                "schema_version": 1,
+                "code": "unknown_code",
+                "attempt_id": "x",
+                "stage": "audit",
+                "retryable": True,
+                "at": "arbitrary untrusted prose",
+                "provider_statuses": [],
+                "counters": {
+                    "provider_attempts": 999,
+                    "format_attempts": 999,
+                    "provenance_attempts": 999,
+                    "attempts": 999,
+                    "research_attempts": 999,
+                },
+            },
+        }
+        report = digest.build_digest([], [record], generated_at="2026-11-18T05:02:00Z")
+        item = report["failed"][0]
+        self.assertEqual(item["counters"], {})
+        self.assertIsNone(item["at"])
+        self.assertFalse(item["retryable"])
+        self.assertTrue(item["manual_review_required"])
+
+    def test_recognized_legacy_record_uses_read_only_migration_decision(self):
+        legacy = {
+            "task": {"variant_id": "legacy.vehicle", "make": "Legacy", "model": "Vehicle"},
+            "verdict": "INDEPENDENT_AUDIT_FAILED",
+            "attempts": 1,
+            "research_attempts": 0,
+            "audits": [
+                {"provider": "deepseek", "vendor": "deepseek", "verdict": "FAIL: incorrect value"},
+                {"provider": "gemini", "vendor": "google", "verdict": "FAIL: incorrect value"},
+            ],
+            "at": "2026-11-18T05:00:00Z",
+        }
+        report = digest.build_digest([], [legacy], generated_at="2026-11-18T05:02:00Z")
+        item = report["failed"][0]
+        self.assertTrue(item["legacy_migrated"])
+        self.assertFalse(item["manual_review_required"])
+        self.assertTrue(item["retryable"])
+        self.assertFalse(item["exhausted"])
+        self.assertEqual(item["outcome_code"], hive_outcomes.VEHICLE_QUALITY_REJECTION)
+
+    def test_top_level_state_attempt_limit_overrides_retryable_outcome(self):
+        record, _ = hive_outcomes.record_outcome(
+            {"variant_id": "limited.vehicle"},
+            None,
+            hive_outcomes.VEHICLE_QUALITY_REJECTION,
+            stage="audit",
+            now="2026-11-18T05:00:00Z",
+        )
+        record["attempts"] = 3
+        record["max_attempts"] = 3
+        report = digest.build_digest([], [record], generated_at="2026-11-18T05:02:00Z")
+        item = report["failed"][0]
+        self.assertFalse(item["retryable"])
+        self.assertTrue(item["exhausted"])
 
     def test_timezone_is_required_for_generated_timestamp(self):
         with self.assertRaises(digest.OwnerDigestError):
