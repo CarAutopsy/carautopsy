@@ -73,7 +73,7 @@ jobs:
                   message,
                   flags=re.MULTILINE,
               )
-              actual = hashlib.sha256(failed + b"\\0" + queue).hexdigest()
+              actual = hashlib.sha256(failed + b"\0" + queue).hexdigest()
               if not match or match.group(1) != actual:
                   raise SystemExit("Hive state ledger digest is missing or does not match; refusing an unverified report")
               source = "origin/hive/state"
@@ -91,9 +91,9 @@ jobs:
           (tasks / "queue.json").write_bytes(queue)
           (tasks / "failed.json").write_bytes(failed)
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"root={temp}\\n")
-              output.write(f"source={source}\\n")
-              output.write(f"integrity={integrity}\\n")
+              output.write(f"root={temp}\n")
+              output.write(f"source={source}\n")
+              output.write(f"integrity={integrity}\n")
           PY
 
       - name: Render owner digest
@@ -103,15 +103,15 @@ jobs:
           STATE_INTEGRITY: ${{ steps.snapshot.outputs.integrity }}
         run: |
           set -euo pipefail
-          python scripts/hive_owner_digest.py \\
-            --root "$SNAPSHOT_ROOT" \\
-            --snapshot-source "$SNAPSHOT_SOURCE" \\
+          python scripts/hive_owner_digest.py \
+            --root "$SNAPSHOT_ROOT" \
+            --snapshot-source "$SNAPSHOT_SOURCE" \
             --state-integrity "$STATE_INTEGRITY" \\
             >> "$GITHUB_STEP_SUMMARY"
-          python scripts/hive_owner_digest.py \\
-            --root "$SNAPSHOT_ROOT" \\
-            --snapshot-source "$SNAPSHOT_SOURCE" \\
-            --state-integrity "$STATE_INTEGRITY" \\
+          python scripts/hive_owner_digest.py \
+            --root "$SNAPSHOT_ROOT" \
+            --snapshot-source "$SNAPSHOT_SOURCE" \
+            --state-integrity "$STATE_INTEGRITY" \
             --format json > "$RUNNER_TEMP/hive-owner-digest.json"
 
       - name: Upload sanitized digest artifact
