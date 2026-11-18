@@ -1,0 +1,123 @@
+name: Hive Owner Digest
+
+on:
+  # Separate, read-only operational snapshot every 15 minutes.
+  schedule:
+    - cron: '12,27,42,57 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hive-owner-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Prepare and verify Hive snapshot
+        id: snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+
+          repo = Path.cwd()
+          temp = Path(os.environ["RUNNER_TEMP"]) / "hive-owner-digest-snapshot"
+          tasks = temp / "tasks"
+          tasks.mkdir(parents=True, exist_ok=True)
+
+          def git(*args):
+              return subprocess.run(
+                  ["git", *args], cwd=repo, check=True,
+                  capture_output=True,
+              ).stdout
+
+          remote = subprocess.run(
+              ["git", "ls-remote", "--exit-code", "--heads", "origin", "refs/heads/hive/state"],
+              cwd=repo, capture_output=True,
+          )
+          if remote.returncode == 0:
+              subprocess.run(
+                  ["git", "fetch", "--no-tags", "origin",
+                   "refs/heads/hive/state:refs/remotes/origin/hive/state"],
+                  cwd=repo, check=True,
+              )
+              ref = "refs/remotes/origin/hive/state"
+              queue = git("show", f"{ref}:tasks/queue.json")
+              failed = git("show", f"{ref}:tasks/failed.json")
+              message = git("show", "-s", "--format=%B", ref).decode("utf-8")
+              match = re.search(
+                  r"^Hive-Ledger-SHA256: ([0-9a-f]{64})$",
+                  message,
+                  flags=re.MULTILINE,
+              )
+              actual = hashlib.sha256(failed + b"\\0" + queue).hexdigest()
+              if not match or match.group(1) != actual:
+                  raise SystemExit("Hive state ledger digest is missing or does not match; refusing an unverified report")
+              source = "origin/hive/state"
+              integrity = "verified-ledger-sha256"
+          elif remote.returncode == 2:
+              queue = (repo / "tasks" / "queue.json").read_bytes()
+              failed = (repo / "tasks" / "failed.json").read_bytes()
+              source = "main-working-tree"
+              integrity = "hive-state-branch-absent"
+          else:
+              raise SystemExit(
+                  "Could not determine whether origin/hive/state exists; refusing to silently fall back"
+              )
+
+          (tasks / "queue.json").write_bytes(queue)
+          (tasks / "failed.json").write_bytes(failed)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"root={temp}\\n")
+              output.write(f"source={source}\\n")
+              output.write(f"integrity={integrity}\\n")
+          PY
+
+      - name: Render owner digest
+        env:
+          SNAPSHOT_ROOT: ${{ steps.snapshot.outputs.root }}
+          SNAPSHOT_SOURCE: ${{ steps.snapshot.outputs.source }}
+          STATE_INTEGRITY: ${{ steps.snapshot.outputs.integrity }}
+        run: |
+          set -euo pipefail
+          python scripts/hive_owner_digest.py \\
+            --root "$SNAPSHOT_ROOT" \\
+            --snapshot-source "$SNAPSHOT_SOURCE" \\
+            --state-integrity "$STATE_INTEGRITY" \\
+            >> "$GITHUB_STEP_SUMMARY"
+          python scripts/hive_owner_digest.py \\
+            --root "$SNAPSHOT_ROOT" \\
+            --snapshot-source "$SNAPSHOT_SOURCE" \\
+            --state-integrity "$STATE_INTEGRITY" \\
+            --format json > "$RUNNER_TEMP/hive-owner-digest.json"
+
+      - name: Upload sanitized digest artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: hive-owner-digest
+          path: ${{ runner.temp }}/hive-owner-digest.json
+          if-no-files-found: error
+          retention-days: 14
