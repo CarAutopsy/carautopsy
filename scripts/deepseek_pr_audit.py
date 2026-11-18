@@ -42,16 +42,19 @@ def parse_response(content):
         conf=f.get("confidence",0)
         if not isinstance(conf,(int,float)) or not 0<=conf<=1:
             raise ValueError("invalid confidence")
-        safe.append({k:f.get(k) for k in ("severity","path","line","title","description","recommendation","confidence")})
+        safe.append({k:(conf if k=="confidence" else f.get(k)) for k in ("severity","path","line","title","description","recommendation","confidence")})
     return {"summary":obj["summary"][:2000],"findings":safe}
 
 def run(diff, sha, key):
     if not isinstance(diff,str) or not diff.strip():
         raise ValueError("empty diff")
     raw=diff.encode("utf-8")
-    if len(raw)>MAX_DIFF_BYTES:
-        raw=raw[:MAX_DIFF_BYTES]
-        diff=raw.decode("utf-8",errors="replace")+"\n[DIFF TRUNCATED AT HARD BYTE LIMIT]"
+    truncated=len(raw)>MAX_DIFF_BYTES
+    if truncated:
+        marker="\n[DIFF TRUNCATED AT HARD BYTE LIMIT]"
+        prefix_limit=MAX_DIFF_BYTES-len(marker.encode("utf-8"))
+        raw=raw[:prefix_limit]
+        diff=raw.decode("utf-8",errors="replace")+marker
     response=requests.post(API_URL,headers={"Authorization":"Bearer "+key,"Content-Type":"application/json"},
       json={"model":MODEL,"temperature":0,"max_tokens":6000,
             "messages":[{"role":"system","content":SYSTEM},
