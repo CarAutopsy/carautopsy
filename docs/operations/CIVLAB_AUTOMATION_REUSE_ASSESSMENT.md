@@ -151,6 +151,21 @@ The current `.github/workflows/autonomous-pipeline.yml` has:
 
 The inspected full TCO path in `scripts/autonomous_pipeline.py` commits and pushes to `main`; the workflow job has `contents: write` and checkout credentials persisted. This is not evidence that the paused Hive research path is active. It is an adjacent write boundary that should be reviewed separately before increasing automation scope. Do not silently copy or broaden it as part of this initiative.
 
+### 5.4 Existing test coverage and concrete gaps
+
+| Reuse candidate | CarAutopsy implementation | Existing regression coverage | Assessment |
+|---|---|---|---|
+| Task contracts / eligibility | `issue_roadmap_controller.py`, `issue_roadmap_proposal.py`, `issue_roadmap_evidence.py`, `issue_roadmap_sync.py`, `issue_roadmap_apply.py`; Hive task identity in `hive_orchestration.py` | `test_issue_roadmap_controller.py`, `test_issue_roadmap_evidence.py`, `test_issue_roadmap_sync.py`, `test_issue_roadmap_apply.py`, `test_hive_orchestration.py` | Strong existing read-only intake/evidence/owner-apply path. Do not replace it with CivLab's selector. |
+| Persistent state / recovery | `hive_state.py` | `test_hive_state.py`, `test_hive_end_to_end_state_reconciliation.py`, `test_hive_restart_interruption.py` | Strong branch ancestry, ledger digest, interrupted-run and reconciliation coverage. Preserve JSON state model. |
+| Typed outcomes / retries | `hive_outcomes.py`, `hive_orchestration.py`, `provider_retry.py` | `test_hive_outcomes.py`, `test_hive_orchestration_retry.py`, `test_hive_retry_recovery.py`, `test_provider_retry.py` | Existing retry classes are domain-specific and bounded. Crosswalk only where a missing failure distinction changes retry/stop behavior. |
+| Source policy / evidence | `hive_source_policy.py`, `hive_source_retrieval.py`, `hive_evidence.py`, `hive_source_extract.py` | `test_hive_source_policy.py`, `test_hive_source_retrieval.py`, `test_hive_evidence.py`, `test_hive_pipeline_preflight.py`, `test_hive_pipeline_robots_denial.py`, `test_hive_pipeline_target_failure.py` | This is Hive's distinct provenance boundary; do not transplant engineering-code sandbox assumptions into it. |
+| Independent audit | `hive_audit.py`, `hive_orchestration.py` | `test_hive_audit.py`, `test_hive_orchestration.py`, `test_hive_orchestration_zero_bypass.py` | Exact PASS parser, two-vendor quorum and zero-bypass tests already exist. Preserve quorum. |
+| Publication | `hive_pr.py` and the separate TCO publication path | `test_hive_pr.py`, plus TCO-specific tests | No general-purpose engineering-code publisher/sandbox is established by these tests. Reuse CivLab publication only in a separately gated engineering pipeline. |
+| Owner digest | Proposed `hive_owner_digest.py` and `hive-owner-digest.yml` in CarAutopsy PR #116 | New `tests/test_hive_owner_digest.py` in PR #116 | Additive, read-only adaptation. It reads a verified `hive/state` snapshot when present and labels the main fallback when absent. |
+| Workflow graph / permissions | `.github/workflows/autonomous-pipeline.yml` | `test_hive_research_gate.py`, `test_hive_pipeline_preflight.py`, `test_hive_orchestration_zero_bypass.py` | Runtime gates are tested; a dedicated YAML-level contract suite for job permissions, dependencies, schedule isolation and artifact boundaries remains a gap. |
+
+The most important remaining Phase 1 gap is workflow-contract testing. Add tests that assert the research pause remains fail-closed, the issue crawler and owner digest retain read-only permissions, and the separate TCO `full` route cannot silently expand into Hive dispatch or broader publication rights.
+
 ## 6. Recommended migration sequence
 
 ### Phase 0 — inventory and evidence map
@@ -161,7 +176,7 @@ The inspected full TCO path in `scripts/autonomous_pipeline.py` commits and push
 - [x] Complete follow-up/fix lineage review for the shortlisted PRs, including #123–#127, #136, #177–#185.
 
 ### Phase 1 — architecture reuse matrix
-- [ ] Map each shortlisted CivLab component to exact CarAutopsy modules and tests.
+- [x] Map shortlisted CivLab components to exact CarAutopsy modules and existing tests; record the remaining workflow-contract coverage gap.
 - [ ] Mark each candidate as reuse, adapt, preserve, or reject.
 - [ ] Identify duplicate state, provider, retry, workflow, and roadmap capabilities before implementation.
 
