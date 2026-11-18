@@ -28,6 +28,7 @@ class HiveOwnerDigestWorkflowTests(unittest.TestCase):
         self.assertNotIn("contents: write", source)
         self.assertNotIn("pull-requests: write", source)
         self.assertNotIn("git push", source)
+        self.assertIn("hive_owner_digest_snapshot.py", source)
         self.assertIn("Hive-Ledger-SHA256", source)
         self.assertIn("hive-state-branch-absent", source)
         self.assertIn("persist-credentials: false", source)
