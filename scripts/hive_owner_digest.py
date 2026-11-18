@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import html
 import json
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -35,15 +36,26 @@ def _parse_constant(value: str) -> None:
     raise OwnerDigestError(f"non-finite JSON number is not allowed: {value}")
 
 
+def _parse_int(value: str) -> int:
+    digits = value.lstrip("-")
+    if len(digits) > 20:
+        raise OwnerDigestError("JSON integer exceeds the 20-digit safety limit")
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise OwnerDigestError("invalid JSON integer") from exc
+
+
 def _read_array(path: Path) -> list[Any]:
     try:
-        raw = path.read_bytes()
+        with path.open("rb") as stream:
+            raw = stream.read(MAX_INPUT_BYTES + 1)
     except OSError as exc:
         raise OwnerDigestError(f"cannot read {path}: {exc}") from exc
     if len(raw) > MAX_INPUT_BYTES:
         raise OwnerDigestError(f"{path} exceeds the {MAX_INPUT_BYTES}-byte limit")
     try:
-        value = json.loads(raw.decode("utf-8"), parse_constant=_parse_constant)
+        value = json.loads(raw.decode("utf-8"), parse_constant=_parse_constant, parse_int=_parse_int)
     except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
         raise OwnerDigestError(f"{path} is not valid UTF-8 JSON") from exc
     if not isinstance(value, list) or len(value) > MAX_RECORDS:
