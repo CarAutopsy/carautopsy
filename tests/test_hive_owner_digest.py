@@ -197,6 +197,29 @@ class HiveOwnerDigestTests(unittest.TestCase):
         self.assertFalse(item["retryable"])
         self.assertTrue(item["exhausted"])
 
+    def test_malformed_top_level_retry_counters_are_quarantined(self):
+        for invalid in (2.9, True):
+            with self.subTest(invalid=invalid):
+                record, _ = hive_outcomes.record_outcome(
+                    {"variant_id": "corrupt.vehicle"},
+                    None,
+                    hive_outcomes.VEHICLE_QUALITY_REJECTION,
+                    stage="audit",
+                    now="2026-11-18T05:00:00Z",
+                )
+                record["attempts"] = invalid
+                report = digest.build_digest(
+                    [],
+                    [record],
+                    generated_at="2026-11-18T05:02:00Z",
+                )
+                item = report["failed"][0]
+                self.assertTrue(item["manual_review_required"])
+                self.assertFalse(item["retryable"])
+                self.assertTrue(item["exhausted"])
+                self.assertEqual(item["counters"], {})
+                self.assertIsNone(item["at"])
+
     def test_timezone_is_required_for_generated_timestamp(self):
         with self.assertRaises(digest.OwnerDigestError):
             digest.build_digest([], [], generated_at="2026-11-18T05:02:00")
