@@ -236,16 +236,32 @@ def build_digest(
     manual_count = sum(item["manual_review_required"] for item in safe_failed) + malformed_failed
     exhausted_count = sum(item["exhausted"] for item in safe_failed) + malformed_failed
     retryable_count = sum(item["retryable"] for item in safe_failed)
+    if source == "origin/hive/state" and integrity == "verified-ledger-sha256":
+        authority_note = (
+            "This report summarizes the fetched origin/hive/state files whose final "
+            "Hive-Ledger-SHA256 trailer matched the queue/failed content. The digest "
+            "renderer itself is offline and does not fetch or reconcile state."
+        )
+    elif integrity == "hive-state-branch-absent" and source == "main-working-tree":
+        authority_note = (
+            "No origin/hive/state branch was found; this report summarizes the "
+            "main checkout's tasks/queue.json and tasks/failed.json. The snapshot "
+            "is a labeled fallback, not a verified remote state-branch ledger."
+        )
+    else:
+        authority_note = (
+            "This report summarizes supplied checkout files; remote Hive state "
+            "integrity is not verified. The digest renderer itself does not fetch "
+            "or reconcile origin/hive/state."
+        )
+
     return {
         "schema_version": 1,
         "generated_at": timestamp,
         "snapshot": {
             "source": source,
             "state_integrity": integrity,
-            "authority_note": (
-                "This is a read-only snapshot of the supplied checkout files; "
-                "it does not fetch or reconcile origin/hive/state."
-            ),
+            "authority_note": authority_note,
         },
         "summary": {
             "queued": len(safe_queue),
