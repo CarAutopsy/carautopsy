@@ -25,6 +25,7 @@ MAX_INPUT_BYTES = 5_000_000
 MAX_RECORDS = 20_000
 MAX_ID_LENGTH = 128
 MAX_LABEL_LENGTH = 100
+MAX_MARKDOWN_DETAIL_BYTES = 60_000
 
 
 class OwnerDigestError(ValueError):
@@ -65,7 +66,7 @@ def _read_array(path: Path) -> list[Any]:
 def _safe_text(value: Any, maximum: int) -> str | None:
     if not isinstance(value, str) or not value.strip() or len(value) > maximum:
         return None
-    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+    if any(ord(char) < 32 or ord(char) == 127 or 0xD800 <= ord(char) <= 0xDFFF for char in value):
         return None
     return value.strip()
 
@@ -323,25 +324,36 @@ def render_markdown(report: dict[str, Any]) -> str:
     else:
         lines.append("- None")
     lines.extend(["", "## Queued tasks", ""])
-    if report["queue"]:
-        for task in report["queue"]:
-            label = " — ".join(_markdown_text(task.get(field, "")) for field in ("make", "model") if task.get(field))
-            suffix = f" ({label})" if label else ""
-            lines.append(f"- {_markdown_code(task['variant_id'])}{suffix}")
-    else:
-        lines.append("- None")
+    details = []
+    for task in report["queue"]:
+        label = " — ".join(_markdown_text(task.get(field, "")) for field in ("make", "model") if task.get(field))
+        suffix = f" ({label})" if label else ""
+        details.append(f"- {_markdown_code(task['variant_id'])}{suffix}")
+    if not details:
+        details.append("- None")
     lines.extend(["", "## Failed tasks", ""])
-    if report["failed"]:
-        for item in report["failed"]:
-            task = item["task"]
-            lines.append(
-                f"- `{_markdown_text(task['variant_id'])}`: `{item['outcome_code']}`; "
-                f"retryable={str(item['retryable']).lower()}; "
-                f"exhausted={str(item['exhausted']).lower()}; "
-                f"manual_review={str(item['manual_review_required']).lower()}"
-            )
-    else:
-        lines.append("- None")
+    failed_details = []
+    for item in report["failed"]:
+        task = item["task"]
+        failed_details.append(
+            f"- {_markdown_code(task['variant_id'])}: `{item['outcome_code']}`; "
+            f"retryable={str(item['retryable']).lower()}; "
+            f"exhausted={str(item['exhausted']).lower()}; "
+            f"manual_review={str(item['manual_review_required']).lower()}"
+        )
+    if not failed_details:
+        failed_details.append("- None")
+    budget = MAX_MARKDOWN_DETAIL_BYTES
+    omitted = 0
+    for detail in details + failed_details:
+        size = len((detail + "\n").encode("utf-8"))
+        if size <= budget:
+            lines.append(detail)
+            budget -= size
+        else:
+            omitted += 1
+    if omitted:
+        lines.append(f"- Details omitted due to Markdown byte budget: **{omitted}** (full details remain in JSON artifact)")
     lines.extend(["", f"> {_markdown_text(snapshot['authority_note'])}", ""])
     return "\n".join(lines)
 
