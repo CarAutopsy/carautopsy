@@ -52,11 +52,14 @@ def final_trailer(root: Path, message: bytes, key: str) -> str | None:
 def select_snapshot(root: Path) -> tuple[bytes, bytes, str, str]:
     """Return queue bytes, failed bytes, source label and integrity label."""
     root = Path(root).resolve()
-    remote = subprocess.run(
-        ["git", "ls-remote", "--exit-code", "--heads", "origin", STATE_BRANCH],
-        cwd=root,
-        capture_output=True,
-    )
+    try:
+        remote = subprocess.run(
+            ["git", "ls-remote", "--exit-code", "--heads", "origin", STATE_BRANCH],
+            cwd=root,
+            capture_output=True,
+        )
+    except OSError as exc:
+        raise SnapshotError("Could not query origin for the Hive state branch") from exc
     if remote.returncode == 0:
         _git(
             root,
