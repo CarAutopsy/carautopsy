@@ -131,7 +131,7 @@ class HiveOwnerDigestTests(unittest.TestCase):
             generated_at="2026-11-18T05:02:00Z",
         )
         rendered = digest.render_markdown(report)
-        self.assertIn(r"\\[click\\]\\(https://attacker\\.example\\)", rendered)
+        self.assertIn(r"\[click\]\(https://attacker\.example\)", rendered)
         self.assertNotIn("[click](https://attacker.example)", rendered)
 
     def test_quarantined_outcome_does_not_expose_counters_or_timestamp(self):
