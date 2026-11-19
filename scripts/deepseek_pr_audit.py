@@ -57,7 +57,7 @@ def render(result):
     lines=["# DeepSeek PR Audit","",f"**Status:** {md_escape(result['audit_status'])}","",f"**Base SHA:** `{md_escape(result['base_sha'])}`",f"**Head SHA:** `{md_escape(result['head_sha'])}`",f"**Model:** {md_escape(result['model'])}","",md_escape(result["summary"]),""] 
     if not result["findings"]: lines+=["No actionable findings returned."]
     for i,f in enumerate(result["findings"],1):
-        lines += [f"## {i}. [{md_escape(f['severity'].upper())}] {md_escape(f['title'])}","",f"- **File:** `{md_escape(f['path'])}`"+(f" (line {f['line']})" if f["line"] else ""),f"- **Confidence:** {f['confidence']:.2f}","",md_escape(f["description"]),"","**Recommendation:** "+md_escape(f["recommendation"]),""]
+        lines += [f"## {i}. [{md_escape(f['severity'].upper())}] {md_escape(f['title'])}","",f"- **File:** {md_escape(f['path'])}"+(f" (line {f['line']})" if f["line"] else ""),f"- **Confidence:** {f['confidence']:.2f}","",md_escape(f["description"]),"","**Recommendation:** "+md_escape(f["recommendation"]),""]
     if result.get("diff_truncated"): lines+=["Diff was truncated to the configured byte limit.",""]
     lines+=["---","This audit is advisory only. It is not approval, verification, or merge authorization."]
     return "\n".join(lines)
