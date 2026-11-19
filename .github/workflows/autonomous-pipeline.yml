@@ -208,7 +208,7 @@ jobs:
               stream.write("\n".join(summary) + "\n")
           PY
       - name: Upload dry-run report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: issue-roadmap-dry-run
           path: ${{ runner.temp }}/issue-roadmap-dry-run.json
@@ -265,7 +265,7 @@ jobs:
               stream.write("\n".join(summary) + "\n")
           PY
       - name: Upload reconciliation proposal
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: issue-roadmap-reconciliation-proposal
           path: ${{ runner.temp }}/issue-roadmap-reconciliation-proposal.json
