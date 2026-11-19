@@ -39,6 +39,13 @@ class DeepSeekAuditParserTests(unittest.TestCase):
         self.assertNotIn("\n",escaped)
         self.assertNotIn("<",escaped)
         self.assertIn(r"\#",escaped)
+    def test_render_treats_untrusted_path_as_plain_text(self):
+        payload={"summary":"ok","findings":[finding()]}
+        payload.update({"audit_status":"COMPLETED","base_sha":"base","head_sha":"head","model":"m"})
+        payload["findings"][0]["path"]="`\n# injected heading"
+        report=render(payload)
+        self.assertNotIn("\n# injected heading",report)
+        self.assertIn(r"\\`",report)
     def test_bounded_diff_respects_byte_cap_at_utf8_boundary(self):
         with tempfile.NamedTemporaryFile() as patch_file:
             patch_file.write((b"x"*(MAX_DIFF_BYTES-4))+"é".encode("utf-8")+b"tail")
