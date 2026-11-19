@@ -47,7 +47,7 @@ jobs:
             echo "- Run: [#$GITHUB_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
             echo "- Started (UTC): $(date -u +'%Y-%m-%d %H:%M:%S')"
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: true
@@ -170,7 +170,7 @@ jobs:
       pull-requests: read
       checks: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v7
