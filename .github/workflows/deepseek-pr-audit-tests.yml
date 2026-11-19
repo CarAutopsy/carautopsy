@@ -1,6 +1,13 @@
 name: DeepSeek PR Auditor Tests
 
 on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "scripts/deepseek_pr_audit.py"
+      - "tests/test_deepseek_pr_audit.py"
+      - ".github/workflows/deepseek-pr-audit-tests.yml"
   pull_request:
     paths:
       - "scripts/deepseek_pr_audit.py"
