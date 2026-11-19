@@ -49,11 +49,10 @@ def run(diff,sha,base_sha,key,truncated=False):
     result.update({"audit_status":"COMPLETED","model":MODEL,"head_sha":sha,"base_sha":base_sha,"diff_truncated":truncated})
     return result
 def md_escape(value):
-    # Provider-controlled text must remain one plain-text paragraph; otherwise
-    # embedded newlines can create Markdown blocks in the published report.
-    value=str(value).replace("\\r\\n"," ").replace("\\r"," ").replace("\\n"," ")
+    # Provider-controlled text must remain a single paragraph in Markdown.
+    value=str(value).replace("\r\n"," ").replace("\r"," ").replace("\n"," ")
     value=value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-    return re.sub(r"([\\\\`*_{}\\[\\]()#+.!|])",r"\\\\\\1",value)
+    return re.sub(r"([\\`*_{}\[\]()#+.!|])",r"\\\1",value)
 def render(result):
     lines=["# DeepSeek PR Audit","",f"**Status:** {md_escape(result['audit_status'])}","",f"**Base SHA:** `{md_escape(result['base_sha'])}`",f"**Head SHA:** `{md_escape(result['head_sha'])}`",f"**Model:** {md_escape(result['model'])}","",md_escape(result["summary"]),""] 
     if not result["findings"]: lines+=["No actionable findings returned."]
