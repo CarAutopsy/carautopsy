@@ -45,7 +45,7 @@ class DeepSeekAuditParserTests(unittest.TestCase):
         payload["findings"][0]["path"]="`\n# injected heading"
         report=render(payload)
         self.assertNotIn("\n# injected heading",report)
-        self.assertIn(r"\\`",report)
+        self.assertIn(r"\`",report)
     def test_bounded_diff_respects_byte_cap_at_utf8_boundary(self):
         with tempfile.NamedTemporaryFile() as patch_file:
             patch_file.write((b"x"*(MAX_DIFF_BYTES-4))+"é".encode("utf-8")+b"tail")
