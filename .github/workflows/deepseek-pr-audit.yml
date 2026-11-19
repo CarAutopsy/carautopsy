@@ -1,0 +1,61 @@
+name: DeepSeek PR Audit
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number
+        required: true
+        type: string
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: deepseek-audit-${{ inputs.pr_number }}
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate PR and fetch pinned diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          gh pr view "$PR_NUMBER" --json headRefOid,baseRefOid > "$RUNNER_TEMP/pr.json"
+          SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["headRefOid"])' "$RUNNER_TEMP/pr.json")
+          BASE_SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["baseRefOid"])' "$RUNNER_TEMP/pr.json")
+          AUTH="AUTHORIZATION: bearer $GH_TOKEN"
+          git -c http.extraheader="$AUTH" fetch --no-tags origin "$SHA" "$BASE_SHA"
+          git diff --no-ext-diff --unified=3 "$BASE_SHA...$SHA" > "$RUNNER_TEMP/pr.diff"
+          echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+        id: pr
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install audit dependency
+        run: python -m pip install requests
+      - name: Run DeepSeek audit
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/deepseek_pr_audit.py --diff "$RUNNER_TEMP/pr.diff" --head-sha "${{ steps.pr.outputs.head_sha }}" --base-sha "${{ steps.pr.outputs.base_sha }}" --json-output "$RUNNER_TEMP/audit.json" --summary-output "$RUNNER_TEMP/audit.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload audit report
+        uses: actions/upload-artifact@v6
+        with:
+          name: deepseek-pr-audit-${{ inputs.pr_number }}
+          path: |
+            ${{ runner.temp }}/audit.json
+            ${{ runner.temp }}/audit.md
+          if-no-files-found: error
+          retention-days: 14
