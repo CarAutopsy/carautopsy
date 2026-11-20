@@ -412,5 +412,53 @@ class HiveCandidateGateTests(unittest.TestCase):
             validate_candidate(candidate, self.task, self.evidence)
 
 
+class HiveCandidateLocatorRegressionTests(unittest.TestCase):
+    """Synthetic regressions for structured locator validation (issue #119).
+
+    Locator keys and spans are injected into bounded prompt/evidence bundles and
+    used by claim bindings. These tests pin the existing fail-closed checks for
+    untrusted locator metadata. They add coverage only and change no gate,
+    manifest, workflow or activation behavior.
+    """
+
+    def setUp(self):
+        self.evidence = [{
+            "source_id": "oem-1",
+            "url": "https://oem.example/specs/model-x",
+            "retrieved_at": "2026-11-11T12:00:00Z",
+            "text": "Synthetic Model X official technical specification.",
+        }]
+
+    def test_untrusted_locator_keys_are_rejected(self):
+        for key in ("javascript:alert(1)", "page:0", "page:-1", "<script>", "document\ninjected"):
+            with self.subTest(key=key):
+                evidence = [dict(self.evidence[0], locator_texts={key: "span"})]
+                with self.assertRaisesRegex(CandidateRejected, "invalid structured locator"):
+                    validate_evidence_bundle(evidence)
+
+    def test_empty_locator_texts_is_rejected(self):
+        evidence = [dict(self.evidence[0], locator_texts={})]
+        with self.assertRaisesRegex(CandidateRejected, "invalid structured locator"):
+            validate_evidence_bundle(evidence)
+
+    def test_oversized_locator_span_is_rejected(self):
+        evidence = [dict(self.evidence[0], locator_texts={"document": "x" * (MAX_EXCERPT_CHARS + 1)})]
+        with self.assertRaisesRegex(CandidateRejected, "invalid structured locator"):
+            validate_evidence_bundle(evidence)
+
+    def test_too_many_locator_texts_are_rejected(self):
+        evidence = [dict(
+            self.evidence[0],
+            locator_texts={f"page:{number}": "span" for number in range(1, 22)},
+        )]
+        with self.assertRaisesRegex(CandidateRejected, "invalid structured locator"):
+            validate_evidence_bundle(evidence)
+
+    def test_non_string_locator_span_is_rejected(self):
+        evidence = [dict(self.evidence[0], locator_texts={"document": 123})]
+        with self.assertRaisesRegex(CandidateRejected, "invalid structured locator"):
+            validate_evidence_bundle(evidence)
+
+
 if __name__ == "__main__":
     unittest.main()
