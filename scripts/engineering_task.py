@@ -14,6 +14,13 @@ from pathlib import Path
 from typing import Any
 
 from hive_audit import concise_audit_verdict
+from hive_outcomes import (
+    MANUAL_REVIEW_REQUIRED,
+    OUTCOME_CODES,
+    PROVIDER_TRANSPORT_FAILURE,
+    RESPONSE_FORMAT_FAILURE,
+    VEHICLE_QUALITY_REJECTION,
+)
 
 
 class TaskContractError(ValueError):
@@ -164,6 +171,98 @@ def next_retry_count(contract: dict[str, Any], previous: Any) -> int:
     if isinstance(previous, bool) or not isinstance(previous, int) or previous < 0 or previous > ceiling:
         return ceiling
     return min(previous + 1, ceiling)
+
+
+def assert_no_symlinks(root: Path, allowed_paths: list[str]) -> None:
+    """Reject symlinks in any path component; never follow them into a snapshot."""
+    base = Path(root).resolve()
+    for relative in sorted(allowed_paths):
+        candidate = Path(root) / relative
+        for part in [candidate, *candidate.parents]:
+            if part.is_symlink():
+                raise TaskContractError(f"symlink in snapshot path: {relative}")
+        try:
+            resolved = candidate.resolve(strict=True)
+        except (OSError, RuntimeError) as exc:
+            raise TaskContractError(f"snapshot path cannot be resolved: {relative}") from exc
+        if base not in resolved.parents and resolved != base:
+            raise TaskContractError(f"snapshot path escapes the repository root: {relative}")
+
+
+def reserve_task(contract: dict[str, Any], state: Any) -> dict[str, Any]:
+    """Create or return an identical reservation; conflicts fail closed."""
+    task_id = contract["task_id"]
+    base_sha = contract["base_sha"]
+    if state is not None:
+        if not isinstance(state, dict):
+            raise TaskContractError("reservation state must be an object")
+        active = state.get("reservation")
+        if isinstance(active, dict) and active.get("task_id") == task_id:
+            if active.get("base_sha") != base_sha:
+                raise TaskContractError("stale reservation for a different base SHA")
+            return dict(active)
+    digest = hashlib.sha256(f"{task_id}:{base_sha}".encode("utf-8")).hexdigest()
+    return {
+        "reservation_id": digest[:24],
+        "task_id": task_id,
+        "base_sha": base_sha,
+        "status": "reserved",
+        "requires_owner_approval": True,
+    }
+
+
+def classify_failure(stage: str, reason: Any) -> str:
+    """Map untrusted failure text to the existing allowlisted Hive taxonomy."""
+    if not isinstance(stage, str) or not stage.strip():
+        return MANUAL_REVIEW_REQUIRED
+    if not isinstance(reason, str) or not reason.strip():
+        return RESPONSE_FORMAT_FAILURE
+    lowered = reason.lower()
+    if any(token in lowered for token in ("timeout", "offline", "transport", "connection")):
+        return PROVIDER_TRANSPORT_FAILURE
+    if any(token in lowered for token in ("json", "format", "verdict", "schema")):
+        return RESPONSE_FORMAT_FAILURE
+    if any(token in lowered for token in ("provenance", "source", "citation", "quote")):
+        code = "provenance_rejection"
+    else:
+        code = VEHICLE_QUALITY_REJECTION
+    return code if code in OUTCOME_CODES else MANUAL_REVIEW_REQUIRED
+
+
+def task_outcome(reservation: dict[str, Any], bundle: dict[str, Any], code: str) -> dict[str, Any]:
+    """Return a deterministic, idempotent outcome record."""
+    if code not in OUTCOME_CODES:
+        raise TaskContractError("outcome code is not allowlisted")
+    if not isinstance(reservation, dict) or not isinstance(bundle, dict):
+        raise TaskContractError("reservation and bundle must be objects")
+    key_source = ":".join([
+        str(reservation.get("reservation_id", "")),
+        str(bundle.get("bundle_sha256", "")),
+        code,
+    ])
+    return {
+        "reservation_id": reservation.get("reservation_id"),
+        "bundle_sha256": bundle.get("bundle_sha256"),
+        "code": code,
+        "requires_owner_approval": True,
+        "publication_enabled": False,
+        "idempotency_key": hashlib.sha256(key_source.encode("utf-8")).hexdigest()[:24],
+    }
+
+
+def draft_pull_request_proposal(contract: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
+    """Return an owner-gated draft-PR proposal; never creates or publishes one."""
+    return {
+        "schema_version": 1,
+        "task_id": contract["task_id"],
+        "base_sha": contract["base_sha"],
+        "bundle_sha256": bundle.get("bundle_sha256"),
+        "mode": "proposal-only",
+        "target": "draft-pull-request",
+        "draft_pr_created": False,
+        "publication_enabled": False,
+        "requires_owner_approval": True,
+    }
 
 
 def build_verification_bundle(

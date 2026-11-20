@@ -11,12 +11,17 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from engineering_task import (  # noqa: E402
     TaskContractError,
+    assert_no_symlinks,
     assert_patch_within_limits,
     attach_untrusted_text,
     build_verification_bundle,
+    classify_failure,
+    draft_pull_request_proposal,
     next_retry_count,
     parse_audit_quorum,
+    reserve_task,
     snapshot_manifest,
+    task_outcome,
     validate_task_contract,
 )
 
@@ -137,6 +142,64 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
         self.assertTrue(first["requires_owner_approval"])
         self.assertTrue(first["owner_approved"])
         self.assertEqual(len(first["bundle_sha256"]), 64)
+
+
+class EngineeringTaskLifecycleTests(unittest.TestCase):
+    """Offline reservation, safety, classification and proposal behavior."""
+
+    def setUp(self):
+        self.contract = validate_task_contract(BASE)
+
+    def test_reservation_is_idempotent_and_conflicts_fail_closed(self):
+        first = reserve_task(self.contract, None)
+        self.assertEqual(first, reserve_task(self.contract, {"reservation": first}))
+        stale = dict(first, base_sha="b" * 40)
+        with self.assertRaisesRegex(TaskContractError, "stale reservation"):
+            reserve_task(self.contract, {"reservation": stale})
+
+    def test_symlink_and_escape_rejection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "scripts").mkdir()
+            (root / "scripts" / "example.py").write_text("x", encoding="utf-8")
+            assert_no_symlinks(root, ["scripts/example.py"])
+            link = root / "linked"
+            try:
+                link.symlink_to(root / "scripts", target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks are unavailable on this host")
+            with self.assertRaises(TaskContractError):
+                assert_no_symlinks(root, ["linked/example.py"])
+
+    def test_failure_classification_uses_allowlisted_codes(self):
+        cases = (
+            ("provider", "connection timeout", "provider_transport_failure"),
+            ("audit", "invalid verdict format", "response_format_failure"),
+            ("evidence", "source provenance missing", "provenance_rejection"),
+            ("candidate", "power mismatch", "vehicle_quality_rejection"),
+            ("audit", "", "response_format_failure"),
+        )
+        for stage, reason, expected in cases:
+            with self.subTest(reason=reason):
+                self.assertEqual(classify_failure(stage, reason), expected)
+        self.assertEqual(classify_failure("", "anything"), "manual_review_required")
+
+    def test_task_outcome_is_idempotent_and_bounded(self):
+        reservation = reserve_task(self.contract, None)
+        bundle = {"bundle_sha256": "d" * 64}
+        first = task_outcome(reservation, bundle, "provenance_rejection")
+        self.assertEqual(first, task_outcome(reservation, bundle, "provenance_rejection"))
+        self.assertFalse(first["publication_enabled"])
+        with self.assertRaises(TaskContractError):
+            task_outcome(reservation, bundle, "arbitrary_code")
+
+    def test_draft_proposal_is_owner_gated_and_immutable(self):
+        bundle = {"bundle_sha256": "e" * 64}
+        proposal = draft_pull_request_proposal(self.contract, bundle)
+        self.assertEqual(proposal["bundle_sha256"], "e" * 64)
+        self.assertFalse(proposal["draft_pr_created"])
+        self.assertFalse(proposal["publication_enabled"])
+        self.assertTrue(proposal["requires_owner_approval"])
 
 
 if __name__ == "__main__":
