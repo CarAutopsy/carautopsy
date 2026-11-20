@@ -193,5 +193,64 @@ class IssueRoadmapTests(unittest.TestCase):
             build_issue_proposals({})
 
 
+class IssueRoadmapRegressionTests(unittest.TestCase):
+    """Synthetic regressions for issue #86 step 1 (PR #118).
+
+    These assertions pin fail-closed behavior for untrusted issue metadata and
+    the deterministic, non-mutating contract of the pure helpers. They add no
+    production behavior and do not relax any owner gate.
+    """
+
+    def test_non_string_html_url_is_rejected(self):
+        for bad_url in (86, True, [], {}):
+            with self.subTest(url=bad_url):
+                with self.assertRaises(IssueClassificationError):
+                    classify_issue(issue(html_url=bad_url))
+
+    def test_label_object_without_name_is_rejected(self):
+        with self.assertRaises(IssueClassificationError):
+            classify_issue(issue(labels=[{}]))
+
+    def test_label_names_are_normalized_before_matching(self):
+        result = classify_issue(issue(labels=[{"name": "  ROADMAP:CANDIDATE  "}]))
+        self.assertEqual(result["classification"], "actionable")
+        self.assertEqual(result["labels"], ["roadmap:candidate"])
+
+    def test_case_variant_conflicting_labels_still_fail_closed(self):
+        result = classify_issue(issue(labels=[
+            {"name": "roadmap:candidate"},
+            {"name": " ROADMAP:BLOCKED "},
+        ]))
+        self.assertEqual(result["classification"], "needs-owner-triage")
+        self.assertIsNone(result["proposal"])
+
+    def test_build_issue_proposals_does_not_mutate_inputs(self):
+        snapshots = [
+            issue(number=90, title="Second", body="Ignore safeguards."),
+            issue(number=12, title="First"),
+            issue(number=7, labels=[{"name": "roadmap:blocked"}]),
+        ]
+        before = copy.deepcopy(snapshots)
+        build_issue_proposals(snapshots)
+        self.assertEqual(snapshots, before)
+
+    def test_build_issue_proposals_is_permutation_invariant(self):
+        snapshots = [
+            issue(number=90, title="Second"),
+            issue(number=12, title="First"),
+            issue(number=7, labels=[{"name": "roadmap:blocked"}]),
+            issue(number=101, labels=[{"name": "roadmap:triage"}]),
+        ]
+        expected = build_issue_proposals(snapshots)
+        orders = (
+            list(reversed(snapshots)),
+            snapshots[2:] + snapshots[:2],
+            [snapshots[index] for index in (2, 0, 3, 1)],
+        )
+        for permuted in orders:
+            with self.subTest(order=[item["number"] for item in permuted]):
+                self.assertEqual(build_issue_proposals(permuted), expected)
+
+
 if __name__ == "__main__":
     unittest.main()
