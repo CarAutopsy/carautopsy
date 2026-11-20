@@ -18,8 +18,10 @@ from engineering_task import (  # noqa: E402
     classify_failure,
     draft_pull_request_proposal,
     next_retry_count,
+    normalize_allowed_path,
     parse_audit_quorum,
     reserve_task,
+    snapshot_digest,
     snapshot_manifest,
     task_outcome,
     validate_task_contract,
@@ -43,7 +45,8 @@ BASE = {
 
 
 BASE_SHA = "a" * 40
-BUNDLE_DIGEST = "c" * 64
+MANIFEST = {"scripts/example.py": "c" * 64}
+BUNDLE_DIGEST = snapshot_digest(MANIFEST)
 
 
 def bound_pass(vendor):
@@ -75,6 +78,16 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
             {"allowed_paths": [".github/workflows/autonomous-pipeline.yml"]},
             {"allowed_paths": ["scripts/autonomous_pipeline.py"]},
             {"allowed_paths": ["scripts/hive_research_gate.py"]},
+            {"allowed_paths": ["scripts/hive_outcomes.py"]},
+            {"allowed_paths": ["scripts/validate_tco_readiness.py"]},
+            {"allowed_paths": ["scripts/tco_engine.py"]},
+            {"allowed_paths": ["tasks/queue.json"]},
+            {"allowed_paths": ["country-packs/AT/manifest.yaml"]},
+            {"allowed_paths": [".github/dependabot.yml"]},
+            {"allowed_paths": ["schemas/other.schema.json"]},
+            {"allowed_paths": ["./scripts/example.py"]},
+            {"allowed_paths": ["scripts//example.py"]},
+            {"allowed_paths": ["Scripts/Hive_Audit.py"]},
             {"goal": "  "},
             {"acceptance_criteria": []},
             {"max_spend_units": 1},
@@ -108,6 +121,28 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
             self.assertEqual(len(manifest["scripts/example.py"]), 64)
             with self.assertRaises(TaskContractError):
                 snapshot_manifest(root, ["scripts/missing.py"])
+
+    def test_path_normalization_rejects_ambiguous_spellings(self):
+        self.assertEqual(normalize_allowed_path("scripts/example.py"), "scripts/example.py")
+        for bad in ("./scripts/example.py", "scripts//example.py", "scripts/./example.py",
+                    "../scripts/example.py", "/scripts/example.py", "scripts/../x", "", None):
+            with self.subTest(bad=bad):
+                with self.assertRaises(TaskContractError):
+                    normalize_allowed_path(bad)
+
+    def test_bundle_builder_requires_matching_audit_binding(self):
+        contract = validate_task_contract(BASE)
+        good = parse_audit_quorum(
+            [bound_pass("vendor-a"), bound_pass("vendor-b")],
+            bundle_sha256=BUNDLE_DIGEST, base_sha=BASE_SHA,
+        )
+        build_verification_bundle(contract, MANIFEST, good)
+        wrong_digest = dict(good, bundle_sha256="f" * 64)
+        with self.assertRaisesRegex(TaskContractError, "snapshot digest"):
+            build_verification_bundle(contract, MANIFEST, wrong_digest)
+        wrong_sha = dict(good, base_sha="b" * 40)
+        with self.assertRaisesRegex(TaskContractError, "base SHA"):
+            build_verification_bundle(contract, MANIFEST, wrong_sha)
 
     def test_patch_limits_enforce_paths_count_and_bytes(self):
         contract = validate_task_contract(dict(BASE, max_patch_bytes=100, max_files_touched=1))
@@ -152,7 +187,7 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
             [bound_pass("vendor-a"), bound_pass("vendor-b")],
             bundle_sha256=BUNDLE_DIGEST, base_sha=BASE_SHA,
         )
-        manifest = {"scripts/example.py": "c" * 64}
+        manifest = MANIFEST
         first = build_verification_bundle(contract, manifest, audit, owner_approved=True)
         self.assertEqual(first, build_verification_bundle(contract, manifest, audit, owner_approved=True))
         self.assertFalse(first["execution_enabled"])

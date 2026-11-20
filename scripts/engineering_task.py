@@ -9,13 +9,26 @@ from __future__ import annotations
 
 import hashlib
 import json
+import posixpath
 import re
 from pathlib import Path
 from typing import Any
 
 from hive_audit import concise_audit_verdict
-from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, OUTCOME_CODES
-FAILURE_CODES = OUTCOME_CODES - {AUDIT_SUCCESS}
+from hive_outcomes import (
+    MANUAL_REVIEW_REQUIRED,
+    OUTCOME_CODES,
+    PROVIDER_TRANSPORT_FAILURE,
+    PROVENANCE_REJECTION,
+    RESPONSE_FORMAT_FAILURE,
+    VEHICLE_QUALITY_REJECTION,
+)
+FAILURE_CODES = frozenset({
+    PROVIDER_TRANSPORT_FAILURE,
+    RESPONSE_FORMAT_FAILURE,
+    PROVENANCE_REJECTION,
+    VEHICLE_QUALITY_REJECTION,
+})
 
 
 class TaskContractError(ValueError):
@@ -29,8 +42,11 @@ _REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
 MAX_UNTRUSTED_CHARS = 8_000
 PROTECTED_PATH_PREFIXES = (
     "data-connectors/",
-    ".github/workflows/",
+    ".github/",
     "docs/operations/",
+    "country-packs/",
+    "schemas/",
+    "tco-contract.json",
 )
 PROTECTED_PATHS = frozenset({
     "scripts/autonomous_pipeline.py",
@@ -44,8 +60,36 @@ PROTECTED_PATHS = frozenset({
     "scripts/hive_orchestration.py",
     "scripts/tco_publication.py",
     "scripts/engineering_task.py",
-    "schemas/vehicle-variant.schema.json",
+    "scripts/hive_outcomes.py",
+    "scripts/validate_tco_readiness.py",
+    "scripts/tco_engine.py",
 })
+TASK_WRITABLE_PREFIXES = (
+    "apps/web/",
+    "tests/",
+    "scripts/",
+    "docs/",
+)
+
+
+def normalize_allowed_path(path: Any) -> str:
+    """Return a canonical POSIX path or fail closed on ambiguous spellings."""
+    if not isinstance(path, str) or not path or path.startswith("/"):
+        raise TaskContractError("allowed path must be a non-empty relative path")
+    candidate = path.replace("\\", "/")
+    if "\x00" in candidate or any(ord(char) < 32 for char in candidate):
+        raise TaskContractError("allowed path contains control characters")
+    normalized = posixpath.normpath(candidate)
+    if candidate != normalized:
+        raise TaskContractError("allowed path is not a canonical relative path")
+    parts = normalized.split("/")
+    if (
+        normalized in {".", ".."}
+        or normalized.startswith("/")
+        or any(part in {"", ".", ".."} for part in parts)
+    ):
+        raise TaskContractError("allowed path is not a canonical relative path")
+    return normalized
 
 
 def validate_task_contract(contract: Any) -> dict[str, Any]:
@@ -68,15 +112,18 @@ def validate_task_contract(contract: Any) -> dict[str, Any]:
         raise TaskContractError("allowed_paths must be a bounded non-empty list")
     normalized_paths = []
     for path in allowed_paths:
-        if (
-            not isinstance(path, str) or not path or path.startswith("/")
-            or ".." in path.split("/") or _SAFE_PATH.fullmatch(path) is None
-        ):
+        normalized = normalize_allowed_path(path)
+        if _SAFE_PATH.fullmatch(normalized) is None:
             raise TaskContractError("allowed path is not a safe relative path")
-        if path in PROTECTED_PATHS or path.startswith(PROTECTED_PATH_PREFIXES):
-            raise TaskContractError(f"protected path cannot be an engineering task target: {path}")
-        normalized_paths.append(path)
-    if len(set(normalized_paths)) != len(normalized_paths):
+        folded = normalized.casefold()
+        if folded in {item.casefold() for item in PROTECTED_PATHS} or any(
+            folded.startswith(prefix.casefold()) for prefix in PROTECTED_PATH_PREFIXES
+        ):
+            raise TaskContractError(f"protected path cannot be an engineering task target: {normalized}")
+        if not any(folded.startswith(prefix.casefold()) for prefix in TASK_WRITABLE_PREFIXES):
+            raise TaskContractError(f"path is outside the engineering task allowlist: {normalized}")
+        normalized_paths.append(normalized)
+    if len({item.casefold() for item in normalized_paths}) != len(normalized_paths):
         raise TaskContractError("duplicate allowed path")
 
     for field in ("goal", "acceptance_criteria"):
@@ -188,7 +235,19 @@ def parse_audit_quorum(
     verdicts = [concise_audit_verdict(item.get("verdict")) for item in audits]
     if any(verdict != "PASS" for verdict in verdicts):
         return {"accepted": False, "reason": "both verdicts must be exact PASS tokens"}
-    return {"accepted": True, "vendors": sorted(vendors), "verdicts": verdicts}
+    return {
+        "accepted": True,
+        "vendors": sorted(vendors),
+        "verdicts": verdicts,
+        "bundle_sha256": bundle_sha256,
+        "base_sha": base_sha,
+    }
+
+
+def snapshot_digest(manifest: dict[str, str]) -> str:
+    """Stable digest of an immutable snapshot manifest."""
+    encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
 def next_retry_count(contract: dict[str, Any], previous: Any) -> int:
@@ -294,6 +353,13 @@ def build_verification_bundle(
     owner_approved: bool = False,
 ) -> dict[str, Any]:
     """Emit a deterministic, read-only bundle; never authorizes execution."""
+    if not isinstance(manifest, dict) or not isinstance(audit_result, dict):
+        raise TaskContractError("manifest and audit result must be objects")
+    expected_digest = snapshot_digest(manifest)
+    if audit_result.get("bundle_sha256") != expected_digest:
+        raise TaskContractError("audit quorum is not bound to this snapshot digest")
+    if audit_result.get("base_sha") != contract["base_sha"]:
+        raise TaskContractError("audit quorum is not bound to this base SHA")
     payload = {
         "schema_version": 1,
         "task_id": contract["task_id"],
