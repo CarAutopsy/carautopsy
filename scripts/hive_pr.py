@@ -25,8 +25,8 @@ def fetch_all_open_pull_requests(fetch_page, initial_limit=100):
     Fails closed on malformed pages and on a result that stays full at the
     safety ceiling, so a stuck API response cannot loop indefinitely.
     """
-    if isinstance(initial_limit, bool) or not isinstance(initial_limit, int) or initial_limit < 1:
-        raise ValueError("initial_limit must be a positive integer")
+    if isinstance(initial_limit, bool) or not isinstance(initial_limit, int) or initial_limit < 1 or initial_limit > MAX_FETCH_LIMIT:
+        raise ValueError(f"initial_limit must be an integer in 1..{MAX_FETCH_LIMIT}")
     limit = initial_limit
     while True:
         pull_requests = fetch_page(limit)
