@@ -81,6 +81,19 @@ def validate_variant_readiness(
     elif vehicle_class != "M1":
         issues.append(f"unsupported identity.vehicle_class: {vehicle_class}")
 
+    year_from = identity.get("model_year_from")
+    year_to = identity.get("model_year_to")
+    if year_from is not None and (isinstance(year_from, bool) or not isinstance(year_from, int)):
+        issues.append("identity.model_year_from must be an integer when present")
+    if year_to is not None and (isinstance(year_to, bool) or not isinstance(year_to, int)):
+        issues.append("identity.model_year_to must be an integer when present")
+    if (
+        isinstance(year_from, int) and not isinstance(year_from, bool)
+        and isinstance(year_to, int) and not isinstance(year_to, bool)
+        and year_from > year_to
+    ):
+        issues.append("identity.model_year_from must not exceed identity.model_year_to")
+
     raw_registration_date = _value(record, "registration.first_registration_date")
     registration_date = _date_value(record)
     if registration_date is None:
