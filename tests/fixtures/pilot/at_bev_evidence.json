@@ -1,0 +1,9 @@
+{
+  "source_id": "oem-synthetic",
+  "url": "https://oem.example/specs/model-x",
+  "retrieved_at": "2026-11-11T12:00:00Z",
+  "text": "[document]\nOfficial synthetic specification.\nPowertrain: BEV.\nModel year from: 2026.\nVehicle class: M1.\nContinuous power: 150000 W.\nOwn weight: 1850 kg.\nPermissible mass: 2300 kg.\nCountry: AT.\nCurrency: EUR.\nList price minor: 4299000.\n",
+  "locator_texts": {
+    "document": "Official synthetic specification.\nPowertrain: BEV.\nModel year from: 2026.\nVehicle class: M1.\nContinuous power: 150000 W.\nOwn weight: 1850 kg.\nPermissible mass: 2300 kg.\nCountry: AT.\nCurrency: EUR.\nList price minor: 4299000.\n"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "approved_hosts": ["oem.example"],
+  "source_policies": [
+    {
+      "host": "oem.example",
+      "automated_access_allowed": true,
+      "terms_url": "https://oem.example/terms",
+      "terms_reviewed_at": "2026-11-01",
+      "terms_reviewed_by": "fixture-owner",
+      "terms_review_ref": "https://github.com/CarAutopsy/carautopsy/issues/119",
+      "approved_urls": [
+        {
+          "url": "https://oem.example/specs/model-x",
+          "variant_ids": ["synthetic.at.bev.model-x"]
+        }
+      ]
+    }
+  ]
+}
