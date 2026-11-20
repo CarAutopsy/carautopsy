@@ -95,7 +95,7 @@ class BoundedOpenPrFetchTests(unittest.TestCase):
     """Regressions for the previously unbounded duplicate-PR fetch loop."""
 
     def test_rejects_invalid_initial_limits(self):
-        for bad in (0, -1, True, "100", None, 1.5):
+        for bad in (0, -1, True, "100", None, 1.5, MAX_FETCH_LIMIT + 1):
             with self.subTest(limit=bad):
                 with self.assertRaises(ValueError):
                     fetch_all_open_pull_requests(Mock(), initial_limit=bad)
