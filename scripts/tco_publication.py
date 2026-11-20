@@ -13,6 +13,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from tco_engine import publication_artifact_is_current
+
 
 PUBLICATION_PATH = "apps/web/public/data/autopsies.json"
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -45,13 +47,36 @@ def catalog_digest(root: Path) -> str:
 
 
 def country_pack_digest(root: Path, country: str = "AT") -> str:
-    """Hash the exact statutory input file; a rule edit changes this digest."""
+    """Hash every rule file in the pack; a rule edit changes this digest."""
     if not re.fullmatch(r"[A-Z]{2}", country):
         raise PublicationBlocked("country code must be two uppercase letters")
-    path = Path(root) / "country-packs" / country / "manifest.yaml"
-    if not path.is_file():
-        raise PublicationBlocked(f"country pack manifest is missing: {country}")
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    pack = Path(root) / "country-packs" / country
+    files = sorted(path for path in pack.rglob("*") if path.is_file())
+    if not files:
+        raise PublicationBlocked(f"country pack has no rule files: {country}")
+    hasher = hashlib.sha256()
+    for path in files:
+        relative = path.relative_to(pack).as_posix()
+        hasher.update(relative.encode("utf-8"))
+        hasher.update(b"\x00")
+        hasher.update(path.read_bytes())
+        hasher.update(b"\x00")
+    return hasher.hexdigest()
+
+
+def build_run_url(server: Any, repository: Any, run_id: Any) -> str | None:
+    """Build exact run evidence from standard GitHub Actions values (pure)."""
+    if not isinstance(server, str) or not server.startswith("https://"):
+        return None
+    if not isinstance(repository, str) or re.fullmatch(
+        r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository
+    ) is None:
+        return None
+    if any(part in {".", ".."} for part in repository.split("/")):
+        return None
+    if not isinstance(run_id, str) or not run_id.isdigit():
+        return None
+    return f"{server.rstrip('/')}/{repository}/actions/runs/{run_id}"
 
 
 def build_attestation(
@@ -61,7 +86,7 @@ def build_attestation(
     catalog_sha256: str,
     country_pack: str,
     engine_version: str,
-    country_pack_sha256: str | None = None,
+    country_pack_sha256: str,
     run_url: str | None = None,
 ) -> dict[str, Any]:
     """Bind a payload to the exact inputs and run evidence that produced it."""
@@ -76,9 +101,7 @@ def build_attestation(
             raise PublicationBlocked(f"{label} is missing")
     if run_url is not None and (not isinstance(run_url, str) or len(run_url) > 300):
         raise PublicationBlocked("run_url must be a bounded string")
-    if country_pack_sha256 is not None and (
-        not isinstance(country_pack_sha256, str) or _SHA256.fullmatch(country_pack_sha256) is None
-    ):
+    if not isinstance(country_pack_sha256, str) or _SHA256.fullmatch(country_pack_sha256) is None:
         raise PublicationBlocked("country_pack_sha256 must be a SHA-256 digest")
     return {
         "schema_version": 1,
@@ -158,11 +181,26 @@ def is_duplicate_publication(existing: Any, attestation: dict[str, Any]) -> bool
     Duplicate detection is based on the payload digest so that a new commit
     which does not change the calculation is not treated as a new publication.
     """
+    existing_attestation = existing.get("attestation") if isinstance(existing, dict) else None
     return (
         isinstance(existing, dict)
-        and isinstance(existing.get("attestation"), dict)
-        and existing["attestation"].get("payload_sha256") == attestation.get("payload_sha256")
+        and isinstance(existing_attestation, dict)
         and isinstance(existing.get("results"), list)
+        and all(
+            existing_attestation.get(field) == attestation.get(field)
+            for field in ("payload_sha256", "catalog_sha256", "country_pack_sha256")
+        )
+    )
+
+
+def publication_needs_refresh(existing: Any, payload: dict[str, Any], attestation: dict[str, Any]) -> bool:
+    """Decide whether the local artifact must be rewritten (no git write)."""
+    if not isinstance(existing, dict):
+        return True
+    return (
+        not is_duplicate_publication(existing, attestation)
+        or not publication_artifact_is_current(existing, payload)
+        or existing.get("attestation") != attestation
     )
 
 

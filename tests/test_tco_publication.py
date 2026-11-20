@@ -16,6 +16,7 @@ from tco_publication import (  # noqa: E402
     assert_only_publication_paths_changed,
     assert_publication_gate,
     build_attestation,
+    build_run_url,
     canonical_bytes,
     catalog_digest,
     country_pack_digest,
@@ -23,6 +24,7 @@ from tco_publication import (  # noqa: E402
     draft_publication_proposal,
     is_duplicate_publication,
     parse_status_paths,
+    publication_needs_refresh,
 )
 
 
@@ -34,6 +36,7 @@ ATTESTATION = build_attestation(
     base_sha=SHA,
     catalog_sha256=DIGEST,
     country_pack="AT@2026.1",
+    country_pack_sha256="d" * 64,
     engine_version="1.0.0",
     run_url="https://github.com/CarAutopsy/carautopsy/actions/runs/1",
 )
@@ -64,7 +67,8 @@ class TcoPublicationGuardTests(unittest.TestCase):
         changed = dict(PAYLOAD, summary={"variants": 2})
         other = build_attestation(
             payload=changed, base_sha=SHA, catalog_sha256=DIGEST,
-            country_pack="AT@2026.1", engine_version="1.0.0",
+            country_pack="AT@2026.1", country_pack_sha256="d" * 64,
+            engine_version="1.0.0",
         )
         self.assertNotEqual(ATTESTATION["payload_sha256"], other["payload_sha256"])
         for kwargs in (
@@ -77,7 +81,8 @@ class TcoPublicationGuardTests(unittest.TestCase):
             with self.subTest(kwargs=kwargs):
                 values = dict(
                     payload=PAYLOAD, base_sha=SHA, catalog_sha256=DIGEST,
-                    country_pack="AT@2026.1", engine_version="1.0.0",
+                    country_pack="AT@2026.1", country_pack_sha256="d" * 64,
+                    engine_version="1.0.0",
                 )
                 values.update(kwargs)
                 with self.assertRaises(PublicationBlocked):
@@ -175,7 +180,43 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
         self.assertTrue(is_duplicate_publication(existing, same_payload_new_head))
         changed_payload = dict(ATTESTATION, payload_sha256="f" * 64)
         self.assertFalse(is_duplicate_publication(existing, changed_payload))
+        changed_catalog = dict(ATTESTATION, catalog_sha256="e" * 64)
+        self.assertFalse(is_duplicate_publication(existing, changed_catalog))
+        changed_pack = dict(ATTESTATION, country_pack_sha256="1" * 64)
+        self.assertFalse(is_duplicate_publication(existing, changed_pack))
         self.assertFalse(is_duplicate_publication({}, ATTESTATION))
+
+    def test_stale_attestation_is_reconciled_on_unchanged_payload(self):
+        envelope = {"country_pack": "AT@2026.1", "engine_version": "1.0.0",
+                    "generated_utc": "2026-11-20T12:00:00Z"}
+        payload = dict(PAYLOAD, envelope=envelope)
+        existing = {"results": payload["results"], "summary": payload["summary"],
+                    "envelope": envelope,
+                    "attestation": dict(ATTESTATION, base_sha="c" * 40)}
+        self.assertTrue(is_duplicate_publication(existing, ATTESTATION))
+        # HEAD-only drift must still refresh the local artifact so the gate
+        # never compares a stale binding against the current attestation.
+        self.assertTrue(publication_needs_refresh(existing, payload, ATTESTATION))
+        current = dict(existing, attestation=ATTESTATION)
+        self.assertFalse(publication_needs_refresh(current, payload, ATTESTATION))
+
+    def test_run_url_builder_is_pure_and_bounded(self):
+        self.assertEqual(
+            build_run_url("https://github.com", "CarAutopsy/carautopsy", "123"),
+            "https://github.com/CarAutopsy/carautopsy/actions/runs/123",
+        )
+        self.assertEqual(
+            build_run_url("https://github.com/", "CarAutopsy/carautopsy", "123"),
+            "https://github.com/CarAutopsy/carautopsy/actions/runs/123",
+        )
+        for args in (
+            ("http://github.com", "CarAutopsy/carautopsy", "123"),
+            ("https://github.com", "../repo", "123"),
+            ("https://github.com", "CarAutopsy/carautopsy", "not-a-number"),
+            (None, "CarAutopsy/carautopsy", "123"),
+        ):
+            with self.subTest(args=args):
+                self.assertIsNone(build_run_url(*args))
 
     def test_uncertain_response_never_authorizes_retry(self):
         self.assertEqual(classify_publication_response(None), "uncertain")
@@ -239,10 +280,11 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
 
     def test_runtime_uses_wired_helpers_and_standard_run_url(self):
         source = (ROOT / "scripts" / "autonomous_pipeline.py").read_text(encoding="utf-8")
-        self.assertIn("is_duplicate_publication(old, attestation)", source)
-        self.assertIn("country_pack_sha256=country_pack_digest(ROOT)", source)
+        self.assertIn("publication_needs_refresh(old, payload, attestation)", source)
+        self.assertIn("country_pack_sha256=country_pack_digest(ROOT, country)", source)
         self.assertIn('os.environ.get("GITHUB_RUN_ID"', source)
         self.assertNotIn("GITHUB_RUN_URL", source)
+        self.assertIn("status_output=post_write_status", source)
         self.assertLess(
             source.index("assert_only_publication_paths_changed(status_output)"),
             source.index("json.dumps(published"),
