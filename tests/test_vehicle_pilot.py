@@ -26,6 +26,7 @@ from hive_audit import concise_audit_verdict
 from hive_candidate import CandidateRejected, validate_candidate, validate_evidence_bundle
 from hive_source_policy import SourcePolicyDenied, check_source_access
 from issue_roadmap import classify_issue
+from validate_tco_readiness import validate_variant_readiness
 
 
 URL = "https://oem.example/specs/model-x"
@@ -201,6 +202,76 @@ class VehiclePilotExpansionTests(unittest.TestCase):
         self.assertTrue(proposal["requires_owner_approval"])
         self.assertTrue(proposal["owner_input_required"])
         self.assertEqual(proposal["status"], "proposed")
+
+
+class VehiclePilotTaxInputTests(unittest.TestCase):
+    """Readiness-gate edge cases for both BEV and combustion variants."""
+
+    @staticmethod
+    def _bev():
+        return {
+            "identity": {
+                "make": "Synthetic", "model": "B", "powertrain": "bev",
+                "vehicle_class": "M1", "model_year_from": 2026, "model_year_to": 2026,
+            },
+            "registration": {"first_registration_date": "2026-01-15"},
+            "dimensions": {"max_permissible_mass_kg": 2300, "own_weight_kg": 1850},
+            "performance": {"electric_motor_continuous_power_w": 150000},
+            "energy": {"consumption_wh_km": {"real_world": 180}},
+            "offers": [{"country": "AT", "currency": "EUR", "list_price_minor": 4299000}],
+        }
+
+    @staticmethod
+    def _ice():
+        return {
+            "identity": {
+                "make": "Synthetic", "model": "C", "powertrain": "ice_petrol",
+                "vehicle_class": "M1", "model_year_from": 2026, "model_year_to": 2026,
+            },
+            "registration": {"first_registration_date": "2026-01-15"},
+            "dimensions": {"max_permissible_mass_kg": 2100},
+            "performance": {"combustion_engine_power_w": 110000},
+            "emissions": {"co2_wltp_gpkm": 132},
+            "extensions": {"fuel_consumption_l_100km": {"real_world": 5.6}},
+            "offers": [{
+                "country": "AT", "currency": "EUR", "list_price_minor": 3299000,
+                "purchase_price_excl_vat_eur": 27000.0,
+            }],
+        }
+
+    def test_complete_bev_and_ice_variants_pass_readiness(self):
+        self.assertEqual(validate_variant_readiness(self._bev()), [])
+        self.assertEqual(validate_variant_readiness(self._ice()), [])
+
+    def test_missing_continuous_motor_power_is_reported(self):
+        record = self._bev()
+        del record["performance"]["electric_motor_continuous_power_w"]
+        self.assertIn(
+            "performance.electric_motor_continuous_power_w",
+            validate_variant_readiness(record),
+        )
+
+    def test_invalid_mass_values_are_reported(self):
+        for mass in (-1, 4000, "heavy", True):
+            with self.subTest(mass=mass):
+                record = self._bev()
+                record["dimensions"]["max_permissible_mass_kg"] = mass
+                findings = validate_variant_readiness(record)
+                self.assertTrue(any("max_permissible_mass_kg" in item for item in findings))
+
+    def test_incomplete_tax_inputs_are_reported(self):
+        bev = self._bev()
+        del bev["energy"]
+        self.assertTrue(any("consumption_wh_km" in item for item in validate_variant_readiness(bev)))
+        ice = self._ice()
+        del ice["offers"][0]["purchase_price_excl_vat_eur"]
+        self.assertTrue(any("purchase_price_excl_vat_eur" in item for item in validate_variant_readiness(ice)))
+
+    def test_conflicting_duplicate_evidence_is_rejected(self):
+        evidence = load("at_bev_evidence.json")
+        conflicting = dict(evidence, text=evidence["text"] + "Contradictory specification.")
+        with self.assertRaisesRegex(CandidateRejected, "duplicate"):
+            validate_evidence_bundle([evidence, conflicting])
 
 
 if __name__ == "__main__":
