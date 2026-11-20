@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "variant_id": "synthetic.at.bev.model-x",
+  "status": "draft",
+  "identity": {
+    "make": "Synthetic",
+    "model": "Model X",
+    "powertrain": "BEV",
+    "model_year_from": 2026,
+    "vehicle_class": "M1"
+  },
+  "performance": {
+    "electric_motor_continuous_power_w": 150000
+  },
+  "dimensions": {
+    "own_weight_kg": 1850,
+    "max_permissible_mass_kg": 2300
+  },
+  "offers": [
+    {
+      "offer_id": "at-synthetic",
+      "country": "AT",
+      "currency": "EUR",
+      "list_price_minor": 4299000
+    }
+  ],
+  "provenance": {
+    "confidence": "low",
+    "reviewed_by": null,
+    "sources": [
+      {
+        "source_id": "oem-synthetic",
+        "url": "https://oem.example/specs/model-x"
+      }
+    ],
+    "claim_evidence": [
+      {"claim_path": "identity.powertrain", "source_id": "oem-synthetic", "locator": "document", "quote": "Powertrain: BEV."},
+      {"claim_path": "identity.model_year_from", "source_id": "oem-synthetic", "locator": "document", "quote": "Model year from: 2026."},
+      {"claim_path": "identity.vehicle_class", "source_id": "oem-synthetic", "locator": "document", "quote": "Vehicle class: M1."},
+      {"claim_path": "performance.electric_motor_continuous_power_w", "source_id": "oem-synthetic", "locator": "document", "quote": "Continuous power: 150000 W."},
+      {"claim_path": "dimensions.own_weight_kg", "source_id": "oem-synthetic", "locator": "document", "quote": "Own weight: 1850 kg."},
+      {"claim_path": "dimensions.max_permissible_mass_kg", "source_id": "oem-synthetic", "locator": "document", "quote": "Permissible mass: 2300 kg."},
+      {"claim_path": "offers[0].country", "source_id": "oem-synthetic", "locator": "document", "quote": "Country: AT."},
+      {"claim_path": "offers[0].currency", "source_id": "oem-synthetic", "locator": "document", "quote": "Currency: EUR."},
+      {"claim_path": "offers[0].list_price_minor", "source_id": "oem-synthetic", "locator": "document", "quote": "List price minor: 4299000."}
+    ]
+  }
+}
