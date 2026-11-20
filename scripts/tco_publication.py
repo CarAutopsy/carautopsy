@@ -13,10 +13,17 @@ import re
 from pathlib import Path
 from typing import Any
 
-from tco_engine import publication_artifact_is_current
-
 
 PUBLICATION_PATH = "apps/web/public/data/autopsies.json"
+ATTESTATION_BINDING_FIELDS = (
+    "schema_version",
+    "payload_sha256",
+    "catalog_sha256",
+    "country_pack",
+    "country_pack_sha256",
+    "engine_version",
+)
+MAX_PACK_FILES = 200
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _SHA1 = re.compile(r"[0-9a-f]{40}\Z")
 
@@ -51,9 +58,14 @@ def country_pack_digest(root: Path, country: str = "AT") -> str:
     if not re.fullmatch(r"[A-Z]{2}", country):
         raise PublicationBlocked("country code must be two uppercase letters")
     pack = Path(root) / "country-packs" / country
-    files = sorted(path for path in pack.rglob("*") if path.is_file())
+    files = sorted(
+        path for path in pack.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    )
     if not files:
         raise PublicationBlocked(f"country pack has no rule files: {country}")
+    if len(files) > MAX_PACK_FILES:
+        raise PublicationBlocked(f"country pack exceeds {MAX_PACK_FILES} rule files")
     hasher = hashlib.sha256()
     for path in files:
         relative = path.relative_to(pack).as_posix()
@@ -116,10 +128,11 @@ def build_attestation(
 
 
 def assert_attestation(artifact: Any, expected: dict[str, Any]) -> None:
-    """Reject any artifact whose attestation is missing or does not match."""
+    """Reject an artifact whose input binding differs. HEAD/run evidence is ignored."""
     if not isinstance(artifact, dict) or not isinstance(artifact.get("attestation"), dict):
         raise PublicationBlocked("published artifact lacks an attestation")
-    if artifact["attestation"] != expected:
+    actual = artifact["attestation"]
+    if any(actual.get(field) != expected.get(field) for field in ATTESTATION_BINDING_FIELDS):
         raise PublicationBlocked("published artifact attestation does not match inputs")
 
 
@@ -194,14 +207,21 @@ def is_duplicate_publication(existing: Any, attestation: dict[str, Any]) -> bool
 
 
 def publication_needs_refresh(existing: Any, payload: dict[str, Any], attestation: dict[str, Any]) -> bool:
-    """Decide whether the local artifact must be rewritten (no git write)."""
+    """Decide whether the local artifact must be rewritten (no git write).
+
+    HEAD SHA and run URL are run-specific evidence, not input bindings: they
+    must not force a rewrite on every scheduled run.
+    """
+    from tco_engine import publication_artifact_is_current
+
     if not isinstance(existing, dict):
         return True
-    return (
-        not is_duplicate_publication(existing, attestation)
-        or not publication_artifact_is_current(existing, payload)
-        or existing.get("attestation") != attestation
+    actual = existing.get("attestation")
+    binding_changed = (
+        not isinstance(actual, dict)
+        or any(actual.get(field) != attestation.get(field) for field in ATTESTATION_BINDING_FIELDS)
     )
+    return binding_changed or not publication_artifact_is_current(existing, payload)
 
 
 def classify_publication_response(response: Any) -> str:

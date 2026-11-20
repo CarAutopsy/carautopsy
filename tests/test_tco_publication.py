@@ -88,13 +88,19 @@ class TcoPublicationGuardTests(unittest.TestCase):
                 with self.assertRaises(PublicationBlocked):
                     build_attestation(**values)
 
+    def test_run_specific_evidence_does_not_change_binding(self):
+        relaxed = dict(ATTESTATION, base_sha="c" * 40,
+                       run_url="https://github.com/CarAutopsy/carautopsy/actions/runs/999")
+        assert_attestation({"attestation": relaxed}, ATTESTATION)
+
     def test_attestation_mismatch_is_detected(self):
         assert_attestation({"attestation": ATTESTATION}, ATTESTATION)
         for bad in (
             {},
             {"attestation": None},
-            {"attestation": dict(ATTESTATION, base_sha="c" * 40)},
             {"attestation": dict(ATTESTATION, payload_sha256="d" * 64)},
+            {"attestation": dict(ATTESTATION, catalog_sha256="e" * 64)},
+            {"attestation": dict(ATTESTATION, country_pack_sha256="1" * 64)},
         ):
             with self.subTest(bad=bad):
                 with self.assertRaises(PublicationBlocked):
@@ -186,19 +192,35 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
         self.assertFalse(is_duplicate_publication(existing, changed_pack))
         self.assertFalse(is_duplicate_publication({}, ATTESTATION))
 
-    def test_stale_attestation_is_reconciled_on_unchanged_payload(self):
+    def test_unchanged_inputs_do_not_rewrite_on_new_head_or_run(self):
         envelope = {"country_pack": "AT@2026.1", "engine_version": "1.0.0",
                     "generated_utc": "2026-11-20T12:00:00Z"}
         payload = dict(PAYLOAD, envelope=envelope)
+        new_evidence = dict(ATTESTATION, base_sha="c" * 40,
+                            run_url="https://github.com/CarAutopsy/carautopsy/actions/runs/999")
         existing = {"results": payload["results"], "summary": payload["summary"],
-                    "envelope": envelope,
-                    "attestation": dict(ATTESTATION, base_sha="c" * 40)}
-        self.assertTrue(is_duplicate_publication(existing, ATTESTATION))
-        # HEAD-only drift must still refresh the local artifact so the gate
-        # never compares a stale binding against the current attestation.
-        self.assertTrue(publication_needs_refresh(existing, payload, ATTESTATION))
-        current = dict(existing, attestation=ATTESTATION)
-        self.assertFalse(publication_needs_refresh(current, payload, ATTESTATION))
+                    "envelope": envelope, "attestation": new_evidence}
+        self.assertTrue(is_duplicate_publication(existing, new_evidence))
+        self.assertFalse(publication_needs_refresh(existing, payload, new_evidence))
+        assert_attestation(existing, new_evidence)
+
+    def test_changed_input_binding_forces_refresh_and_blocks_stale_artifact(self):
+        envelope = {"country_pack": "AT@2026.1", "engine_version": "1.0.0",
+                    "generated_utc": "2026-11-20T12:00:00Z"}
+        payload = dict(PAYLOAD, envelope=envelope)
+        stale = {"results": payload["results"], "summary": payload["summary"],
+                 "envelope": envelope,
+                 "attestation": dict(ATTESTATION, catalog_sha256="e" * 64)}
+        self.assertTrue(publication_needs_refresh(stale, payload, ATTESTATION))
+        with self.assertRaises(PublicationBlocked):
+            assert_attestation(stale, ATTESTATION)
+
+    def test_engine_import_is_local_and_pack_digest_is_bounded(self):
+        source = (ROOT / "scripts" / "tco_publication.py").read_text(encoding="utf-8")
+        self.assertNotIn("\nfrom tco_engine import", source)
+        self.assertIn("    from tco_engine import publication_artifact_is_current", source)
+        self.assertIn("MAX_PACK_FILES", source)
+        self.assertIn("not path.is_symlink()", source)
 
     def test_run_url_builder_is_pure_and_bounded(self):
         self.assertEqual(
