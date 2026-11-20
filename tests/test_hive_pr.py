@@ -1,9 +1,10 @@
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from hive_pr import fetch_all_open_pull_requests, select_open_research_pr
+from hive_pr import MAX_FETCH_LIMIT, fetch_all_open_pull_requests, select_open_research_pr
 
 
 class SelectOpenResearchPrTests(unittest.TestCase):
@@ -88,6 +89,43 @@ class SelectOpenResearchPrTests(unittest.TestCase):
         complete = fetch_all_open_pull_requests(fetch_page)
         with self.assertRaisesRegex(RuntimeError, "multiple open Hive research PRs"):
             select_open_research_pr(complete, "CarAutopsy/carautopsy")
+
+
+class BoundedOpenPrFetchTests(unittest.TestCase):
+    """Regressions for the previously unbounded duplicate-PR fetch loop."""
+
+    def test_rejects_invalid_initial_limits(self):
+        for bad in (0, -1, True, "100", None, 1.5, MAX_FETCH_LIMIT + 1):
+            with self.subTest(limit=bad):
+                with self.assertRaises(ValueError):
+                    fetch_all_open_pull_requests(Mock(), initial_limit=bad)
+
+    def test_rejects_non_list_page(self):
+        with self.assertRaisesRegex(RuntimeError, "must be a list"):
+            fetch_all_open_pull_requests(lambda limit: {"message": "rate limited"})
+
+    def test_full_page_at_ceiling_fails_closed_instead_of_looping(self):
+        calls = []
+
+        def full_page(limit):
+            calls.append(limit)
+            return [{"number": number} for number in range(limit)]
+
+        with self.assertRaisesRegex(RuntimeError, "exceeded the .* result bound"):
+            fetch_all_open_pull_requests(full_page)
+        self.assertLessEqual(len(calls), 8)
+        self.assertEqual(calls[-1], MAX_FETCH_LIMIT)
+
+    def test_ceiling_is_reached_without_skipping_intermediate_limits(self):
+        calls = []
+
+        def full_page(limit):
+            calls.append(limit)
+            return [{"number": number} for number in range(limit)]
+
+        with self.assertRaisesRegex(RuntimeError, "result bound"):
+            fetch_all_open_pull_requests(full_page, initial_limit=750)
+        self.assertEqual(calls[:2], [750, 1500])
 
 
 if __name__ == "__main__":
