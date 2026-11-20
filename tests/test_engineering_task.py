@@ -32,7 +32,7 @@ BASE = {
     "task_id": "eng-001",
     "repository": "CarAutopsy/carautopsy",
     "base_sha": "a" * 40,
-    "allowed_paths": ["scripts/example.py"],
+    "allowed_paths": ["tests/fixtures/example.json"],
     "goal": "Make a bounded improvement",
     "acceptance_criteria": ["tests pass"],
     "max_patch_bytes": 1000,
@@ -45,7 +45,7 @@ BASE = {
 
 
 BASE_SHA = "a" * 40
-MANIFEST = {"scripts/example.py": "c" * 64}
+MANIFEST = {"tests/fixtures/example.json": "c" * 64}
 BUNDLE_DIGEST = snapshot_digest(MANIFEST)
 
 
@@ -62,7 +62,7 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
     def test_valid_contract_is_normalized(self):
         contract = validate_task_contract(BASE)
         self.assertEqual(contract["task_id"], "eng-001")
-        self.assertEqual(contract["allowed_paths"], ["scripts/example.py"])
+        self.assertEqual(contract["allowed_paths"], ["tests/fixtures/example.json"])
         self.assertTrue(contract["requires_owner_approval"])
 
     def test_malformed_or_unsafe_contracts_fail_closed(self):
@@ -73,7 +73,7 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
             {"allowed_paths": []},
             {"allowed_paths": ["../secret"]},
             {"allowed_paths": ["/etc/passwd"]},
-            {"allowed_paths": ["scripts/example.py", "scripts/example.py"]},
+            {"allowed_paths": ["tests/fixtures/example.json", "tests/fixtures/example.json"]},
             {"allowed_paths": ["data-connectors/approved-source-hosts.json"]},
             {"allowed_paths": [".github/workflows/autonomous-pipeline.yml"]},
             {"allowed_paths": ["scripts/autonomous_pipeline.py"]},
@@ -85,9 +85,14 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
             {"allowed_paths": ["country-packs/AT/manifest.yaml"]},
             {"allowed_paths": [".github/dependabot.yml"]},
             {"allowed_paths": ["schemas/other.schema.json"]},
-            {"allowed_paths": ["./scripts/example.py"]},
+            {"allowed_paths": ["./tests/fixtures/example.json"]},
             {"allowed_paths": ["scripts//example.py"]},
             {"allowed_paths": ["Scripts/Hive_Audit.py"]},
+            {"allowed_paths": ["scripts/provider_retry.py"]},
+            {"allowed_paths": ["scripts/hive_state.py"]},
+            {"allowed_paths": ["apps/web/public/data/autopsies.json"]},
+            {"allowed_paths": ["apps/web/src/example.ts", "tests/fixtures/example.json",
+                               "scripts/example.py"]},
             {"goal": "  "},
             {"acceptance_criteria": []},
             {"max_spend_units": 1},
@@ -114,18 +119,20 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
     def test_snapshot_manifest_is_deterministic_and_missing_files_fail(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "scripts").mkdir()
-            (root / "scripts" / "example.py").write_text("print(1)\n", encoding="utf-8")
-            manifest = snapshot_manifest(root, ["scripts/example.py"])
-            self.assertEqual(manifest, snapshot_manifest(root, ["scripts/example.py"]))
-            self.assertEqual(len(manifest["scripts/example.py"]), 64)
+            (root / "tests" / "fixtures").mkdir(parents=True)
+            (root / "tests" / "fixtures" / "example.json").write_text("{}\n", encoding="utf-8")
+            manifest = snapshot_manifest(root, ["tests/fixtures/example.json"])
+            self.assertEqual(manifest, snapshot_manifest(root, ["tests/fixtures/example.json"]))
+            self.assertEqual(len(manifest["tests/fixtures/example.json"]), 64)
             with self.assertRaises(TaskContractError):
-                snapshot_manifest(root, ["scripts/missing.py"])
+                snapshot_manifest(root, ["tests/fixtures/missing.json"])
 
     def test_path_normalization_rejects_ambiguous_spellings(self):
-        self.assertEqual(normalize_allowed_path("scripts/example.py"), "scripts/example.py")
-        for bad in ("./scripts/example.py", "scripts//example.py", "scripts/./example.py",
-                    "../scripts/example.py", "/scripts/example.py", "scripts/../x", "", None):
+        self.assertEqual(normalize_allowed_path("tests/fixtures/example.json"), "tests/fixtures/example.json")
+        for bad in ("./tests/fixtures/example.json", "tests//fixtures/example.json",
+                    "tests/./fixtures/example.json", "tests/fixtures/../x",
+                    "../tests/fixtures/example.json", "/tests/fixtures/example.json",
+                    "tests/fixtures/example.json.", "", None):
             with self.subTest(bad=bad):
                 with self.assertRaises(TaskContractError):
                     normalize_allowed_path(bad)
@@ -143,14 +150,17 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
         wrong_sha = dict(good, base_sha="b" * 40)
         with self.assertRaisesRegex(TaskContractError, "base SHA"):
             build_verification_bundle(contract, MANIFEST, wrong_sha)
+        not_accepted = dict(good, accepted=False)
+        with self.assertRaisesRegex(TaskContractError, "must be accepted"):
+            build_verification_bundle(contract, MANIFEST, not_accepted)
 
     def test_patch_limits_enforce_paths_count_and_bytes(self):
         contract = validate_task_contract(dict(BASE, max_patch_bytes=100, max_files_touched=1))
-        assert_patch_within_limits(contract, {"scripts/example.py": 100})
+        assert_patch_within_limits(contract, {"tests/fixtures/example.json": 100})
         for patch in (
             {"tasks/queue.json": 1},
-            {"scripts/example.py": 101},
-            {"scripts/example.py": 1, "scripts/other.py": 1},
+            {"tests/fixtures/example.json": 101},
+            {"tests/fixtures/example.json": 1, "scripts/other.py": 1},
         ):
             with self.subTest(patch=patch):
                 with self.assertRaises(TaskContractError):
@@ -213,12 +223,12 @@ class EngineeringTaskLifecycleTests(unittest.TestCase):
     def test_symlink_and_escape_rejection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "scripts").mkdir()
-            (root / "scripts" / "example.py").write_text("x", encoding="utf-8")
-            assert_no_symlinks(root, ["scripts/example.py"])
+            (root / "tests" / "fixtures").mkdir(parents=True)
+            (root / "tests" / "fixtures" / "example.json").write_text("{}", encoding="utf-8")
+            assert_no_symlinks(root, ["tests/fixtures/example.json"])
             link = root / "linked"
             try:
-                link.symlink_to(root / "scripts", target_is_directory=True)
+                link.symlink_to(root / "tests", target_is_directory=True)
             except (OSError, NotImplementedError):
                 self.skipTest("symlinks are unavailable on this host")
             with self.assertRaises(TaskContractError):

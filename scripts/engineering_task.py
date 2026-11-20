@@ -65,10 +65,8 @@ PROTECTED_PATHS = frozenset({
     "scripts/tco_engine.py",
 })
 TASK_WRITABLE_PREFIXES = (
-    "apps/web/",
-    "tests/",
-    "scripts/",
-    "docs/",
+    "apps/web/src/",
+    "tests/fixtures/",
 )
 
 
@@ -87,6 +85,7 @@ def normalize_allowed_path(path: Any) -> str:
         normalized in {".", ".."}
         or normalized.startswith("/")
         or any(part in {"", ".", ".."} for part in parts)
+        or any(part.endswith(".") or part.endswith(" ") for part in parts)
     ):
         raise TaskContractError("allowed path is not a canonical relative path")
     return normalized
@@ -356,6 +355,8 @@ def build_verification_bundle(
     if not isinstance(manifest, dict) or not isinstance(audit_result, dict):
         raise TaskContractError("manifest and audit result must be objects")
     expected_digest = snapshot_digest(manifest)
+    if audit_result.get("accepted") is not True:
+        raise TaskContractError("audit quorum must be accepted before verification")
     if audit_result.get("bundle_sha256") != expected_digest:
         raise TaskContractError("audit quorum is not bound to this snapshot digest")
     if audit_result.get("base_sha") != contract["base_sha"]:
