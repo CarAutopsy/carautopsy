@@ -136,6 +136,26 @@ def assert_publication_gate(
     return changed
 
 
+def is_duplicate_publication(existing: Any, attestation: dict[str, Any]) -> bool:
+    """True only when an existing artifact is bound to identical input evidence."""
+    return (
+        isinstance(existing, dict)
+        and isinstance(existing.get("attestation"), dict)
+        and existing["attestation"] == attestation
+        and isinstance(existing.get("results"), list)
+    )
+
+
+def classify_publication_response(response: Any) -> str:
+    """Classify a write response; ambiguous results never authorize a retry."""
+    if isinstance(response, dict):
+        if response.get("reconciled") is True:
+            return "reconciled"
+        if response.get("status") in {"published", "created"} and response.get("reconciled") is not False:
+            return "published"
+    return "uncertain"
+
+
 def draft_publication_proposal(
     *, base_sha: str, attestation: dict[str, Any], owner_approved: bool = False
 ) -> dict[str, Any]:

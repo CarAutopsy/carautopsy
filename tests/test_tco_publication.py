@@ -18,7 +18,9 @@ from tco_publication import (  # noqa: E402
     build_attestation,
     canonical_bytes,
     catalog_digest,
+    classify_publication_response,
     draft_publication_proposal,
+    is_duplicate_publication,
     parse_status_paths,
 )
 
@@ -160,6 +162,63 @@ class TcoPublicationGuardTests(unittest.TestCase):
             source.index("publication blocked before writes"),
             source.index("json.dumps(published"),
         )
+
+
+class TcoPublicationSecurityRegressionTests(unittest.TestCase):
+    """Phase 2 proof list for issue #129 (offline, mocked only)."""
+
+    def test_no_duplicate_publication_when_inputs_unchanged(self):
+        existing = {"results": PAYLOAD["results"], "attestation": ATTESTATION}
+        self.assertTrue(is_duplicate_publication(existing, ATTESTATION))
+        drifted = dict(ATTESTATION, base_sha="c" * 40)
+        self.assertFalse(is_duplicate_publication(existing, drifted))
+        self.assertFalse(is_duplicate_publication({}, ATTESTATION))
+
+    def test_uncertain_response_never_authorizes_retry(self):
+        self.assertEqual(classify_publication_response(None), "uncertain")
+        self.assertEqual(classify_publication_response({}), "uncertain")
+        self.assertEqual(classify_publication_response({"status": "maybe"}), "uncertain")
+        self.assertEqual(classify_publication_response({"status": "created", "reconciled": False}), "uncertain")
+        self.assertEqual(classify_publication_response({"status": "published"}), "published")
+        self.assertEqual(classify_publication_response({"reconciled": True}), "reconciled")
+        proposal = draft_publication_proposal(base_sha=SHA, attestation=ATTESTATION)
+        self.assertNotIn("retry", proposal)
+        self.assertFalse(proposal["direct_main_push"])
+
+    def test_publication_module_has_no_secrets_or_environment_access(self):
+        source = (ROOT / "scripts" / "tco_publication.py").read_text(encoding="utf-8")
+        self.assertNotIn("secrets.", source)
+        self.assertNotIn("os.environ", source)
+        self.assertNotIn("subprocess", source)
+        self.assertNotIn("requests", source)
+
+    def test_workflow_has_no_scheduled_or_research_mode_publication(self):
+        import yaml
+
+        workflow = yaml.load(
+            (ROOT / ".github" / "workflows" / "autonomous-pipeline.yml").read_text(encoding="utf-8"),
+            Loader=yaml.BaseLoader,
+        )
+        run_job = workflow["jobs"]["run"]
+        tco = next(step for step in run_job["steps"] if step.get("name") == "Gated TCO pipeline")
+        self.assertIn("workflow_dispatch", tco["if"])
+        self.assertIn("'full'", tco["if"])
+        self.assertNotIn("schedule", tco["if"])
+        self.assertNotIn("research-only", tco["if"])
+
+    def test_research_only_path_exits_before_publication_block(self):
+        source = (ROOT / "scripts" / "autonomous_pipeline.py").read_text(encoding="utf-8")
+        self.assertLess(
+            source.index("Research cycle completed successfully"),
+            source.index("Fail-closed TCO publication"),
+        )
+
+    def test_audit_failure_exits_before_any_publication_write(self):
+        source = (ROOT / "scripts" / "autonomous_pipeline.py").read_text(encoding="utf-8")
+        failure = source.index("publication blocked before writes")
+        for marker in ("build_attestation(", "json.dumps(published", "assert_publication_gate("):
+            with self.subTest(marker=marker):
+                self.assertLess(failure, source.index(marker))
 
 
 if __name__ == "__main__":
