@@ -26,10 +26,40 @@ CRAWLER_PERMISSIONS = {
     "checks": "read",
 }
 RUN_PERMISSIONS = {"contents": "write", "pull-requests": "write"}
+EXPECTED_CRON = "7,22,37,52 * * * *"
+EXPECTED_CRAWLER_IF = (
+    "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' "
+    "&& inputs.run_mode == 'crawler-only')"
+)
+EXPECTED_RUN_IF = (
+    "github.event_name != 'workflow_dispatch' || inputs.run_mode != 'crawler-only'"
+)
+
+
+class _StrictLoader(yaml.BaseLoader):
+    """YAML loader that rejects duplicate mapping keys instead of last-one-wins."""
+
+    def construct_mapping(self, node, deep=False):
+        if not isinstance(node, yaml.MappingNode):
+            return super().construct_mapping(node, deep=deep)
+        seen = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping", node.start_mark,
+                    f"duplicate mapping key: {key}", key_node.start_mark,
+                )
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
+def parse_workflow(text):
+    return yaml.load(text, Loader=_StrictLoader)
 
 
 def load_workflow():
-    return yaml.load(WORKFLOW_PATH.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    return parse_workflow(WORKFLOW_PATH.read_text(encoding="utf-8"))
 
 
 def _norm(value):
@@ -60,25 +90,40 @@ def contract_errors(workflow):
     if errors:
         return errors
 
+    triggers = workflow.get("on")
+    if not isinstance(triggers, dict):
+        errors.append("workflow triggers are missing")
+    else:
+        if EXPECTED_CRON not in [
+            _norm(item.get("cron")) for item in triggers.get("schedule", [])
+            if isinstance(item, dict)
+        ]:
+            errors.append("expected heartbeat schedule trigger is missing")
+        dispatch = triggers.get("workflow_dispatch")
+        if not isinstance(dispatch, dict):
+            errors.append("workflow_dispatch trigger is missing")
+        else:
+            modes = dispatch.get("inputs", {}).get("run_mode", {}).get("options", [])
+            if "crawler-only" not in modes:
+                errors.append("crawler-only dispatch mode is missing")
+
     if workflow.get("permissions") != {"contents": "read"}:
         errors.append("top-level permissions are not least privilege")
     run, crawler = jobs["run"], jobs["issue-roadmap-crawler"]
+    for name, job in jobs.items():
+        for value in job.get("env", {}).values():
+            if "secrets." in str(value):
+                errors.append(f"job-level secret exposure in: {name}")
 
     if run.get("permissions") != RUN_PERMISSIONS:
         errors.append("run job permissions changed")
     if crawler.get("permissions") != CRAWLER_PERMISSIONS:
         errors.append("crawler permissions are not read-only")
 
-    if "inputs.run_mode != 'crawler-only'" not in _norm(run.get("if")):
-        errors.append("run job is not excluded for crawler-only")
-    crawler_if = _norm(crawler.get("if"))
-    for token in (
-        "github.event_name == 'schedule'",
-        "github.event_name == 'workflow_dispatch'",
-        "inputs.run_mode == 'crawler-only'",
-    ):
-        if token not in crawler_if:
-            errors.append(f"crawler trigger lost: {token}")
+    if _norm(run.get("if")) != EXPECTED_RUN_IF:
+        errors.append("run job crawler-only exclusion changed")
+    if _norm(crawler.get("if")) != EXPECTED_CRAWLER_IF:
+        errors.append("crawler trigger condition changed")
 
     if _norm(run.get("concurrency", {}).get("group")) != "autonomous-pipeline-research":
         errors.append("run concurrency group changed")
@@ -192,6 +237,27 @@ class AutonomousPipelineWorkflowContractTests(unittest.TestCase):
         step = _step(broken["jobs"]["run"], "Gated TCO pipeline")
         step["if"] = "github.event_name == 'schedule'"
         self.assertTrue(any("manual-dispatch guard lost" in error for error in contract_errors(broken)))
+
+    def test_duplicate_yaml_mapping_keys_are_rejected(self):
+        with self.assertRaises(yaml.constructor.ConstructorError):
+            parse_workflow(
+                "permissions:\n  contents: read\npermissions:\n  contents: write\n"
+            )
+
+    def test_detects_missing_schedule_trigger(self):
+        broken = deepcopy(self.workflow)
+        broken["on"]["schedule"] = []
+        self.assertTrue(any("heartbeat schedule" in error for error in contract_errors(broken)))
+
+    def test_detects_guard_that_never_runs(self):
+        broken = deepcopy(self.workflow)
+        broken["jobs"]["issue-roadmap-crawler"]["if"] = "github.event_name == 'never'"
+        self.assertTrue(any("crawler trigger condition" in error for error in contract_errors(broken)))
+
+    def test_detects_job_level_secret_exposure(self):
+        broken = deepcopy(self.workflow)
+        broken["jobs"]["run"]["env"] = {"GH_TOKEN": "${{ secrets.TOKEN }}"}
+        self.assertTrue(any("job-level secret exposure" in error for error in contract_errors(broken)))
 
     def test_detects_crawler_mutation_and_persisted_credentials(self):
         broken = deepcopy(self.workflow)
