@@ -151,5 +151,84 @@ class HiveEvidenceAdapterTests(unittest.TestCase):
         fetcher.assert_not_called()
 
 
+class HiveEvidenceBoundsRegressionTests(unittest.TestCase):
+    """Synthetic regressions for fail-closed evidence-bundle bounds (issue #119).
+
+    Production limits are enforced in retrieve_approved_evidence but were not
+    directly asserted. These tests add coverage only; they change no gate,
+    manifest, workflow or activation behavior.
+    """
+
+    @staticmethod
+    def _config_with_url_count(count):
+        approved_urls = [
+            {"url": f"https://oem.example/specs/model-{index}.html",
+             "variant_ids": ["synthetic.model-x"]}
+            for index in range(count)
+        ]
+        entry = dict(CONFIG["source_policies"][0], approved_urls=approved_urls)
+        return dict(CONFIG, source_policies=[entry])
+
+    @staticmethod
+    def _bounded_fetcher(url, **kwargs):
+        if url == ROBOTS_URL:
+            return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
+        return SimpleNamespace(
+            outcome="retrieved_unverified", body=b"data",
+            content_type="text/plain", retrieved_at="2026-11-11T12:00:00Z",
+        )
+
+    @staticmethod
+    def _extractor(text):
+        return lambda body, content_type, max_chars: SimpleNamespace(
+            text=text, locators=(), locator_texts={}
+        )
+
+    def test_more_than_ten_seeded_urls_is_rejected_before_any_fetch(self):
+        fetcher = Mock()
+        with self.assertRaisesRegex(EvidenceRetrievalRejected, "ten-source limit"):
+            retrieve_approved_evidence(
+                variant_id="synthetic.model-x",
+                config=self._config_with_url_count(11),
+                fetcher=fetcher,
+                today=date(2026, 11, 11),
+            )
+        fetcher.assert_not_called()
+
+    def test_total_bundle_character_cap_is_enforced(self):
+        with self.assertRaisesRegex(EvidenceRetrievalRejected, "character limits"):
+            retrieve_approved_evidence(
+                variant_id="synthetic.model-x",
+                config=self._config_with_url_count(4),
+                fetcher=self._bounded_fetcher,
+                extractor=self._extractor("x" * 20_000),
+                today=date(2026, 11, 11),
+            )
+
+    def test_missing_retrieval_timestamp_is_rejected_before_extraction(self):
+        def fetcher(url, **kwargs):
+            if url == ROBOTS_URL:
+                return SimpleNamespace(outcome="retrieved_unverified", body=b"User-agent: *\nAllow: /\n")
+            return SimpleNamespace(outcome="retrieved_unverified", body=b"data", content_type="text/plain")
+
+        extractor = Mock()
+        with self.assertRaisesRegex(EvidenceRetrievalRejected, "lacks transient body or timestamp"):
+            retrieve_approved_evidence(
+                variant_id="synthetic.model-x", config=CONFIG,
+                fetcher=fetcher, extractor=extractor,
+                today=date(2026, 11, 11),
+            )
+        extractor.assert_not_called()
+
+    def test_oversized_extracted_excerpt_is_rejected(self):
+        with self.assertRaisesRegex(EvidenceRetrievalRejected, "excerpt limit"):
+            retrieve_approved_evidence(
+                variant_id="synthetic.model-x", config=CONFIG,
+                fetcher=self._bounded_fetcher,
+                extractor=self._extractor("x" * 20_001),
+                today=date(2026, 11, 11),
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
