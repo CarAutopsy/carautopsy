@@ -18,6 +18,7 @@ from tco_publication import (  # noqa: E402
     build_attestation,
     canonical_bytes,
     catalog_digest,
+    country_pack_digest,
     classify_publication_response,
     draft_publication_proposal,
     is_duplicate_publication,
@@ -170,8 +171,10 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
     def test_no_duplicate_publication_when_inputs_unchanged(self):
         existing = {"results": PAYLOAD["results"], "attestation": ATTESTATION}
         self.assertTrue(is_duplicate_publication(existing, ATTESTATION))
-        drifted = dict(ATTESTATION, base_sha="c" * 40)
-        self.assertFalse(is_duplicate_publication(existing, drifted))
+        same_payload_new_head = dict(ATTESTATION, base_sha="c" * 40)
+        self.assertTrue(is_duplicate_publication(existing, same_payload_new_head))
+        changed_payload = dict(ATTESTATION, payload_sha256="f" * 64)
+        self.assertFalse(is_duplicate_publication(existing, changed_payload))
         self.assertFalse(is_duplicate_publication({}, ATTESTATION))
 
     def test_uncertain_response_never_authorizes_retry(self):
@@ -219,6 +222,31 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
         for marker in ("build_attestation(", "json.dumps(published", "assert_publication_gate("):
             with self.subTest(marker=marker):
                 self.assertLess(failure, source.index(marker))
+
+
+    def test_country_pack_rules_are_bound_into_attestation(self):
+        digest = country_pack_digest(ROOT)
+        self.assertEqual(len(digest), 64)
+        self.assertEqual(digest, country_pack_digest(ROOT))
+        attestation = dict(ATTESTATION, country_pack_sha256=digest)
+        self.assertEqual(attestation["country_pack_sha256"], digest)
+        with self.assertRaises(PublicationBlocked):
+            build_attestation(
+                payload=PAYLOAD, base_sha=SHA, catalog_sha256=DIGEST,
+                country_pack="AT@2026.1", engine_version="1.0.0",
+                country_pack_sha256="not-a-digest",
+            )
+
+    def test_runtime_uses_wired_helpers_and_standard_run_url(self):
+        source = (ROOT / "scripts" / "autonomous_pipeline.py").read_text(encoding="utf-8")
+        self.assertIn("is_duplicate_publication(old, attestation)", source)
+        self.assertIn("country_pack_sha256=country_pack_digest(ROOT)", source)
+        self.assertIn('os.environ.get("GITHUB_RUN_ID"', source)
+        self.assertNotIn("GITHUB_RUN_URL", source)
+        self.assertLess(
+            source.index("assert_only_publication_paths_changed(status_output)"),
+            source.index("json.dumps(published"),
+        )
 
 
 if __name__ == "__main__":

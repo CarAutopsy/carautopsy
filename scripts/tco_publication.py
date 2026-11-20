@@ -44,6 +44,16 @@ def catalog_digest(root: Path) -> str:
     return hasher.hexdigest()
 
 
+def country_pack_digest(root: Path, country: str = "AT") -> str:
+    """Hash the exact statutory input file; a rule edit changes this digest."""
+    if not re.fullmatch(r"[A-Z]{2}", country):
+        raise PublicationBlocked("country code must be two uppercase letters")
+    path = Path(root) / "country-packs" / country / "manifest.yaml"
+    if not path.is_file():
+        raise PublicationBlocked(f"country pack manifest is missing: {country}")
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def build_attestation(
     *,
     payload: dict[str, Any],
@@ -51,6 +61,7 @@ def build_attestation(
     catalog_sha256: str,
     country_pack: str,
     engine_version: str,
+    country_pack_sha256: str | None = None,
     run_url: str | None = None,
 ) -> dict[str, Any]:
     """Bind a payload to the exact inputs and run evidence that produced it."""
@@ -65,11 +76,16 @@ def build_attestation(
             raise PublicationBlocked(f"{label} is missing")
     if run_url is not None and (not isinstance(run_url, str) or len(run_url) > 300):
         raise PublicationBlocked("run_url must be a bounded string")
+    if country_pack_sha256 is not None and (
+        not isinstance(country_pack_sha256, str) or _SHA256.fullmatch(country_pack_sha256) is None
+    ):
+        raise PublicationBlocked("country_pack_sha256 must be a SHA-256 digest")
     return {
         "schema_version": 1,
         "base_sha": base_sha,
         "catalog_sha256": catalog_sha256,
         "country_pack": country_pack,
+        "country_pack_sha256": country_pack_sha256,
         "engine_version": engine_version,
         "run_url": run_url,
         "payload_sha256": hashlib.sha256(canonical_bytes(payload)).hexdigest(),
@@ -137,11 +153,15 @@ def assert_publication_gate(
 
 
 def is_duplicate_publication(existing: Any, attestation: dict[str, Any]) -> bool:
-    """True only when an existing artifact is bound to identical input evidence."""
+    """True when the same payload is already published, ignoring a new HEAD SHA.
+
+    Duplicate detection is based on the payload digest so that a new commit
+    which does not change the calculation is not treated as a new publication.
+    """
     return (
         isinstance(existing, dict)
         and isinstance(existing.get("attestation"), dict)
-        and existing["attestation"] == attestation
+        and existing["attestation"].get("payload_sha256") == attestation.get("payload_sha256")
         and isinstance(existing.get("results"), list)
     )
 

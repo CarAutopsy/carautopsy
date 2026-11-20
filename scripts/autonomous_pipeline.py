@@ -14,12 +14,29 @@ from hive_candidate import validate_evidence_bundle
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 from tco_publication import (
     PublicationBlocked,
+    assert_only_publication_paths_changed,
     assert_publication_gate,
     build_attestation,
     catalog_digest,
+    country_pack_digest,
     draft_publication_proposal,
+    is_duplicate_publication,
     PUBLICATION_PATH,
 )
+
+
+def publication_run_url():
+    """Build exact run evidence from standard GitHub Actions variables."""
+    server = os.environ.get("GITHUB_SERVER_URL", "")
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    if (
+        server.startswith("https://")
+        and re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
+        and run_id.isdigit()
+    ):
+        return f"{server.rstrip('/')}/{repository}/actions/runs/{run_id}"
+    return None
 
 ROOT = Path.cwd()
 
@@ -689,9 +706,16 @@ attestation = build_attestation(
     base_sha=base_sha,
     catalog_sha256=catalog_digest(ROOT),
     country_pack=payload["envelope"]["country_pack"],
+    country_pack_sha256=country_pack_digest(ROOT),
     engine_version=payload["envelope"]["engine_version"],
-    run_url=os.environ.get("GITHUB_RUN_URL") or None,
+    run_url=publication_run_url(),
 )
+
+status_output = subprocess.run(
+    ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+).stdout
+# Check stray files before ANY artifact write, not only before git writes.
+assert_only_publication_paths_changed(status_output)
 
 out = ROOT / PUBLICATION_PATH
 published = dict(payload)
@@ -700,10 +724,7 @@ changed = True
 if out.exists():
     try:
         old = json.loads(out.read_text(encoding="utf-8"))
-        changed = (
-            not publication_artifact_is_current(old, payload)
-            or old.get("attestation") != attestation
-        )
+        changed = not is_duplicate_publication(old, attestation) or not publication_artifact_is_current(old, payload)
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         changed = True
 
@@ -711,10 +732,6 @@ if changed:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(published, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Wrote {len(results)} autopsies with input attestation")
-
-status_output = subprocess.run(
-    ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
-).stdout
 try:
     written = json.loads(out.read_text(encoding="utf-8"))
     staged_paths = assert_publication_gate(
