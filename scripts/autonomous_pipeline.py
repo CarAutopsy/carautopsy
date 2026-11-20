@@ -12,6 +12,14 @@ from hive_source_policy import SourcePolicyDenied, load_policy, require_variant_
 from hive_evidence import EvidenceRetrievalRejected, retrieve_approved_evidence
 from hive_candidate import validate_evidence_bundle
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
+from tco_publication import (
+    PublicationBlocked,
+    assert_publication_gate,
+    build_attestation,
+    catalog_digest,
+    draft_publication_proposal,
+    PUBLICATION_PATH,
+)
 
 ROOT = Path.cwd()
 
@@ -663,34 +671,70 @@ payload = {
     },
 }
 
-out = ROOT / "apps" / "web" / "public" / "data" / "autopsies.json"
+# --- Fail-closed TCO publication (issue #129) --------------------------------
+# Audit failures stop the run before ANY artifact write or git operation.
+if audit_failures_this_run:
+    print(
+        f"Pipeline rejected {audit_failures_this_run} vehicle record(s); "
+        "publication blocked before writes.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+base_sha = subprocess.run(
+    ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+).stdout.strip()
+attestation = build_attestation(
+    payload=payload,
+    base_sha=base_sha,
+    catalog_sha256=catalog_digest(ROOT),
+    country_pack=payload["envelope"]["country_pack"],
+    engine_version=payload["envelope"]["engine_version"],
+    run_url=os.environ.get("GITHUB_RUN_URL") or None,
+)
+
+out = ROOT / PUBLICATION_PATH
+published = dict(payload)
+published["attestation"] = attestation
 changed = True
 if out.exists():
     try:
         old = json.loads(out.read_text(encoding="utf-8"))
-        changed = not publication_artifact_is_current(old, payload)
+        changed = (
+            not publication_artifact_is_current(old, payload)
+            or old.get("attestation") != attestation
+        )
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         changed = True
 
 if changed:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Wrote {len(results)} autopsies")
+    out.write_text(json.dumps(published, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Wrote {len(results)} autopsies with input attestation")
 
-# Include queue/failed-ledger updates in the commit decision, not only catalog output.
-if not subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True).stdout.strip():
-    print("No changes. Exiting.")
-    if audit_failures_this_run:
-        print(f"Pipeline rejected {audit_failures_this_run} vehicle record(s).")
-        sys.exit(1)
+status_output = subprocess.run(
+    ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+).stdout
+try:
+    written = json.loads(out.read_text(encoding="utf-8"))
+    staged_paths = assert_publication_gate(
+        audit_failures=audit_failures_this_run,
+        status_output=status_output,
+        attestation=written.get("attestation"),
+        expected_attestation=attestation,
+    )
+except (PublicationBlocked, OSError, ValueError, TypeError) as exc:
+    print(f"TCO publication blocked: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+if not staged_paths:
+    print("No publication changes. Exiting.")
     sys.exit(0)
 
-run(["git", "config", "user.name", "hive-bot"])
-run(["git", "config", "user.email", "hive-bot@users.noreply.github.com"])
-run(["git", "add", "-A"])
-run(["git", "commit", "-m", f"chore(autonomous): {msg} | {len(results)} autopsies"])
-run(["git", "push", "origin", "main"])
-print("Committed and pushed to main.")
-if audit_failures_this_run:
-    print(f"Pipeline rejected {audit_failures_this_run} vehicle record(s); marking workflow failed.")
-    sys.exit(1)
+# Direct-to-main publication is disabled pending a separate owner decision.
+# This path produces an owner-gated proposal only; it never stages broadly,
+# commits, pushes, or creates a PR.
+proposal = draft_publication_proposal(base_sha=base_sha, attestation=attestation)
+print(json.dumps(proposal, indent=2, sort_keys=True))
+print("Draft-PR publication requires owner approval; no commit or push was performed.")
+sys.exit(0)
