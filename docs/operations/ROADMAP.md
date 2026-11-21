@@ -89,3 +89,11 @@ Issue #44 (prompt builders and deterministic candidate gates) and #45 (no-retrie
 ## Change control
 
 Update this roadmap when an issue changes state, a PR merges, a dependency is discovered or an acceptance criterion changes. Record exact commit SHAs for validation and review claims. Never mark an audit complete based only on documentation, mocked tests or AI-generated output.
+
+## Offline vehicle catalog quality milestone
+
+- Implemented `scripts/catalog_quality.py` as an additive quality layer over the existing `validate_catalog.py` JSON-schema gate: canonical make/model/generation normalization, duplicate/conflict detection, evidence confidence scoring, missing-data and completeness metrics, source freshness/stale detection, deterministic refresh planning and a machine-readable report. [STATIC_READ]
+- CI integration: `.github/workflows/validate-catalog.yml` now builds `reports/catalog-quality.json` and uploads it as an artifact. [STATIC_READ]
+- Measured baseline on main `4e4398f`: 6 variants, 0 structural errors, 0 blocking findings, overall completeness 0.3277, 0 complete variants, 6 refresh-plan entries. A clean synthetic fixture reaches completeness 1.0 with 0 blocking findings. These are tool-quality metrics, not verified real-world vehicle data. [TRACE_EXECUTION] [TEST_OBSERVED]
+- Safety invariant: `HIVE_RESEARCH_PAUSED` stays active, `VERIFIED_RETRIEVAL_AVAILABLE` stays `False`, no live retrieval, paid call, secret change, catalog mutation, issue creation or merge is authorized by this milestone. [OWNER_DECISION]
+
