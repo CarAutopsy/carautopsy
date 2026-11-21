@@ -1,0 +1,154 @@
+{
+  "catalog_eligible": true,
+  "catalog_written": true,
+  "derived_fields": {
+    "fuel_consumption_l_per_100km": {
+      "conversion_formula": "CO2_g_per_km / 23.2 = L_per_100km",
+      "derived": true,
+      "derived_from": "co2_nedc_wltp",
+      "measured": false,
+      "value": 6.121
+    }
+  },
+  "dimensions": {
+    "max_permissible_mass_kg": 1302.0,
+    "own_weight_kg": 1442.0
+  },
+  "emissions": {
+    "co2_wltp_gpkm": 142.0
+  },
+  "extensions": {
+    "fuel_consumption_l_100km": {
+      "conversion_formula": "CO2_g_per_km / 23.2 = L_per_100km",
+      "derived": true,
+      "derived_from": "co2_nedc_wltp",
+      "measured": false,
+      "real_world": 6.121
+    }
+  },
+  "gate": {
+    "findings": [],
+    "passed": true
+  },
+  "identity": {
+    "generation": "",
+    "make": "Skoda",
+    "model": "Octavia",
+    "powertrain": "ice_petrol",
+    "resolution": {
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "matched_fields": [
+        "make",
+        "model",
+        "variant",
+        "powertrain",
+        "model_year",
+        "market"
+      ],
+      "method": "curated_mapping",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+    },
+    "trim": "",
+    "variant_name": "Octavia",
+    "vehicle_class": "M1"
+  },
+  "identity_quality": "identity_resolved",
+  "offers": [
+    {
+      "currency": "EUR",
+      "license": "OEM price list, public archived snapshot; terms per source publisher",
+      "market": "AT",
+      "price_date": "2018-11-30",
+      "price_pending": true,
+      "price_source": null,
+      "price_source_url": null,
+      "purchase_price_excl_vat_eur": 18858.33,
+      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
+      "uncertainty": "none"
+    }
+  ],
+  "performance": {
+    "combustion_engine_power_w": 110000.0
+  },
+  "price_pending": false,
+  "price_verification": {
+    "catalog_eligible": true,
+    "confidence": "low",
+    "currency": "EUR",
+    "license": "OEM price list, public archived snapshot; terms per source publisher",
+    "market": "AT",
+    "price_date": "2018-11-30",
+    "price_match": {
+      "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,– 3 (4) 23.470,– 4 (5)",
+      "matched_fields": [
+        "consumer_model",
+        "market",
+        "model_year_window"
+      ],
+      "matched_model": "octavia",
+      "uncertainty": "model_level_from_price; not variant-specific"
+    },
+    "price_precision": "model_level",
+    "purchase_price_excl_vat_eur": 18858.33,
+    "purchase_price_incl_vat_eur": 22630.0,
+    "retrieved_at": "2026-11-21T17:31:59+00:00",
+    "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
+    "tco_ready": false
+  },
+  "provenance": {
+    "confidence": "low",
+    "sources": [
+      {
+        "license": "CC BY 4.0",
+        "record_id": "2781180",
+        "source_id": "eea-co2-mrv",
+        "url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+      }
+    ]
+  },
+  "registration": {
+    "first_registration_date": "2018-01-01"
+  },
+  "resolved_identity": {
+    "confidence": "high",
+    "consumer_make": "Skoda",
+    "consumer_model": "Octavia",
+    "cross_checks": [
+      {
+        "error": null,
+        "matched": true,
+        "matched_url": "https://www.skoda.at/octavia/octavia",
+        "retrieved_at": "2026-11-21T17:14:10+00:00",
+        "robots_checked": true,
+        "source": "https://www.skoda.at/sitemap.xml"
+      }
+    ],
+    "generation": null,
+    "license": "CC BY 4.0 (EEA type-approval microdata)",
+    "retrieved_at": "2026-11-21T17:14:08+00:00",
+    "reviewed_by": "automated-harvest-v1 (pending owner review)",
+    "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+    "trim": null
+  },
+  "schema_version": "1.0.0",
+  "source_fields": {
+    "co2_basis": "wltp",
+    "co2_g_per_km": 142.0,
+    "fuel_code": "PETROL",
+    "make": "SKODA",
+    "mass_kg": 1302.0,
+    "model": "SKODA",
+    "power_kw": 110.0,
+    "powertrain": "ice_petrol",
+    "record_id": "2781180",
+    "variant": "NFM6FM62S0227CPSTVLN1C7B",
+    "vehicle_class": "M1"
+  },
+  "status": "proposed",
+  "statutory": {},
+  "tco_ready": false,
+  "variant_id": "eea-2781180-skoda-skoda"
+}
