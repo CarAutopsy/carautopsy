@@ -18,8 +18,10 @@ from engineering_task import (  # noqa: E402
     classify_failure,
     draft_pull_request_proposal,
     next_retry_count,
+    normalize_allowed_path,
     parse_audit_quorum,
     reserve_task,
+    snapshot_digest,
     snapshot_manifest,
     task_outcome,
     validate_task_contract,
@@ -30,7 +32,7 @@ BASE = {
     "task_id": "eng-001",
     "repository": "CarAutopsy/carautopsy",
     "base_sha": "a" * 40,
-    "allowed_paths": ["scripts/example.py"],
+    "allowed_paths": ["tests/fixtures/example.json"],
     "goal": "Make a bounded improvement",
     "acceptance_criteria": ["tests pass"],
     "max_patch_bytes": 1000,
@@ -42,11 +44,25 @@ BASE = {
 }
 
 
+BASE_SHA = "a" * 40
+MANIFEST = {"tests/fixtures/example.json": "c" * 64}
+BUNDLE_DIGEST = snapshot_digest(MANIFEST)
+
+
+def bound_pass(vendor):
+    return {
+        "vendor": vendor,
+        "verdict": "PASS",
+        "bundle_sha256": BUNDLE_DIGEST,
+        "base_sha": BASE_SHA,
+    }
+
+
 class EngineeringTaskFoundationTests(unittest.TestCase):
     def test_valid_contract_is_normalized(self):
         contract = validate_task_contract(BASE)
         self.assertEqual(contract["task_id"], "eng-001")
-        self.assertEqual(contract["allowed_paths"], ["scripts/example.py"])
+        self.assertEqual(contract["allowed_paths"], ["tests/fixtures/example.json"])
         self.assertTrue(contract["requires_owner_approval"])
 
     def test_malformed_or_unsafe_contracts_fail_closed(self):
@@ -57,7 +73,26 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
             {"allowed_paths": []},
             {"allowed_paths": ["../secret"]},
             {"allowed_paths": ["/etc/passwd"]},
-            {"allowed_paths": ["scripts/example.py", "scripts/example.py"]},
+            {"allowed_paths": ["tests/fixtures/example.json", "tests/fixtures/example.json"]},
+            {"allowed_paths": ["data-connectors/approved-source-hosts.json"]},
+            {"allowed_paths": [".github/workflows/autonomous-pipeline.yml"]},
+            {"allowed_paths": ["scripts/autonomous_pipeline.py"]},
+            {"allowed_paths": ["scripts/hive_research_gate.py"]},
+            {"allowed_paths": ["scripts/hive_outcomes.py"]},
+            {"allowed_paths": ["scripts/validate_tco_readiness.py"]},
+            {"allowed_paths": ["scripts/tco_engine.py"]},
+            {"allowed_paths": ["tasks/queue.json"]},
+            {"allowed_paths": ["country-packs/AT/manifest.yaml"]},
+            {"allowed_paths": [".github/dependabot.yml"]},
+            {"allowed_paths": ["schemas/other.schema.json"]},
+            {"allowed_paths": ["./tests/fixtures/example.json"]},
+            {"allowed_paths": ["scripts//example.py"]},
+            {"allowed_paths": ["Scripts/Hive_Audit.py"]},
+            {"allowed_paths": ["scripts/provider_retry.py"]},
+            {"allowed_paths": ["scripts/hive_state.py"]},
+            {"allowed_paths": ["apps/web/public/data/autopsies.json"]},
+            {"allowed_paths": ["apps/web/src/example.ts", "tests/fixtures/example.json",
+                               "scripts/example.py"]},
             {"goal": "  "},
             {"acceptance_criteria": []},
             {"max_spend_units": 1},
@@ -84,40 +119,68 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
     def test_snapshot_manifest_is_deterministic_and_missing_files_fail(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "scripts").mkdir()
-            (root / "scripts" / "example.py").write_text("print(1)\n", encoding="utf-8")
-            manifest = snapshot_manifest(root, ["scripts/example.py"])
-            self.assertEqual(manifest, snapshot_manifest(root, ["scripts/example.py"]))
-            self.assertEqual(len(manifest["scripts/example.py"]), 64)
+            (root / "tests" / "fixtures").mkdir(parents=True)
+            (root / "tests" / "fixtures" / "example.json").write_text("{}\n", encoding="utf-8")
+            manifest = snapshot_manifest(root, ["tests/fixtures/example.json"])
+            self.assertEqual(manifest, snapshot_manifest(root, ["tests/fixtures/example.json"]))
+            self.assertEqual(len(manifest["tests/fixtures/example.json"]), 64)
             with self.assertRaises(TaskContractError):
-                snapshot_manifest(root, ["scripts/missing.py"])
+                snapshot_manifest(root, ["tests/fixtures/missing.json"])
+
+    def test_path_normalization_rejects_ambiguous_spellings(self):
+        self.assertEqual(normalize_allowed_path("tests/fixtures/example.json"), "tests/fixtures/example.json")
+        for bad in ("./tests/fixtures/example.json", "tests//fixtures/example.json",
+                    "tests/./fixtures/example.json", "tests/fixtures/../x",
+                    "../tests/fixtures/example.json", "/tests/fixtures/example.json",
+                    "tests/fixtures/example.json.", "", None):
+            with self.subTest(bad=bad):
+                with self.assertRaises(TaskContractError):
+                    normalize_allowed_path(bad)
+
+    def test_bundle_builder_requires_matching_audit_binding(self):
+        contract = validate_task_contract(BASE)
+        good = parse_audit_quorum(
+            [bound_pass("vendor-a"), bound_pass("vendor-b")],
+            bundle_sha256=BUNDLE_DIGEST, base_sha=BASE_SHA,
+        )
+        build_verification_bundle(contract, MANIFEST, good)
+        wrong_digest = dict(good, bundle_sha256="f" * 64)
+        with self.assertRaisesRegex(TaskContractError, "snapshot digest"):
+            build_verification_bundle(contract, MANIFEST, wrong_digest)
+        wrong_sha = dict(good, base_sha="b" * 40)
+        with self.assertRaisesRegex(TaskContractError, "base SHA"):
+            build_verification_bundle(contract, MANIFEST, wrong_sha)
+        not_accepted = dict(good, accepted=False)
+        with self.assertRaisesRegex(TaskContractError, "must be accepted"):
+            build_verification_bundle(contract, MANIFEST, not_accepted)
 
     def test_patch_limits_enforce_paths_count_and_bytes(self):
         contract = validate_task_contract(dict(BASE, max_patch_bytes=100, max_files_touched=1))
-        assert_patch_within_limits(contract, {"scripts/example.py": 100})
+        assert_patch_within_limits(contract, {"tests/fixtures/example.json": 100})
         for patch in (
             {"tasks/queue.json": 1},
-            {"scripts/example.py": 101},
-            {"scripts/example.py": 1, "scripts/other.py": 1},
+            {"tests/fixtures/example.json": 101},
+            {"tests/fixtures/example.json": 1, "scripts/other.py": 1},
         ):
             with self.subTest(patch=patch):
                 with self.assertRaises(TaskContractError):
                     assert_patch_within_limits(contract, patch)
 
-    def test_audit_quorum_requires_two_distinct_exact_passes(self):
-        good = [
-            {"vendor": "vendor-a", "verdict": "PASS"},
-            {"vendor": "vendor-b", "verdict": "PASS"},
-        ]
-        self.assertTrue(parse_audit_quorum(good)["accepted"])
+    def test_audit_quorum_requires_two_distinct_exact_bound_passes(self):
+        good = [bound_pass("vendor-a"), bound_pass("vendor-b")]
+        kwargs = {"bundle_sha256": BUNDLE_DIGEST, "base_sha": BASE_SHA}
+        self.assertTrue(parse_audit_quorum(good, **kwargs)["accepted"])
+        case_variant = [bound_pass("OpenAI"), bound_pass("openai")]
+        self.assertFalse(parse_audit_quorum(case_variant, **kwargs)["accepted"])
         for audits in (
             [good[0]],
             [good[0], dict(good[0])],
-            [good[0], {"vendor": "vendor-b", "verdict": "PASS with reservations"}],
-            [good[0], {"vendor": "vendor-b", "verdict": "PASS\nFAIL: bad"}],
+            [good[0], dict(bound_pass("vendor-b"), verdict="PASS with reservations")],
+            [good[0], dict(bound_pass("vendor-b"), bundle_sha256="d" * 64)],
+            [good[0], dict(bound_pass("vendor-b"), base_sha="b" * 40)],
         ):
             with self.subTest(audits=audits):
-                self.assertFalse(parse_audit_quorum(audits)["accepted"])
+                self.assertFalse(parse_audit_quorum(audits, **kwargs)["accepted"])
 
     def test_retry_count_is_bounded_and_invalid_inputs_fail_closed(self):
         contract = validate_task_contract(BASE)
@@ -130,11 +193,11 @@ class EngineeringTaskFoundationTests(unittest.TestCase):
 
     def test_verification_bundle_is_read_only_and_owner_gated(self):
         contract = validate_task_contract(BASE)
-        audit = parse_audit_quorum([
-            {"vendor": "vendor-a", "verdict": "PASS"},
-            {"vendor": "vendor-b", "verdict": "PASS"},
-        ])
-        manifest = {"scripts/example.py": "c" * 64}
+        audit = parse_audit_quorum(
+            [bound_pass("vendor-a"), bound_pass("vendor-b")],
+            bundle_sha256=BUNDLE_DIGEST, base_sha=BASE_SHA,
+        )
+        manifest = MANIFEST
         first = build_verification_bundle(contract, manifest, audit, owner_approved=True)
         self.assertEqual(first, build_verification_bundle(contract, manifest, audit, owner_approved=True))
         self.assertFalse(first["execution_enabled"])
@@ -160,29 +223,32 @@ class EngineeringTaskLifecycleTests(unittest.TestCase):
     def test_symlink_and_escape_rejection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "scripts").mkdir()
-            (root / "scripts" / "example.py").write_text("x", encoding="utf-8")
-            assert_no_symlinks(root, ["scripts/example.py"])
+            (root / "tests" / "fixtures").mkdir(parents=True)
+            (root / "tests" / "fixtures" / "example.json").write_text("{}", encoding="utf-8")
+            assert_no_symlinks(root, ["tests/fixtures/example.json"])
             link = root / "linked"
             try:
-                link.symlink_to(root / "scripts", target_is_directory=True)
+                link.symlink_to(root / "tests", target_is_directory=True)
             except (OSError, NotImplementedError):
                 self.skipTest("symlinks are unavailable on this host")
             with self.assertRaises(TaskContractError):
                 assert_no_symlinks(root, ["linked/example.py"])
+            with self.assertRaises(TaskContractError):
+                snapshot_manifest(root, ["linked/example.py"])
 
-    def test_failure_classification_uses_allowlisted_codes(self):
-        cases = (
-            ("provider", "connection timeout", "provider_transport_failure"),
-            ("audit", "invalid verdict format", "response_format_failure"),
-            ("evidence", "source provenance missing", "provenance_rejection"),
-            ("candidate", "power mismatch", "vehicle_quality_rejection"),
-            ("audit", "", "response_format_failure"),
-        )
-        for stage, reason, expected in cases:
-            with self.subTest(reason=reason):
-                self.assertEqual(classify_failure(stage, reason), expected)
-        self.assertEqual(classify_failure("", "anything"), "manual_review_required")
+    def test_failure_classification_uses_structured_codes_only(self):
+        for code in (
+            "provider_transport_failure", "response_format_failure",
+            "provenance_rejection", "vehicle_quality_rejection",
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(classify_failure(code), code)
+        for untrusted in (
+            "connection timeout", "invalid verdict format", "source provenance missing",
+            "", None, 123, "audit_success",
+        ):
+            with self.subTest(untrusted=untrusted):
+                self.assertEqual(classify_failure(untrusted), "manual_review_required")
 
     def test_task_outcome_is_idempotent_and_bounded(self):
         reservation = reserve_task(self.contract, None)
@@ -192,6 +258,8 @@ class EngineeringTaskLifecycleTests(unittest.TestCase):
         self.assertFalse(first["publication_enabled"])
         with self.assertRaises(TaskContractError):
             task_outcome(reservation, bundle, "arbitrary_code")
+        with self.assertRaisesRegex(TaskContractError, "bundle SHA-256"):
+            task_outcome(reservation, {}, "provider_transport_failure")
 
     def test_draft_proposal_is_owner_gated_and_immutable(self):
         bundle = {"bundle_sha256": "e" * 64}
