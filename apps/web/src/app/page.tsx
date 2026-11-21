@@ -1,45 +1,7 @@
-import { promises as fs } from "fs";
-import path from "path";
-
-type Result = {
-  variant_id: string;
-  make: string | null;
-  model: string | null;
-  variant_name: string | null;
-  powertrain: string;
-  power_kw: number;
-  co2_gkm: number | null;
-  list_price_eur: number | null;
-  nova_eur: number;
-  motor_tax_monthly_eur: number;
-  energy_5y_eur: number;
-  maintenance_5y_eur: number;
-  insurance_5y_eur: number;
-  tyres_5y_eur: number;
-  inspection_5y_eur: number;
-  total_5y_eur: number;
-  monthly_eur: number;
-  data_confidence: string | null;
-};
-
-type Envelope = {
-  engine_version?: unknown;
-  country_pack?: unknown;
-  country_pack_status?: unknown;
-  generated_utc?: unknown;
-  note?: unknown;
-};
-
-type Payload = {
-  results: Result[];
-  summary: { variants: number; bev_avg_monthly_eur: number | null; ice_avg_monthly_eur: number | null };
-  envelope: Envelope;
-};
-
-const eur = (n: number | null | undefined) =>
-  n === null || n === undefined
-    ? "—"
-    : "€" + n.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import Explorer from "../components/Explorer";
+import type { Payload, Result } from "../lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -219,100 +181,61 @@ export default async function Home() {
   const publicationIssues = data ? await getPublicationIssues(data) : [];
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6 md:p-12">
-      <header className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">CarAutopsy</h1>
-        <p className="text-neutral-400 mt-2 max-w-2xl">
-          Dissect your car&apos;s true ownership cost — calculated for Austria from statutory rules, not vibes.
-        </p>
+    <div className="min-h-screen">
+      <header className="ca-hero-band">
+        <div className="mx-auto max-w-6xl px-6 md:px-10 py-14 md:py-20">
+          <p className="ca-eyebrow">Austria · statutory TCO</p>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mt-3">
+            Dissect your car&apos;s <span className="ca-accent">true cost</span>.
+          </h1>
+          <p className="text-neutral-300 mt-4 max-w-2xl text-base md:text-lg">
+            Transparent, attested ownership costs built from statutory tax rules — not estimates dressed up as facts.
+          </p>
+        </div>
       </header>
 
-      {!data ? (
-        <section role="alert" className="border border-amber-700/60 bg-amber-950/30 rounded-lg p-5 max-w-3xl">
-          <h2 className="text-lg font-semibold text-amber-200">TCO figures unavailable</h2>
-          <p className="text-sm text-neutral-300 mt-2">
-            {loadError
-              ? "The published data file is missing or invalid. No cost figures are displayed."
-              : "No autopsy data has been published yet. No cost figures are displayed."}
-          </p>
-        </section>
-      ) : publicationIssues.length > 0 ? (
-        <section role="alert" className="border border-amber-700/60 bg-amber-950/30 rounded-lg p-5 max-w-3xl">
-          <h2 className="text-lg font-semibold text-amber-200">Published TCO data is stale or not approved</h2>
-          <p className="text-sm text-neutral-300 mt-2">
-            Saved figures are hidden until the artifact matches the current engine and country pack, the tax pack is legally verified, and the data is fresh.
-          </p>
-          <ul className="list-disc pl-5 mt-3 space-y-1 text-sm text-amber-100">
-            {publicationIssues.map((issue) => <li key={issue}>{issue}</li>)}
-          </ul>
-        </section>
-      ) : (
-        <>
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-            <div className="border border-neutral-800 rounded-lg p-4">
-              <p className="text-neutral-500 text-sm">Variants dissected</p>
-              <p className="text-2xl font-semibold">{data.summary.variants}</p>
-            </div>
-            <div className="border border-neutral-800 rounded-lg p-4">
-              <p className="text-neutral-500 text-sm">BEV avg / month (5y)</p>
-              <p className="text-2xl font-semibold text-emerald-400">{eur(data.summary.bev_avg_monthly_eur)}</p>
-            </div>
-            <div className="border border-neutral-800 rounded-lg p-4">
-              <p className="text-neutral-500 text-sm">Non-BEV avg / month (5y)</p>
-              <p className="text-2xl font-semibold text-red-400">{eur(data.summary.ice_avg_monthly_eur)}</p>
-            </div>
-          </section>
-
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {data.results.map((r) => (
-              <article key={r.variant_id} className="border border-neutral-800 rounded-lg p-6 bg-neutral-900/40">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-semibold">
-                      {r.make} {r.model} <span className="text-neutral-500">{r.variant_name}</span>
-                    </h2>
-                    <p className="text-sm text-neutral-500">{r.variant_id}</p>
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded ${
-                      r.powertrain === "bev" ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"
-                    }`}
-                  >
-                    {r.powertrain}
-                  </span>
-                </div>
-
-                <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  <div className="flex justify-between"><dt className="text-neutral-500">NoVA (once)</dt><dd>{eur(r.nova_eur)}</dd></div>
-                  <div className="flex justify-between"><dt className="text-neutral-500">Motor tax / mo</dt><dd>{eur(r.motor_tax_monthly_eur)}</dd></div>
-                  <div className="flex justify-between"><dt className="text-neutral-500">Energy 5y</dt><dd>{eur(r.energy_5y_eur)}</dd></div>
-                  <div className="flex justify-between"><dt className="text-neutral-500">Maintenance 5y</dt><dd>{eur(r.maintenance_5y_eur)}</dd></div>
-                  <div className="flex justify-between"><dt className="text-neutral-500">Insurance 5y</dt><dd>{eur(r.insurance_5y_eur)}</dd></div>
-                  <div className="flex justify-between"><dt className="text-neutral-500">Tyres + §57a 5y</dt><dd>{eur(r.tyres_5y_eur + r.inspection_5y_eur)}</dd></div>
-                </dl>
-
-                <div className="mt-4 pt-4 border-t border-neutral-800 flex items-end justify-between">
-                  <div>
-                    <p className="text-neutral-500 text-sm">5-year cost (excl. depreciation)</p>
-                    <p className="text-3xl font-bold">{eur(r.total_5y_eur)}</p>
-                  </div>
-                  <p className="text-neutral-400 text-sm">{eur(r.monthly_eur)} / month</p>
-                </div>
-                <p className="mt-2 text-xs text-neutral-600">
-                  data confidence: {r.data_confidence ?? "unknown"} · {r.power_kw} kW · CO₂ {r.co2_gkm ?? "—"} g/km
-                </p>
-              </article>
-            ))}
-          </section>
-
-          <footer className="mt-12 text-xs text-neutral-600 max-w-3xl">
-            <p>
-              Engine {String(data.envelope.engine_version)} · country pack {String(data.envelope.country_pack)} ·
-              generated {String(data.envelope.generated_utc)} · {String(data.envelope.note ?? "")}
+      <main className="mx-auto max-w-6xl px-6 md:px-10 py-10 md:py-14">
+        {!data ? (
+          <section role="alert" className="ca-card ca-alert p-6 max-w-3xl">
+            <p className="ca-eyebrow">Publication held</p>
+            <h2 className="text-xl font-semibold text-amber-200 mt-2">TCO figures unavailable</h2>
+            <p className="text-sm text-neutral-300 mt-3">
+              {loadError
+                ? "The published data file is missing or invalid. No cost figures are displayed."
+                : "No autopsy data has been published yet. No cost figures are displayed."}
             </p>
-          </footer>
-        </>
-      )}
-    </main>
+          </section>
+        ) : publicationIssues.length > 0 ? (
+          <section role="alert" className="ca-card ca-alert p-6 md:p-8 max-w-4xl">
+            <p className="ca-eyebrow">Fail-closed publication guard</p>
+            <h2 className="text-2xl font-semibold text-amber-200 mt-2">
+              Figures withheld until the attestation matches
+            </h2>
+            <p className="text-sm text-neutral-300 mt-3 max-w-2xl">
+              Saved figures are hidden until the artifact matches the current engine and country pack, the tax
+              pack is legally verified, and the data is fresh. This is intentional: stale or unapproved numbers
+              are never shown as current.
+            </p>
+            <ul className="list-disc pl-5 mt-4 space-y-2 text-sm text-amber-100">
+              {publicationIssues.map((issue) => <li key={issue}>{issue}</li>)}
+            </ul>
+            <p className="text-xs text-neutral-500 mt-5">
+              Saved artifact: engine {String(data.envelope.engine_version ?? "—")} · pack{" "}
+              {String(data.envelope.country_pack ?? "—")} · generated{" "}
+              {String(data.envelope.generated_utc ?? "—")}
+            </p>
+          </section>
+        ) : (
+          <Explorer results={data.results} summary={data.summary} envelope={data.envelope} />
+        )}
+      </main>
+
+      <footer className="border-t border-neutral-800/80 mt-10">
+        <div className="mx-auto max-w-6xl px-6 md:px-10 py-8 text-xs text-neutral-500 flex flex-wrap gap-x-6 gap-y-2">
+          <span>CarAutopsy · transparent ownership economics</span>
+          <span>No live vehicle data is collected by this page.</span>
+        </div>
+      </footer>
+    </div>
   );
 }

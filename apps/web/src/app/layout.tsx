@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CarAutopsy — True Cost of Ownership",
-  description: "Understand the true cost of owning a vehicle in Austria.",
+  title: "CarAutopsy — True Cost of Ownership, Austria",
+  description:
+    "Transparent, attested total cost of ownership for vehicles in Austria, calculated from statutory tax rules.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
