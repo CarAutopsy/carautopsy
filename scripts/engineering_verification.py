@@ -51,7 +51,6 @@ CHECK_REGISTRY: dict[str, tuple[str, ...]] = {
     "unit_tests": ("python", "-m", "unittest", "discover", "-s", "tests", "-v"),
     "catalog_validation": ("python", "scripts/validate_catalog.py"),
     "repo_audit": ("python", "scripts/repo_audit.py"),
-    "python_probe": ("python", "--version"),
 }
 DEFAULT_CHECKS = (
     "compile_sources",
@@ -108,6 +107,27 @@ def _default_runner(argv: list[str], *, cwd: str, env: dict[str, str], timeout: 
     except OSError:
         return _Completed(EXECUTION_ERROR_EXIT_CODE, b"", b"", execution_error=True)
     return _Completed(completed.returncode, completed.stdout, completed.stderr)
+
+
+def _default_status_probe(root: Path) -> str:
+    """Return read-only ``git status --porcelain`` output for the checkout."""
+    try:
+        completed = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=str(root),
+            env=scrub_environment(),
+            capture_output=True,
+            timeout=60,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise VerificationError("could not inspect the working tree") from exc
+    if completed.returncode != 0:
+        raise VerificationError("working tree inspection failed")
+    text, truncated, _ = _bounded_text(completed.stdout)
+    if truncated:
+        raise VerificationError("working tree status exceeds the bounded size")
+    return text
 
 
 def assert_offline_command_registry() -> None:
@@ -223,6 +243,7 @@ def run_verification(
     root: Path,
     check_names: Any = DEFAULT_CHECKS,
     runner: Callable[..., Any] | None = None,
+    status_probe: Callable[[Path], str] | None = None,
 ) -> dict[str, Any]:
     """Run offline checks and return a deterministic evidence artifact.
 
@@ -258,6 +279,18 @@ def run_verification(
         raise VerificationError("snapshot cannot be verified before checks") from exc
     if current != manifest:
         raise VerificationError("snapshot manifest does not match the checkout")
+
+    inspect_tree = status_probe if status_probe is not None else _default_status_probe
+    try:
+        tree_before = inspect_tree(checkout)
+    except VerificationError:
+        raise
+    except Exception as exc:
+        raise VerificationError("working tree probe failed") from exc
+    if not isinstance(tree_before, str):
+        raise VerificationError("working tree probe must return text")
+    if tree_before.strip():
+        raise VerificationError("working tree is not clean before verification")
 
     run = runner if runner is not None else _default_runner
     records: list[dict[str, Any]] = []
@@ -312,6 +345,14 @@ def run_verification(
             raise VerificationError(f"snapshot cannot be re-verified after {name}") from exc
         if after != manifest:
             raise VerificationError(f"snapshot changed during verification check: {name}")
+        try:
+            tree_after = inspect_tree(checkout)
+        except Exception as exc:
+            raise VerificationError(f"working tree probe failed after {name}") from exc
+        if not isinstance(tree_after, str):
+            raise VerificationError("working tree probe must return text")
+        if tree_after != tree_before:
+            raise VerificationError(f"working tree changed during verification check: {name}")
         records.append(record)
         all_passed = all_passed and passed
 
@@ -320,6 +361,9 @@ def run_verification(
         "task_id": normalized["task_id"],
         "base_sha": normalized["base_sha"],
         "snapshot_digest": snapshot_digest(manifest),
+        "snapshot_intact_scope": "allowed_paths",
+        "working_tree_intact": True,
+        "working_tree_scope": "entire checkout (git status --porcelain)",
         "patch_digest": patch_digest,
         "checks": records,
         "passed": all_passed,
@@ -361,6 +405,10 @@ def assert_offline_evidence(artifact: Any) -> None:
         raise VerificationError("runtime isolation must not be claimed by this runner")
     if artifact.get("execution_enabled") is not False or artifact.get("draft_pr_created") is not False:
         raise VerificationError("verification evidence must remain non-executing")
+    if artifact.get("working_tree_intact") is not True:
+        raise VerificationError("working tree integrity must be asserted by the runner")
+    if artifact.get("snapshot_intact_scope") != "allowed_paths":
+        raise VerificationError("snapshot integrity scope must be explicit and bounded")
 
 
 def correction_feedback(artifact: dict[str, Any], *, max_chars: int = MAX_EXCERPT_CHARS) -> str:

@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +30,9 @@ from engineering_verification import (  # noqa: E402
 
 
 TARGET = "tests/fixtures/example.json"
+# Test-only check: deliberately absent from the production CHECK_REGISTRY so a
+# production caller cannot select a no-op check and get passed=True evidence.
+TEST_ONLY_CHECK = {"python_probe": ("python", "--version")}
 BASE = {
     "task_id": "eng-verify-001",
     "repository": "CarAutopsy/carautopsy",
@@ -80,19 +84,20 @@ class EngineeringVerificationTests(unittest.TestCase):
             "patch_digest": PATCH_DIGEST,
             "root": self.root,
             "runner": runner,
+            "status_probe": lambda _root: "",
         }
         options.update(overrides)
         return run_verification(**options)
 
-    def test_command_registry_is_offline(self):
+    def test_command_registry_is_offline_and_has_no_noop_check(self):
         assert_offline_command_registry()
-        original = CHECK_REGISTRY["python_probe"]
-        CHECK_REGISTRY["python_probe"] = ("python", "-c", "print(1)")
-        try:
+        self.assertNotIn("python_probe", CHECK_REGISTRY)
+        with patch.dict(CHECK_REGISTRY, {"python_probe": ("python", "-c", "print(1)")}):
             with self.assertRaises(VerificationError):
                 assert_offline_command_registry()
-        finally:
-            CHECK_REGISTRY["python_probe"] = original
+        with patch.dict(CHECK_REGISTRY, TEST_ONLY_CHECK):
+            with self.assertRaises(VerificationError):
+                validate_check_names(["python_probe", "python_probe"])
 
     def test_check_names_fail_closed(self):
         for names in ("unit_tests", [], ["unknown"], ["unit_tests", "unit_tests"],
@@ -185,12 +190,46 @@ class EngineeringVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(VerificationError, "does not match the checkout"):
             self._run(_FakeRunner(_Completed(0)), manifest={TARGET: "f" * 64})
 
+    def test_noop_check_cannot_be_selected_by_a_production_caller(self):
+        with self.assertRaisesRegex(VerificationError, "unknown verification check"):
+            self._run(_FakeRunner(_Completed(0)), check_names=("python_probe",))
+
     def test_real_subprocess_probe_is_offline_and_deterministic(self):
-        first = self._run(None, check_names=("python_probe",))
-        second = self._run(None, check_names=("python_probe",))
+        with patch.dict(CHECK_REGISTRY, TEST_ONLY_CHECK):
+            first = self._run(None, check_names=("python_probe",))
+            second = self._run(None, check_names=("python_probe",))
         self.assertTrue(first["passed"])
         self.assertEqual(first, second)
         assert_offline_evidence(first)
+
+    def test_working_tree_integrity_is_reported_and_enforced(self):
+        artifact = self._run(_FakeRunner(_Completed(0, b"OK\n", b"")))
+        self.assertTrue(artifact["working_tree_intact"])
+        self.assertEqual(artifact["snapshot_intact_scope"], "allowed_paths")
+        self.assertIn("git status", artifact["working_tree_scope"])
+        assert_offline_evidence(artifact)
+        for tampered in (
+            dict(artifact, working_tree_intact=False),
+            dict(artifact, snapshot_intact_scope="entire checkout"),
+        ):
+            with self.subTest(tampered=tampered):
+                with self.assertRaises(VerificationError):
+                    assert_offline_evidence(tampered)
+
+    def test_dirty_working_tree_fails_before_any_check(self):
+        runner = _FakeRunner(_Completed(0))
+        with self.assertRaisesRegex(VerificationError, "working tree is not clean"):
+            self._run(runner, status_probe=lambda _root: " M scripts/example.py")
+        self.assertEqual(runner.calls, [])
+
+    def test_working_tree_change_during_check_fails_closed(self):
+        states = iter(["", " M scripts/example.py"])
+
+        def changing_status(_root):
+            return next(states)
+
+        with self.assertRaisesRegex(VerificationError, "working tree changed"):
+            self._run(_FakeRunner(_Completed(0, b"OK\n", b"")), status_probe=changing_status)
 
     def test_evidence_tampering_is_rejected(self):
         artifact = self._run(_FakeRunner(_Completed(0, b"OK\n", b"")))
