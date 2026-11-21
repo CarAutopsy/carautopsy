@@ -1,8 +1,10 @@
 {
   "catalog_written": false,
+  "deduplication_role": "duplicate",
   "derived_fields": {
     "fuel_consumption_l_per_100km": null
   },
+  "duplicate_of": "2887803",
   "gate": {
     "findings": [],
     "passed": true
