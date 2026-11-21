@@ -14,6 +14,15 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Validate vehicle catalog
         run: python scripts/validate_catalog.py
+      - name: Build catalog quality and completeness report
+        run: python scripts/catalog_quality.py --report reports/catalog-quality.json
+      - name: Upload catalog quality report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: catalog-quality-report
+          path: reports/catalog-quality.json
+          if-no-files-found: warn
       - name: Report TCO calculation readiness
         run: python scripts/validate_tco_readiness.py
       - name: Compile pipeline, candidate, prompt and retrieval modules
