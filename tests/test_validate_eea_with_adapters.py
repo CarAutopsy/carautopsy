@@ -3,28 +3,31 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
-
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from validate_eea_with_adapters import (  # noqa: E402
+from validate_eea_with_adapters import (
     CO2_DIVISOR,
+    DEFAULT_STATUTORY_RULES,
     DERIVED_FROM,
     NEDC_REJECTION,
     PROPOSALS_ROOT,
     attach_price,
     build_proposal,
     derive_fuel_consumption,
+    evaluate_statutory,
     field_coverage,
     is_wltp_era,
+    load_statutory_rules,
     map_row,
     proposal_path,
+    read_rows,
     run_validation,
 )
-
 
 ROW = {
     "ID": "110900", "MS": "AT", "Mh": "VOLKSWAGEN", "Mk": "VOLKSWAGEN, VW",
@@ -149,6 +152,69 @@ class AdapterIntegrationTests(unittest.TestCase):
                 "vw.tiguan.2026.tdi-150.json",
             },
         )
+
+
+class StatutoryGateTests(unittest.TestCase):
+    """Verified, in-period statutory outcomes only; no invented rates."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rules = load_statutory_rules(DEFAULT_STATUTORY_RULES)
+        sample = ROOT / "docs" / "data-sources" / "sample" / "eea_at_2018_wltp_sample.tsv"
+        cls.bev_row = next(row for row in read_rows(sample) if row["Ft"].strip().upper() == "ELECTRIC")
+        cls.bev = map_row(cls.bev_row, 2018, None)
+
+    def test_bev_2018_receives_both_verified_exemptions(self):
+        result = evaluate_statutory(self.bev, self.rules, date(2018, 1, 1))
+        self.assertTrue(result["verified"])
+        self.assertEqual(result["findings"], [])
+        self.assertTrue(result["nova"]["exemption"])
+        self.assertEqual(result["nova"]["rate_eur"], 0)
+        self.assertEqual(result["nova"]["outcome"], "verified statutory exemption")
+        self.assertTrue(result["motor_tax"]["exemption"])
+        self.assertEqual(result["motor_tax"]["rate_eur_per_month"], 0)
+        self.assertIn("BGBl. I Nr. 7/2025", result["motor_tax"]["legal_basis"])
+
+    def test_ice_uses_non_electric_schedule(self):
+        row = dict(self.bev_row)
+        row["Ft"] = "DIESEL"
+        row["Ewltp (g/km)"] = "150"
+        ice = map_row(row, 2018, None)
+        result = evaluate_statutory(ice, self.rules, date(2018, 1, 1))
+        self.assertTrue(result["verified"])
+        self.assertFalse(result["nova"]["exemption"])
+        self.assertFalse(result["motor_tax"]["exemption"])
+        self.assertEqual(result["motor_tax"]["outcome"], "verified non-electric M1 schedule")
+        self.assertIn(2018, result["taxes"]["nova"]["annual_rules"])
+        self.assertIn("ice", result["taxes"]["motorbezogene_versicherungssteuer"]["annual_rules"][2018])
+
+    def test_bev_on_or_after_2025_04_01_is_not_exempt(self):
+        result = evaluate_statutory(self.bev, self.rules, date(2025, 4, 1))
+        self.assertFalse(result["verified"])
+        self.assertTrue(any("motorbezogene_versicherungssteuer" in item for item in result["findings"]))
+
+    def test_record_outside_all_rule_periods_is_rejected(self):
+        row = dict(self.bev_row)
+        row["Ft"] = "PETROL"
+        row["Ewltp (g/km)"] = "140"
+        record = map_row(row, 2021, None)
+        result = evaluate_statutory(record, self.rules, date(2021, 1, 1))
+        self.assertFalse(result["verified"])
+        self.assertEqual(len(result["findings"]), 2)
+        self.assertTrue(all("STATUTORY_RULE_UNAVAILABLE" in item for item in result["findings"]))
+
+    def test_missing_statutory_data_is_an_explicit_rejection(self):
+        empty = {"schema_version": 1, "jurisdiction": "AT", "rules": []}
+        result = evaluate_statutory(self.bev, empty, date(2018, 1, 1))
+        self.assertFalse(result["verified"])
+        self.assertEqual(len(result["findings"]), 2)
+        self.assertTrue(all("STATUTORY_RULE_UNAVAILABLE" in item for item in result["findings"]))
+
+    def test_rules_file_metadata_is_complete(self):
+        for rule in self.rules["rules"]:
+            for field in ("tax", "powertrain", "applicable_from", "applicable_to",
+                          "exemption", "legal_basis", "source_url", "publisher", "retrieved"):
+                self.assertIn(field, rule)
 
 
 if __name__ == "__main__":

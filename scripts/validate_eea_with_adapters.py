@@ -10,22 +10,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
-
-import yaml
-
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from validate_tco_readiness import validate_variant_readiness  # noqa: E402
-from validate_bulk_source import COLUMNS, FUEL_MAP, _number, _slug  # noqa: E402
-
+from validate_bulk_source import COLUMNS, FUEL_MAP, _number, _slug
+from validate_tco_readiness import validate_variant_readiness
 
 MIN_WLTP_YEAR = 2018
 MAX_WLTP_YEAR = 2026
@@ -36,6 +31,8 @@ SOURCE_LICENSE = "CC BY 4.0"
 DERIVED_FROM = "co2_nedc_wltp"
 CO2_DIVISOR = {"ice_petrol": 23.2, "ice_diesel": 26.5}
 PROPOSALS_ROOT = ROOT / "docs" / "data-sources" / "proposals"
+DEFAULT_STATUTORY_RULES = ROOT / "docs" / "data-sources" / "statutory" / "at-rules-v1.json"
+STATUTORY_FIELDS = ("statutory.nova.verified", "statutory.motor_tax.verified")
 GATE_FIELDS = (
     "identity.make",
     "identity.model",
@@ -46,6 +43,7 @@ GATE_FIELDS = (
     "performance.combustion_engine_power_w",
     "extensions.fuel_consumption_l_100km.real_world",
     "offers.price_or_pending",
+    *STATUTORY_FIELDS,
 )
 
 
@@ -69,6 +67,144 @@ def derive_fuel_consumption(co2_g_per_km: Any, powertrain: str | None) -> dict[s
         "derived_from": DERIVED_FROM,
         "conversion_formula": f"CO2_g_per_km / {divisor} = L_per_100km",
         "measured": False,
+    }
+
+
+def load_statutory_rules(path: Path = DEFAULT_STATUTORY_RULES) -> dict[str, Any]:
+    """Load versioned, attributed statutory rules; fail closed on bad metadata."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or data.get("schema_version") != 1 or data.get("jurisdiction") != "AT":
+        raise ValueError("statutory rules must be version 1 for AT")
+    rules = data.get("rules")
+    if not isinstance(rules, list) or not rules:
+        raise ValueError("statutory rules file has no rules")
+    required = (
+        "id", "tax", "powertrain", "applicable_from", "applicable_to", "exemption",
+        "legal_basis", "source_url", "publisher", "retrieved",
+    )
+    for rule in rules:
+        if not isinstance(rule, dict) or any(field not in rule for field in required):
+            raise ValueError("statutory rule is missing required provenance metadata")
+        date.fromisoformat(rule["applicable_from"])
+        if rule["applicable_to"] is not None:
+            date.fromisoformat(rule["applicable_to"])
+    return data
+
+
+def _powertrain_group(powertrain: str | None) -> str:
+    return "bev" if powertrain == "bev" else "non_electric"
+
+
+def _rule_in_period(rule: dict[str, Any], day: date) -> bool:
+    start = date.fromisoformat(rule["applicable_from"])
+    end = date.fromisoformat(rule["applicable_to"]) if rule["applicable_to"] is not None else None
+    return start <= day and (end is None or day <= end)
+
+
+def evaluate_statutory(
+    record: dict[str, Any],
+    rules: dict[str, Any],
+    day: date,
+) -> dict[str, Any]:
+    """Resolve in-period rules for both taxes and derive readiness tax inputs.
+
+    An exemption is a verified legal outcome (exemption=true, rate=0); it is not
+    an invented rate. Missing or out-of-period rules always fail closed.
+    """
+    powertrain = record.get("source_fields", {}).get("powertrain")
+    group = _powertrain_group(powertrain)
+    co2 = record.get("source_fields", {}).get("co2_g_per_km")
+    findings: list[str] = []
+
+    selected: dict[str, dict[str, Any]] = {}
+    for tax in ("nova", "motorbezogene_versicherungssteuer"):
+        candidates = [
+            rule for rule in rules["rules"]
+            if rule.get("tax") == tax and rule.get("powertrain") == group
+        ]
+        in_period = [rule for rule in candidates if _rule_in_period(rule, day)]
+        if len(in_period) != 1:
+            findings.append(
+                f"STATUTORY_RULE_UNAVAILABLE: {tax} for {group} on {day.isoformat()} "
+                f"(matched {len(in_period)} rules)"
+            )
+            continue
+        selected[tax] = in_period[0]
+
+    nova_rule = selected.get("nova")
+    if nova_rule is not None and nova_rule.get("exemption") is True:
+        eligible = isinstance(co2, (int, float)) and co2 == 0
+        if not eligible:
+            findings.append("NOVA_EXEMPTION_NOT_ELIGIBLE: zero-CO2 electric vehicle required")
+
+    if findings:
+        return {
+            "nova": {"verified": False, "exemption": None, "rate_eur": None},
+            "motor_tax": {"verified": False, "exemption": None, "rate_eur_per_month": None},
+            "taxes": None,
+            "verified": False,
+            "findings": findings,
+        }
+
+    nova = {"exemptions": [], "annual_rules": {}}
+    nova_result: dict[str, Any] = {"verified": True, "exemption": bool(nova_rule["exemption"])}
+    if nova_rule["exemption"]:
+        nova["exemptions"] = ["bev", "fcev"]
+        nova_result["rate_eur"] = nova_rule["rate_eur"]
+        nova_result["outcome"] = "verified statutory exemption"
+        nova_result["legal_basis"] = nova_rule["legal_basis"]
+        nova_result["source_url"] = nova_rule["source_url"]
+    else:
+        formula = nova_rule["formula"]
+        nova["annual_rules"] = {day.year: {
+            "co2_deduction_gkm": formula["co2_deduction_gkm"],
+            "divisor": formula["divisor"],
+            "min_percentage": formula["min_percentage"],
+            "max_percentage": formula["max_percentage"],
+            "rounding": formula["rounding"],
+            "malus_threshold_gkm": formula["malus_threshold_gkm"],
+            "malus_eur_per_gkm": formula["malus_eur_per_gkm"],
+            "fixed_deduction_eur": formula["fixed_deduction_eur"],
+        }}
+        nova_result["rate_eur"] = None
+        nova_result["outcome"] = "verified formula-based rate"
+        nova_result["legal_basis"] = nova_rule["legal_basis"]
+        nova_result["source_url"] = nova_rule["source_url"]
+
+    motor_rule = selected["motorbezogene_versicherungssteuer"]
+    motor: dict[str, Any] = {"annual_rules": {}}
+    motor_result: dict[str, Any] = {"verified": True, "exemption": bool(motor_rule["exemption"])}
+    if motor_rule["exemption"]:
+        motor["bev_m1"] = {
+            "exemption": True,
+            "rate_eur_per_month": motor_rule["rate_eur_per_month"],
+            "legal_basis": motor_rule["legal_basis"],
+            "source_url": motor_rule["source_url"],
+        }
+        motor_result["rate_eur_per_month"] = motor_rule["rate_eur_per_month"]
+        motor_result["outcome"] = "verified statutory exemption"
+        motor_result["legal_basis"] = motor_rule["legal_basis"]
+        motor_result["source_url"] = motor_rule["source_url"]
+    else:
+        formula = motor_rule["formula"]
+        schedule = {
+            "power_tiers_eur_per_kw": formula["power_tiers_eur_per_kw"],
+            "minimum_taxable_kw": 5,
+            "minimum_tax_eur": formula["minimum_eur_per_month"],
+            "rate_eur": 0.72,
+        }
+        motor["annual_rules"] = {day.year: {"ice": schedule, "phev": schedule}}
+        motor_result["rate_eur_per_month"] = None
+        motor_result["outcome"] = "verified non-electric M1 schedule"
+        motor_result["legal_basis"] = motor_rule["legal_basis"]
+        motor_result["source_url"] = motor_rule["source_url"]
+
+    return {
+        "nova": nova_result,
+        "motor_tax": motor_result,
+        "taxes": {"nova": nova, "motorbezogene_versicherungssteuer": motor},
+        "verified": True,
+        "findings": [],
     }
 
 
@@ -199,6 +335,12 @@ def map_row(
 
 def _present(record: dict[str, Any], path: str) -> bool:
     value: Any = record
+    if path in STATUTORY_FIELDS:
+        _, section, field = path.split(".", 2)
+        statutory = record.get("statutory")
+        return isinstance(statutory, dict) and isinstance(statutory.get(section), dict) and (
+            statutory[section].get(field) is True
+        )
     parts = path.split(".")
     for index, part in enumerate(parts):
         if part == "price_or_pending":
@@ -266,12 +408,13 @@ def build_proposal(
             "passed": not findings,
             "findings": findings,
         },
+        "statutory": record.get("statutory", {}),
         "provenance": {
             "source_name": SOURCE_NAME,
             "source_url": SOURCE_URL,
             "license": SOURCE_LICENSE,
             "dataset_year": dataset_year,
-            "extraction_date": datetime.now(timezone.utc).date().isoformat(),
+            "extraction_date": datetime.now(UTC).date().isoformat(),
             "record_id": record.get("source_fields", {}).get("record_id"),
         },
         "status": "proposed" if not findings else "rejected",
@@ -293,10 +436,7 @@ def run_validation(
     if output_dir.resolve() != PROPOSALS_ROOT.resolve():
         raise ValueError("proposals may only be written under docs/data-sources/proposals")
     rows = read_rows(sample)
-    taxes = None
-    if with_taxes:
-        manifest = yaml.safe_load((ROOT / "country-packs" / "AT" / "manifest.yaml").read_text(encoding="utf-8"))
-        taxes = manifest.get("taxes", manifest)
+    statutory_rules = load_statutory_rules() if with_taxes else None
 
     wltp_ok = is_wltp_era(dataset_year)
     records = [map_row(row, dataset_year, price_source) for row in rows]
@@ -306,10 +446,22 @@ def run_validation(
 
     for record in records:
         findings: list[str] = []
+        if statutory_rules is None:
+            statutory = {
+                "nova": {"verified": False, "exemption": None, "rate_eur": None},
+                "motor_tax": {"verified": False, "exemption": None, "rate_eur_per_month": None},
+                "verified": False,
+                "findings": ["STATUTORY_RULES_NOT_APPLIED: --no-taxes"],
+            }
+        else:
+            registered = date.fromisoformat(record["registration"]["first_registration_date"])
+            statutory = evaluate_statutory(record, statutory_rules, registered)
+            findings.extend(statutory["findings"])
+        record["statutory"] = statutory
         if not wltp_ok:
             findings.append(NEDC_REJECTION)
-        else:
-            findings.extend(validate_variant_readiness(record, taxes))
+        elif statutory["verified"]:
+            findings.extend(validate_variant_readiness(record, statutory["taxes"]))
         if findings:
             rejected += 1
             reasons.update(findings)
@@ -319,6 +471,13 @@ def run_validation(
             continue
         proposal = build_proposal(record, year=dataset_year, findings=findings, dataset_year=dataset_year)
         path = proposal_path(record, dataset_year)
+        # Owner-approved dedup flags live in the artifacts; never silently drop
+        # them when regenerating a proposal from source evidence.
+        if path.exists():
+            previous = json.loads(path.read_text(encoding="utf-8"))
+            for field in ("duplicate_of", "deduplication_role"):
+                if field in previous:
+                    proposal[field] = previous[field]
         path.write_text(json.dumps(proposal, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
         artifacts += 1
 
@@ -335,6 +494,10 @@ def run_validation(
         "coverage_percent": field_coverage(records),
         "rejection_reasons": dict(sorted(reasons.items())),
         "price_source_records": len(price_source or {}),
+        "statutory_rules_applied": statutory_rules is not None,
+        "statutory_verified_count": sum(
+            1 for record in records if record.get("statutory", {}).get("verified") is True
+        ),
         "catalog_variants_written": 0,
     }
 
@@ -344,7 +507,7 @@ def load_price_source(path: Path | None) -> dict[str, Any] | None:
         return None
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        raise ValueError("price source must be a JSON object")
+        raise TypeError("price source must be a JSON object")
     return data
 
 
