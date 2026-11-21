@@ -143,19 +143,31 @@ class AdapterIntegrationTests(unittest.TestCase):
                     self.assertEqual(data["gate"]["findings"], [NEDC_REJECTION])
 
     def test_no_catalog_files_were_modified(self):
-        status = PROPOSALS_ROOT.parents[2] / "catalog" / "variants"
-        self.assertTrue(status.is_dir())
-        self.assertEqual(
-            {p.name for p in status.glob("*.json")},
-            {
-                "fiat.500e.hatch.42kwh.json",
-                "kia.ev3.my25.long-range-rwd.json",
-                "renault.5.etech.52kwh-150.json",
-                "tesla.model-3.highland.rwd-60.json",
-                "tesla.model-y.juniper.rwd-60.json",
-                "vw.tiguan.2026.tdi-150.json",
-            },
-        )
+        catalog = PROPOSALS_ROOT.parents[2] / "catalog" / "variants"
+        self.assertTrue(catalog.is_dir())
+        # The catalog may have grown since this test was written; assert that
+        # the original records are still present and that this adapter run
+        # never adds or changes a file.
+        original = {
+            "fiat.500e.hatch.42kwh.json",
+            "kia.ev3.my25.long-range-rwd.json",
+            "renault.5.etech.52kwh-150.json",
+            "tesla.model-3.highland.rwd-60.json",
+            "tesla.model-y.juniper.rwd-60.json",
+            "vw.tiguan.2026.tdi-150.json",
+        }
+        before = {path.name: path.read_bytes() for path in catalog.glob("*.json")}
+        self.assertTrue(original <= set(before))
+        import validate_eea_with_adapters as adapter_module
+
+        sample = ROOT / "docs" / "data-sources" / "sample" / "eea_at_2017_sample.tsv"
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "proposals"
+            with patch.object(adapter_module, "PROPOSALS_ROOT", out):
+                run_validation(sample, dataset_year=2017, price_source=None,
+                               output_dir=out, with_taxes=False)
+        after = {path.name: path.read_bytes() for path in catalog.glob("*.json")}
+        self.assertEqual(after, before)
 
 
 class StatutoryGateTests(unittest.TestCase):
