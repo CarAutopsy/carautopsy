@@ -445,5 +445,63 @@ class RoadmapSyncTests(unittest.TestCase):
                     )
 
 
+class RoadmapSyncRegressionTests(unittest.TestCase):
+    """Synthetic regressions for issue #86 step 1 (PR #118).
+
+    These assertions pin fail-closed validation and the deterministic,
+    non-mutating reconciliation contract using only in-memory inputs. They do
+    not add production behavior, apply roadmap state, or relax an owner gate.
+    """
+
+    def test_invalid_task_key_shapes_are_rejected(self):
+        # Note: a trailing hyphen (e.g. "issue-") is currently accepted by the
+        # slug regex; that is existing behavior and is intentionally not
+        # changed in this regression-only PR.
+        for bad_key in ("Issue-10", "-issue", "i", "issue_10", "issue 10", "a" * 65):
+            with self.subTest(key=bad_key):
+                with self.assertRaisesRegex(RoadmapReconciliationError, "task_key"):
+                    validate_task_graph([task(key=bad_key)])
+
+    def test_invalid_issue_number_shapes_are_rejected(self):
+        for bad_number in (True, 0, -1, "10", None):
+            with self.subTest(number=bad_number):
+                with self.assertRaisesRegex(RoadmapReconciliationError, "issue_number"):
+                    validate_task_graph([task(number=bad_number)])
+
+    def test_non_tuple_required_checks_is_rejected(self):
+        with self.assertRaisesRegex(RoadmapReconciliationError, "required checks"):
+            build_reconciliation_proposal(
+                [task()], [issue()], [pr()], checks(),
+                required_checks=["audit"],
+            )
+
+    def test_reconciliation_is_permutation_invariant(self):
+        tasks = [task("issue-9", 9), task("issue-10", 10), task("issue-11", 11)]
+        issues = [issue(9), issue(10), issue(11)]
+        prs = [pr(110, 10), pr(111, 11)]
+        run_checks = checks()
+        expected = build_reconciliation_proposal(tasks, issues, prs, run_checks)
+        orders = (
+            (
+                list(reversed(tasks)),
+                list(reversed(issues)),
+                list(reversed(prs)),
+                list(reversed(run_checks)),
+            ),
+            (
+                [tasks[2], tasks[0], tasks[1]],
+                [issues[1], issues[2], issues[0]],
+                [prs[1], prs[0]],
+                [run_checks[1], run_checks[0]],
+            ),
+        )
+        for ordered in orders:
+            with self.subTest():
+                self.assertEqual(
+                    build_reconciliation_proposal(*ordered),
+                    expected,
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
