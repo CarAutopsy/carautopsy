@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "eea-at-2018-wltp-at",
+  "source_name": "EEA type-approval CO2 microdata — 2018 WLTP Austrian sample",
+  "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+  "license": "CC BY 4.0",
+  "extraction_date": "2026-11-21",
+  "dataset_year": 2018,
+  "sample": "docs/data-sources/sample/eea_at_2018_wltp_sample.tsv",
+  "identity_map": "docs/data-sources/identity-map/v1.json",
+  "price_evidence": "docs/data-sources/price-evidence/v1.json",
+  "statutory_rules": "docs/data-sources/statutory/at-rules-v1.json",
+  "selection_doc": "docs/data-sources/bulk-source-selection.md"
+}
