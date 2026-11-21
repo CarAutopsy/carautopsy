@@ -25,6 +25,7 @@ from tco_publication import (  # noqa: E402
     is_duplicate_publication,
     parse_status_paths,
     publication_needs_refresh,
+    stable_payload,
 )
 
 
@@ -62,7 +63,7 @@ class TcoPublicationGuardTests(unittest.TestCase):
     def test_attestation_binds_payload_and_rejects_bad_inputs(self):
         self.assertEqual(
             ATTESTATION["payload_sha256"],
-            hashlib.sha256(canonical_bytes(PAYLOAD)).hexdigest(),
+            hashlib.sha256(canonical_bytes(stable_payload(PAYLOAD))).hexdigest(),
         )
         changed = dict(PAYLOAD, summary={"variants": 2})
         other = build_attestation(
@@ -191,6 +192,43 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
         changed_pack = dict(ATTESTATION, country_pack_sha256="1" * 64)
         self.assertFalse(is_duplicate_publication(existing, changed_pack))
         self.assertFalse(is_duplicate_publication({}, ATTESTATION))
+
+    def test_generated_utc_does_not_change_payload_binding(self):
+        envelope_at = {"country_pack": "AT@2026.1", "engine_version": "1.0.0",
+                       "generated_utc": "2026-11-20T12:00:00Z"}
+        envelope_later = dict(envelope_at, generated_utc="2026-11-21T06:00:00Z")
+        first_payload = dict(PAYLOAD, envelope=envelope_at)
+        second_payload = dict(PAYLOAD, envelope=envelope_later)
+
+        first_attestation = build_attestation(
+            payload=first_payload, base_sha=SHA, catalog_sha256=DIGEST,
+            country_pack="AT@2026.1", country_pack_sha256="d" * 64,
+            engine_version="1.0.0",
+        )
+        second_attestation = build_attestation(
+            payload=second_payload, base_sha=SHA, catalog_sha256=DIGEST,
+            country_pack="AT@2026.1", country_pack_sha256="d" * 64,
+            engine_version="1.0.0",
+        )
+
+        # (a) the payload digest excludes the generated_utc timestamp
+        self.assertNotEqual(first_payload["envelope"]["generated_utc"],
+                            second_payload["envelope"]["generated_utc"])
+        self.assertEqual(first_attestation["payload_sha256"],
+                         second_attestation["payload_sha256"])
+
+        # (b) the two artifacts are duplicates
+        existing = {"results": first_payload["results"],
+                    "summary": first_payload["summary"],
+                    "envelope": envelope_later,
+                    "attestation": second_attestation}
+        self.assertTrue(is_duplicate_publication(existing, first_attestation))
+
+        # (c) no refresh is needed on the new timestamp
+        self.assertFalse(publication_needs_refresh(existing, second_payload, first_attestation))
+
+        # (d) the post-write gate accepts the stored binding
+        assert_attestation(existing, first_attestation)
 
     def test_unchanged_inputs_do_not_rewrite_on_new_head_or_run(self):
         envelope = {"country_pack": "AT@2026.1", "engine_version": "1.0.0",

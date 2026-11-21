@@ -24,6 +24,7 @@ ATTESTATION_BINDING_FIELDS = (
     "engine_version",
 )
 MAX_PACK_FILES = 200
+PACK_RULE_EXTENSIONS = frozenset({".yaml", ".yml", ".json"})
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _SHA1 = re.compile(r"[0-9a-f]{40}\Z")
 
@@ -37,6 +38,22 @@ def canonical_bytes(value: Any) -> bytes:
     return json.dumps(
         value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
     ).encode("utf-8")
+
+
+def stable_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy without the run-specific ``envelope.generated_utc`` value.
+
+    ``tco_engine.publication_artifact_is_current`` ignores this timestamp when
+    deciding whether an artifact is current, so the attestation digest must too;
+    otherwise a new timestamp would look like a new input on every run.
+    """
+    if not isinstance(payload, dict):
+        raise PublicationBlocked("payload must be an object")
+    envelope = payload.get("envelope")
+    if not isinstance(envelope, dict) or "generated_utc" not in envelope:
+        return dict(payload)
+    stable_envelope = {key: value for key, value in envelope.items() if key != "generated_utc"}
+    return {**payload, "envelope": stable_envelope}
 
 
 def catalog_digest(root: Path) -> str:
@@ -60,7 +77,11 @@ def country_pack_digest(root: Path, country: str = "AT") -> str:
     pack = Path(root) / "country-packs" / country
     files = sorted(
         path for path in pack.rglob("*")
-        if path.is_file() and not path.is_symlink()
+        if path.is_file()
+        and not path.is_symlink()
+        and not path.name.startswith((".", "~"))
+        and not path.name.endswith(("~", ".tmp", ".bak"))
+        and path.suffix.casefold() in PACK_RULE_EXTENSIONS
     )
     if not files:
         raise PublicationBlocked(f"country pack has no rule files: {country}")
@@ -123,12 +144,17 @@ def build_attestation(
         "country_pack_sha256": country_pack_sha256,
         "engine_version": engine_version,
         "run_url": run_url,
-        "payload_sha256": hashlib.sha256(canonical_bytes(payload)).hexdigest(),
+        "payload_sha256": hashlib.sha256(canonical_bytes(stable_payload(payload))).hexdigest(),
     }
 
 
 def assert_attestation(artifact: Any, expected: dict[str, Any]) -> None:
-    """Reject an artifact whose input binding differs. HEAD/run evidence is ignored."""
+    """Reject an artifact whose input binding differs.
+
+    ``base_sha`` and ``run_url`` are not compared: they record the run that last
+    changed the bound inputs, so an unchanged-payload run with a new commit or
+    run URL does not invalidate the artifact.
+    """
     if not isinstance(artifact, dict) or not isinstance(artifact.get("attestation"), dict):
         raise PublicationBlocked("published artifact lacks an attestation")
     actual = artifact["attestation"]
