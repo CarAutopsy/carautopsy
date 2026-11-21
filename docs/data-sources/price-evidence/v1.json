@@ -13,7 +13,7 @@
       "powertrain": "bev",
       "price": {
         "match": {
-          "evidence_line": "VISIA 24 kWh Elektromotor 80 (109) Automatikgetriebe, stufenlos 22.982,\u2013 28.882,\u2013",
+          "evidence_line": "Modelle Batteriekapazit\u00e4t Motor kW (PS) Getriebe Preise brutto Preise brutto | in Euro mit in Euro mit | Batteriemiete Batteriekauf | VISIA 24 kWh Elektromotor 80 (109) Automatikgetriebe, stufenlos 22.982,\u2013 28.882,\u2013 | ACENTA 24 kWh Elektromotor 80 (109) Automatikgetriebe, stufenlos 26.153,\u2013 32.052,\u2013",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -25,11 +25,12 @@
         "price_pending": false
       },
       "price_date": "2017-05-01",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 19151.67,
       "purchase_price_incl_vat_eur": 22982.0,
-      "retrieved_at": "2026-11-21T17:32:05+00:00",
+      "retrieved_at": "2026-11-21T18:34:39+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20171201040232id_/https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
       "tco_ready": false,
@@ -50,7 +51,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -62,11 +63,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -87,7 +89,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7",
+          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7 | Diesel 150 PS TDI 6-Gang 32.530,\u2013 5 33.890,\u2013 5 | 150 PS TDI 7-Gang DSG4) 34.540,\u2013 5 35.880,\u2013 5 | AMBITION | Benzin 150 PS TSI ACT3) 6-Gang 33.250,\u2013 6 34.220,\u2013 7",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -99,11 +101,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 24683.33,
       "purchase_price_incl_vat_eur": 29620.0,
-      "retrieved_at": "2026-11-21T17:32:01+00:00",
+      "retrieved_at": "2026-11-21T18:34:35+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724171833id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/138-133_brochures-list-2076-downloadTag/default/15d4fe53/1545055301/SUPERB-Preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -124,7 +127,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -136,11 +139,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -161,7 +165,83 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "60 PS 5-Gang \u2022 5 Jahre \u0160KODA Plus Garantie3) 11.480,\u2013 4 \u2013 \u2013 | 75 PS 5-Gang \u2022 Active Austria-Paket 11.980,\u2013 4 12.850,\u2013 4 | VORTEILS-PAKET | FABIA 20 | \u2022 5 Jahre \u0160KODA Plus Garantie 3)",
+          "matched_fields": [
+            "consumer_model",
+            "market",
+            "model_year_window"
+          ],
+          "matched_model": "fabia",
+          "uncertainty": "model_level_from_price; not variant-specific"
+        },
+        "price_pending": false
+      },
+      "price_date": "2019-03-01",
+      "price_date_precision": "month",
+      "price_pending": false,
+      "price_precision": "model_level",
+      "purchase_price_excl_vat_eur": 9566.67,
+      "purchase_price_incl_vat_eur": 11480.0,
+      "retrieved_at": "2026-11-21T18:34:38+00:00",
+      "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
+      "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "tco_ready": false,
+      "variant": "NFD7FD7CW0017CPN1C7A",
+      "vat_rate_used": 0.2,
+      "vat_treatment": "source list price stated incl. VAT; excl-VAT value derived arithmetically"
+    },
+    {
+      "catalog_eligible": true,
+      "confidence": "low",
+      "currency": "EUR",
+      "license": "OEM price list, public archived snapshot; terms per source publisher",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "nova_treatment": "Austrian OEM list prices may include NoVA; not separately removed",
+      "powertrain": "ice_petrol",
+      "price": {
+        "match": {
+          "evidence_line": "60 PS 5-Gang \u2022 5 Jahre \u0160KODA Plus Garantie3) 11.480,\u2013 4 \u2013 \u2013 | 75 PS 5-Gang \u2022 Active Austria-Paket 11.980,\u2013 4 12.850,\u2013 4 | VORTEILS-PAKET | FABIA 20 | \u2022 5 Jahre \u0160KODA Plus Garantie 3)",
+          "matched_fields": [
+            "consumer_model",
+            "market",
+            "model_year_window"
+          ],
+          "matched_model": "fabia",
+          "uncertainty": "model_level_from_price; not variant-specific"
+        },
+        "price_pending": false
+      },
+      "price_date": "2019-03-01",
+      "price_date_precision": "month",
+      "price_pending": false,
+      "price_precision": "model_level",
+      "purchase_price_excl_vat_eur": 9566.67,
+      "purchase_price_incl_vat_eur": 11480.0,
+      "retrieved_at": "2026-11-21T18:34:38+00:00",
+      "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
+      "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "tco_ready": false,
+      "variant": "NFD7FD7CW0017CPN1C8A",
+      "vat_rate_used": 0.2,
+      "vat_treatment": "source list price stated incl. VAT; excl-VAT value derived arithmetically"
+    },
+    {
+      "catalog_eligible": true,
+      "confidence": "low",
+      "currency": "EUR",
+      "license": "OEM price list, public archived snapshot; terms per source publisher",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "nova_treatment": "Austrian OEM list prices may include NoVA; not separately removed",
+      "powertrain": "ice_petrol",
+      "price": {
+        "match": {
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -173,11 +253,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -198,7 +279,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -210,11 +291,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -235,7 +317,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7",
+          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7 | Diesel 150 PS TDI 6-Gang 32.530,\u2013 5 33.890,\u2013 5 | 150 PS TDI 7-Gang DSG4) 34.540,\u2013 5 35.880,\u2013 5 | AMBITION | Benzin 150 PS TSI ACT3) 6-Gang 33.250,\u2013 6 34.220,\u2013 7",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -247,11 +329,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 24683.33,
       "purchase_price_incl_vat_eur": 29620.0,
-      "retrieved_at": "2026-11-21T17:32:01+00:00",
+      "retrieved_at": "2026-11-21T18:34:35+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724171833id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/138-133_brochures-list-2076-downloadTag/default/15d4fe53/1545055301/SUPERB-Preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -272,7 +355,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -284,11 +367,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -309,7 +393,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -321,11 +405,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -346,7 +431,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -358,11 +443,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -383,7 +469,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -395,11 +481,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -420,7 +507,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -432,11 +519,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -457,7 +545,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -469,11 +557,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -494,7 +583,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -506,11 +595,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -531,7 +621,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -543,11 +633,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -568,7 +659,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7",
+          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7 | Diesel 150 PS TDI 6-Gang 32.530,\u2013 5 33.890,\u2013 5 | 150 PS TDI 7-Gang DSG4) 34.540,\u2013 5 35.880,\u2013 5 | AMBITION | Benzin 150 PS TSI ACT3) 6-Gang 33.250,\u2013 6 34.220,\u2013 7",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -580,11 +671,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 24683.33,
       "purchase_price_incl_vat_eur": 29620.0,
-      "retrieved_at": "2026-11-21T17:32:01+00:00",
+      "retrieved_at": "2026-11-21T18:34:35+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724171833id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/138-133_brochures-list-2076-downloadTag/default/15d4fe53/1545055301/SUPERB-Preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -605,7 +697,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7",
+          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7 | Diesel 150 PS TDI 6-Gang 32.530,\u2013 5 33.890,\u2013 5 | 150 PS TDI 7-Gang DSG4) 34.540,\u2013 5 35.880,\u2013 5 | AMBITION | Benzin 150 PS TSI ACT3) 6-Gang 33.250,\u2013 6 34.220,\u2013 7",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -617,11 +709,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 24683.33,
       "purchase_price_incl_vat_eur": 29620.0,
-      "retrieved_at": "2026-11-21T17:32:01+00:00",
+      "retrieved_at": "2026-11-21T18:34:35+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724171833id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/138-133_brochures-list-2076-downloadTag/default/15d4fe53/1545055301/SUPERB-Preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -642,7 +735,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7",
+          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7 | Diesel 150 PS TDI 6-Gang 32.530,\u2013 5 33.890,\u2013 5 | 150 PS TDI 7-Gang DSG4) 34.540,\u2013 5 35.880,\u2013 5 | AMBITION | Benzin 150 PS TSI ACT3) 6-Gang 33.250,\u2013 6 34.220,\u2013 7",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -654,11 +747,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 24683.33,
       "purchase_price_incl_vat_eur": 29620.0,
-      "retrieved_at": "2026-11-21T17:32:01+00:00",
+      "retrieved_at": "2026-11-21T18:34:35+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724171833id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/138-133_brochures-list-2076-downloadTag/default/15d4fe53/1545055301/SUPERB-Preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -679,7 +773,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -691,11 +785,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -716,7 +811,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -728,11 +823,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -753,7 +849,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -765,11 +861,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -790,7 +887,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -802,11 +899,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -827,7 +925,121 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 95 PS TSI 5-Gang 20.080,\u2013 4 19.150,\u2013 3",
+          "evidence_line": "60 PS 5-Gang \u2022 5 Jahre \u0160KODA Plus Garantie3) 11.480,\u2013 4 \u2013 \u2013 | 75 PS 5-Gang \u2022 Active Austria-Paket 11.980,\u2013 4 12.850,\u2013 4 | VORTEILS-PAKET | FABIA 20 | \u2022 5 Jahre \u0160KODA Plus Garantie 3)",
+          "matched_fields": [
+            "consumer_model",
+            "market",
+            "model_year_window"
+          ],
+          "matched_model": "fabia",
+          "uncertainty": "model_level_from_price; not variant-specific"
+        },
+        "price_pending": false
+      },
+      "price_date": "2019-03-01",
+      "price_date_precision": "month",
+      "price_pending": false,
+      "price_precision": "model_level",
+      "purchase_price_excl_vat_eur": 9566.67,
+      "purchase_price_incl_vat_eur": 11480.0,
+      "retrieved_at": "2026-11-21T18:34:38+00:00",
+      "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
+      "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "tco_ready": false,
+      "variant": "NFM5FM5CF0087CPN1C7A",
+      "vat_rate_used": 0.2,
+      "vat_treatment": "source list price stated incl. VAT; excl-VAT value derived arithmetically"
+    },
+    {
+      "catalog_eligible": true,
+      "confidence": "low",
+      "currency": "EUR",
+      "license": "OEM price list, public archived snapshot; terms per source publisher",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "nova_treatment": "Austrian OEM list prices may include NoVA; not separately removed",
+      "powertrain": "ice_petrol",
+      "price": {
+        "match": {
+          "evidence_line": "60 PS 5-Gang \u2022 5 Jahre \u0160KODA Plus Garantie3) 11.480,\u2013 4 \u2013 \u2013 | 75 PS 5-Gang \u2022 Active Austria-Paket 11.980,\u2013 4 12.850,\u2013 4 | VORTEILS-PAKET | FABIA 20 | \u2022 5 Jahre \u0160KODA Plus Garantie 3)",
+          "matched_fields": [
+            "consumer_model",
+            "market",
+            "model_year_window"
+          ],
+          "matched_model": "fabia",
+          "uncertainty": "model_level_from_price; not variant-specific"
+        },
+        "price_pending": false
+      },
+      "price_date": "2019-03-01",
+      "price_date_precision": "month",
+      "price_pending": false,
+      "price_precision": "model_level",
+      "purchase_price_excl_vat_eur": 9566.67,
+      "purchase_price_incl_vat_eur": 11480.0,
+      "retrieved_at": "2026-11-21T18:34:38+00:00",
+      "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
+      "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "tco_ready": false,
+      "variant": "NFM5FM5DF0027CPN1C7A",
+      "vat_rate_used": 0.2,
+      "vat_treatment": "source list price stated incl. VAT; excl-VAT value derived arithmetically"
+    },
+    {
+      "catalog_eligible": true,
+      "confidence": "low",
+      "currency": "EUR",
+      "license": "OEM price list, public archived snapshot; terms per source publisher",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "nova_treatment": "Austrian OEM list prices may include NoVA; not separately removed",
+      "powertrain": "ice_petrol",
+      "price": {
+        "match": {
+          "evidence_line": "60 PS 5-Gang \u2022 5 Jahre \u0160KODA Plus Garantie3) 11.480,\u2013 4 \u2013 \u2013 | 75 PS 5-Gang \u2022 Active Austria-Paket 11.980,\u2013 4 12.850,\u2013 4 | VORTEILS-PAKET | FABIA 20 | \u2022 5 Jahre \u0160KODA Plus Garantie 3)",
+          "matched_fields": [
+            "consumer_model",
+            "market",
+            "model_year_window"
+          ],
+          "matched_model": "fabia",
+          "uncertainty": "model_level_from_price; not variant-specific"
+        },
+        "price_pending": false
+      },
+      "price_date": "2019-03-01",
+      "price_date_precision": "month",
+      "price_pending": false,
+      "price_precision": "model_level",
+      "purchase_price_excl_vat_eur": 9566.67,
+      "purchase_price_incl_vat_eur": 11480.0,
+      "retrieved_at": "2026-11-21T18:34:38+00:00",
+      "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
+      "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "tco_ready": false,
+      "variant": "NFM5FM5DF0027CPN1C8A",
+      "vat_rate_used": 0.2,
+      "vat_treatment": "source list price stated incl. VAT; excl-VAT value derived arithmetically"
+    },
+    {
+      "catalog_eligible": true,
+      "confidence": "low",
+      "currency": "EUR",
+      "license": "OEM price list, public archived snapshot; terms per source publisher",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "nova_treatment": "Austrian OEM list prices may include NoVA; not separately removed",
+      "powertrain": "ice_petrol",
+      "price": {
+        "match": {
+          "evidence_line": "Benzin 95 PS TSI 5-Gang 20.080,\u2013 4 19.150,\u2013 3 | 110 PS TSI 6-Gang 20.590,\u2013 4 19.810,\u2013 4 | 110 PS TSI 7-Gang DSG3) 21.630,\u2013 4 20.860,\u2013 4 | 20 | PREISE \u0160KODA RAPID",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -839,11 +1051,12 @@
         "price_pending": false
       },
       "price_date": "2018-05-25",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 16733.33,
       "purchase_price_incl_vat_eur": 20080.0,
-      "retrieved_at": "2026-11-21T17:31:58+00:00",
+      "retrieved_at": "2026-11-21T18:34:31+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20181124205331id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/128-211_brochures-list-2064-downloadTag/default/e18e77c0/1536245169/rapid-preisliste-09-2018.pdf",
       "tco_ready": false,
@@ -864,7 +1077,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7",
+          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7 | Diesel 150 PS TDI 6-Gang 32.530,\u2013 5 33.890,\u2013 5 | 150 PS TDI 7-Gang DSG4) 34.540,\u2013 5 35.880,\u2013 5 | AMBITION | Benzin 150 PS TSI ACT3) 6-Gang 33.250,\u2013 6 34.220,\u2013 7",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -876,11 +1089,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 24683.33,
       "purchase_price_incl_vat_eur": 29620.0,
-      "retrieved_at": "2026-11-21T17:32:01+00:00",
+      "retrieved_at": "2026-11-21T18:34:35+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724171833id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/138-133_brochures-list-2076-downloadTag/default/15d4fe53/1545055301/SUPERB-Preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -901,7 +1115,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -913,11 +1127,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -938,7 +1153,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7",
+          "evidence_line": "Benzin 150 PS TSI ACT3) 6-Gang 29.620,\u2013 6 31.480,\u2013 7 | Diesel 150 PS TDI 6-Gang 32.530,\u2013 5 33.890,\u2013 5 | 150 PS TDI 7-Gang DSG4) 34.540,\u2013 5 35.880,\u2013 5 | AMBITION | Benzin 150 PS TSI ACT3) 6-Gang 33.250,\u2013 6 34.220,\u2013 7",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -950,11 +1165,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 24683.33,
       "purchase_price_incl_vat_eur": 29620.0,
-      "retrieved_at": "2026-11-21T17:32:01+00:00",
+      "retrieved_at": "2026-11-21T18:34:35+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724171833id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/138-133_brochures-list-2076-downloadTag/default/15d4fe53/1545055301/SUPERB-Preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -975,7 +1191,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -987,11 +1203,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -1012,7 +1229,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -1024,11 +1241,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -1049,7 +1267,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -1061,11 +1279,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -1086,7 +1305,7 @@
       "powertrain": "ice_petrol",
       "price": {
         "match": {
-          "evidence_line": "Benzin 95 PS TSI 5-Gang 20.080,\u2013 4 19.150,\u2013 3",
+          "evidence_line": "Benzin 95 PS TSI 5-Gang 20.080,\u2013 4 19.150,\u2013 3 | 110 PS TSI 6-Gang 20.590,\u2013 4 19.810,\u2013 4 | 110 PS TSI 7-Gang DSG3) 21.630,\u2013 4 20.860,\u2013 4 | 20 | PREISE \u0160KODA RAPID",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -1098,11 +1317,12 @@
         "price_pending": false
       },
       "price_date": "2018-05-25",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 16733.33,
       "purchase_price_incl_vat_eur": 20080.0,
-      "retrieved_at": "2026-11-21T17:31:58+00:00",
+      "retrieved_at": "2026-11-21T18:34:31+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20181124205331id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/128-211_brochures-list-2064-downloadTag/default/e18e77c0/1536245169/rapid-preisliste-09-2018.pdf",
       "tco_ready": false,
@@ -1123,7 +1343,7 @@
       "powertrain": "ice_diesel",
       "price": {
         "match": {
-          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5)",
+          "evidence_line": "Benzin 115 PS TSI 6-Gang 22.630,\u2013 3 (4) 23.470,\u2013 4 (5) | INKLUSIVE | Diesel 115 PS TDI 5-Gang \u2022 2.000,\u2013 Euro Limited-Pr\u00e4mie* 24.930,\u2013 3 (4) 25.810,\u2013 4 | AMBITION LIMITED | Benzin 115 PS TSI 6-Gang 24.510,\u2013 3 (4) 25.370,\u2013 4 (5)",
           "matched_fields": [
             "consumer_model",
             "market",
@@ -1135,11 +1355,12 @@
         "price_pending": false
       },
       "price_date": "2018-11-30",
+      "price_date_precision": "day",
       "price_pending": false,
       "price_precision": "model_level",
       "purchase_price_excl_vat_eur": 18858.33,
       "purchase_price_incl_vat_eur": 22630.0,
-      "retrieved_at": "2026-11-21T17:31:59+00:00",
+      "retrieved_at": "2026-11-21T18:34:32+00:00",
       "reviewed_by": "automated-model-level-harvest-v1 (pending owner review)",
       "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
       "tco_ready": false,
@@ -1148,7 +1369,7 @@
       "vat_treatment": "source list price stated incl. VAT; excl-VAT value derived arithmetically"
     }
   ],
-  "harvested_at": "2026-11-21T17:32:05+00:00",
+  "harvested_at": "2026-11-21T18:34:39+00:00",
   "jurisdiction": "AT",
   "method": "owner_approved_model_level_archived_oem_price",
   "notice": "Interim owner-approved relaxation: model-level 'from' prices are catalog-eligible but not TCO-ready (price_precision=model_level, confidence=low, tco_ready=false).",

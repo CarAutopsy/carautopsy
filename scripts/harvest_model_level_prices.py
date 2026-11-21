@@ -35,15 +35,24 @@ REVIEWER = "automated-model-level-harvest-v1 (pending owner review)"
 PRICE_TOKEN = re.compile(r"(\d{1,3}\.\d{3}),\D")
 DATE_TOKEN = re.compile(r"(\d{1,2})\.(\d{1,2})\.(\d{4})")
 GERMAN_MONTHS = {
-    "januar": 1, "februar": 2, "maerz": 3, "april": 4, "mai": 5, "juni": 6,
+    "januar": 1, "februar": 2, "maerz": 3, "marz": 3, "april": 4, "mai": 5, "juni": 6,
     "juli": 7, "august": 8, "september": 9, "oktober": 10, "november": 11,
     "dezember": 12,
 }
 KNOWN_MODELS = ("leaf", "octavia", "superb", "rapid", "fabia", "karoq", "kodiaq")
 
 
-def validity_date(text: str, fallback: str) -> str:
-    """Prefer the document's 'gueltig ab' date; else the Wayback snapshot date."""
+def ascii_german(line: str) -> str:
+    """Transliterate German umlauts before ASCII folding for date matching."""
+    normalized = line
+    for source, target in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"),
+                           ("Ä", "Ae"), ("Ö", "Oe"), ("Ü", "Ue")):
+        normalized = normalized.replace(source, target)
+    return normalized.encode("ascii", "replace").decode().lower()
+
+
+def validity_date(text: str, fallback: str) -> tuple[str, str]:
+    """Return (ISO date, precision) from the document, else the snapshot date."""
     for line in text.splitlines():
         if not re.search(r"g.ltig ab", line, re.IGNORECASE):
             continue
@@ -51,35 +60,52 @@ def validity_date(text: str, fallback: str) -> str:
         if found:
             day, month, year = (int(part) for part in found.groups())
             try:
-                return date(year, month, day).isoformat()
+                return date(year, month, day).isoformat(), "day"
             except ValueError:
                 continue
-        ascii_line = line.encode("ascii", "replace").decode().lower()
+        ascii_line = ascii_german(line)
         for name, month in GERMAN_MONTHS.items():
             match = re.search(r"(\d{1,2})\.\s*" + name + r"\s+(\d{4})", ascii_line)
             if match:
                 day, year = int(match.group(1)), int(match.group(2))
                 try:
-                    return date(year, month, day).isoformat()
+                    return date(year, month, day).isoformat(), "day"
                 except ValueError:
                     continue
-    return fallback
+    # Edition lines such as "Ausgabe: Oesterreich, Maerz 2019" give month only.
+    for line in text.splitlines():
+        ascii_line = ascii_german(line)
+        if "ausgabe" not in ascii_line:
+            continue
+        for name, month in GERMAN_MONTHS.items():
+            match = re.search(name + r"\s+(\d{4})", ascii_line)
+            if match:
+                return date(int(match.group(1)), month, 1).isoformat(), "month"
+    return fallback, "snapshot"
 
 
 def first_from_price(text: str) -> tuple[float | None, str | None]:
-    """Return the first documented price in a model/trim table row."""
+    """Return the first documented price in a model/trim table row.
+
+    Some PDFs place the engine label and the price on separate lines, so a
+    small rolling window is used and the full matched window is retained as
+    evidence.
+    """
     lines = text.splitlines()
     # OEM tables describe engine rows either by "PS" (Skoda) or by "kWh" (BEV).
     for marker in ("ps", "kwh"):
-        for line in lines:
+        for index, line in enumerate(lines):
             if marker not in line.lower():
                 continue
-            match = PRICE_TOKEN.search(line)
-            if match is None:
-                continue
-            price = parse_price(match.group(1))
-            if price is not None and price > 0:
-                return price, line.strip()
+            window = lines[index:index + 5]
+            for candidate_line in window:
+                match = PRICE_TOKEN.search(candidate_line)
+                if match is None:
+                    continue
+                price = parse_price(match.group(1))
+                if price is not None and price > 0:
+                    evidence = " | ".join(part.strip() for part in window if part.strip())
+                    return price, evidence[:300]
     return None, None
 
 
@@ -116,16 +142,18 @@ def discover_model_prices(price_log: dict[str, Any]) -> tuple[dict[str, dict[str
         attempt.update(price_incl_vat=price, evidence_line=evidence_line[:300])
         attempts.append(attempt)
         # Keep the most recent validity date for a given model.
-        price_date = validity_date(text, candidate["date"])
+        price_date, date_precision = validity_date(text, candidate["date"])
         existing = models.get(model)
         if existing is None or price_date > existing["price_date"]:
             models[model] = {
                 "model": model,
                 "price_incl_vat": price,
                 "price_date": price_date,
+                "price_date_precision": date_precision,
                 "source_url": candidate["snapshot_url"],
                 "evidence_line": evidence_line[:300],
                 "retrieved_at": meta["retrieved_at"],
+                "extractor": meta.get("extractor"),
             }
     return models, attempts
 
@@ -158,6 +186,7 @@ def build_evidence(
             "purchase_price_excl_vat_eur": excl,
             "purchase_price_incl_vat_eur": incl,
             "price_date": candidate["price_date"],
+            "price_date_precision": candidate.get("price_date_precision", "snapshot"),
             "currency": "EUR",
             "market": "AT",
             "source_url": candidate["source_url"],

@@ -5,12 +5,14 @@ import json
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import apply_research_evidence_to_proposals as apply_module
 import harvest_model_level_prices as model_harvest
+import harvest_price_evidence as price_harvest
 
 PRICE = ROOT / "docs" / "data-sources" / "price-evidence" / "v1.json"
 IDENTITY = ROOT / "docs" / "data-sources" / "identity-map" / "v1.json"
@@ -88,6 +90,71 @@ class ModelLevelEvidenceTests(unittest.TestCase):
                 self.assertTrue(proposal["price_verification"]["source_url"])
         self.assertEqual(updated, 9)
         self.assertEqual({path.name: path.read_bytes() for path in CATALOG.glob("*.json")}, before)
+
+
+class PdfExtractionFallbackTests(unittest.TestCase):
+    """pdfplumber -> PyMuPDF -> OCR, with explicit failure reporting."""
+
+    def setUp(self):
+        self.snapshot = {"snapshot_url": "https://example.invalid/price.pdf"}
+
+    def test_falls_back_to_pymupdf(self):
+        failing = Mock(side_effect=RuntimeError("broken pdf"))
+        working = Mock(return_value="11.480,? model price")
+        meta = {"cache_path": "/tmp/price.pdf", "retrieved_at": "2026-11-21", "error": None}
+        chain = (("pdfplumber", failing), ("pymupdf", working), ("ocr", Mock()))
+        with patch.object(price_harvest, "fetch_url", return_value=meta), patch.object(
+            price_harvest, "EXTRACTORS", chain
+        ):
+            text, result = price_harvest.extract_text(self.snapshot)
+        self.assertEqual(text, "11.480,? model price")
+        self.assertEqual(result["extractor"], "pymupdf")
+        self.assertIsNone(result["error"])
+
+    def test_falls_back_to_ocr(self):
+        fail = Mock(side_effect=RuntimeError("no text layer"))
+        ocr = Mock(return_value="scanned price 12.000,?")
+        meta = {"cache_path": "/tmp/price.pdf", "retrieved_at": "2026-11-21", "error": None}
+        chain = (("pdfplumber", fail), ("pymupdf", fail), ("ocr", ocr))
+        with patch.object(price_harvest, "fetch_url", return_value=meta), patch.object(
+            price_harvest, "EXTRACTORS", chain
+        ):
+            text, result = price_harvest.extract_text(self.snapshot)
+        self.assertEqual(text, "scanned price 12.000,?")
+        self.assertEqual(result["extractor"], "ocr")
+
+    def test_all_extractors_failing_never_fabricates_text(self):
+        fail = Mock(side_effect=RuntimeError("broken"))
+        meta = {"cache_path": "/tmp/price.pdf", "retrieved_at": "2026-11-21", "error": None}
+        chain = (("pdfplumber", fail), ("pymupdf", fail), ("ocr", fail))
+        with patch.object(price_harvest, "fetch_url", return_value=meta), patch.object(
+            price_harvest, "EXTRACTORS", chain
+        ):
+            text, result = price_harvest.extract_text(self.snapshot)
+        self.assertEqual(text, "")
+        self.assertIn("all_extractors_failed", result["error"])
+        for name in ("pdfplumber", "pymupdf", "ocr"):
+            self.assertIn(name, result["error"])
+
+    def test_german_edition_month_is_parsed(self):
+        iso, precision = model_harvest.validity_date(
+            "Ausgabe: \u00d6sterreich, M\u00e4rz 2019", "2019-07-18"
+        )
+        self.assertEqual(iso, "2019-03-01")
+        self.assertEqual(precision, "month")
+
+    def test_fabia_rows_are_harvested_from_streuer_with_month_date(self):
+        rows = [entry for entry in json.loads(PRICE.read_text(encoding="utf-8"))["entries"]
+                if entry["price"]["match"]["matched_model"] == "fabia"]
+        self.assertEqual(len(rows), 5)
+        for row in rows:
+            self.assertEqual(row["purchase_price_incl_vat_eur"], 11480.0)
+            self.assertEqual(row["price_date"], "2019-03-01")
+            self.assertEqual(row["price_date_precision"], "month")
+            self.assertEqual(row["price_precision"], "model_level")
+            self.assertFalse(row["tco_ready"])
+            self.assertTrue(row["catalog_eligible"])
+            self.assertIn("FABIA20", row["source_url"])
 
 
 if __name__ == "__main__":

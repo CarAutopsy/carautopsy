@@ -1,6 +1,6 @@
 {
-  "count": 27,
-  "harvested_at": "2026-11-21T17:32:05+00:00",
+  "count": 22,
+  "harvested_at": "2026-11-21T18:34:39+00:00",
   "schema_version": 1,
   "variants": [
     {
@@ -131,26 +131,6 @@
       "model_year": 2018,
       "powertrain": "ice_petrol",
       "reason": "no_model_level_price_source",
-      "variant": "NFD7FD7CW0017CPN1C7A"
-    },
-    {
-      "detail": "No dated archived AT price list found for this consumer model",
-      "make": "SKODA",
-      "market": "AT",
-      "model": "SKODA",
-      "model_year": 2018,
-      "powertrain": "ice_petrol",
-      "reason": "no_model_level_price_source",
-      "variant": "NFD7FD7CW0017CPN1C8A"
-    },
-    {
-      "detail": "No dated archived AT price list found for this consumer model",
-      "make": "SKODA",
-      "market": "AT",
-      "model": "SKODA",
-      "model_year": 2018,
-      "powertrain": "ice_petrol",
-      "reason": "no_model_level_price_source",
       "variant": "NFD7FD7CW0027CP155N1C7B"
     },
     {
@@ -192,36 +172,6 @@
       "powertrain": "ice_diesel",
       "reason": "no_model_level_price_source",
       "variant": "NFD7FD7GC0097CP4NS7N1C7B"
-    },
-    {
-      "detail": "No dated archived AT price list found for this consumer model",
-      "make": "SKODA",
-      "market": "AT",
-      "model": "SKODA",
-      "model_year": 2018,
-      "powertrain": "ice_petrol",
-      "reason": "no_model_level_price_source",
-      "variant": "NFM5FM5CF0087CPN1C7A"
-    },
-    {
-      "detail": "No dated archived AT price list found for this consumer model",
-      "make": "SKODA",
-      "market": "AT",
-      "model": "SKODA",
-      "model_year": 2018,
-      "powertrain": "ice_petrol",
-      "reason": "no_model_level_price_source",
-      "variant": "NFM5FM5DF0027CPN1C7A"
-    },
-    {
-      "detail": "No dated archived AT price list found for this consumer model",
-      "make": "SKODA",
-      "market": "AT",
-      "model": "SKODA",
-      "model_year": 2018,
-      "powertrain": "ice_petrol",
-      "reason": "no_model_level_price_source",
-      "variant": "NFM5FM5DF0027CPN1C8A"
     },
     {
       "detail": "No dated archived AT price list found for this consumer model",

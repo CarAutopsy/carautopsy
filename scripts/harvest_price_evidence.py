@@ -104,7 +104,8 @@ def discover_snapshots() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                 continue
             original, timestamp = record[2], record[1]
             lowered = original.lower()
-            if "preisliste" not in lowered and "price" not in lowered:
+            # "Streuer" are Austrian tax guides that also publish list-price tables.
+            if not any(token in lowered for token in ("preisliste", "price", "streuer")):
                 continue
             snapshot = f"https://web.archive.org/web/{timestamp}id_/{original}"
             candidates.append({
@@ -117,23 +118,72 @@ def discover_snapshots() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     return candidates, log
 
 
+def _extract_pdfplumber(path: str) -> str:
+    """Primary extractor: pdfplumber/pdfminer."""
+    import pdfplumber
+
+    with pdfplumber.open(path) as document:
+        return "\n".join((page.extract_text() or "") for page in document.pages)
+
+
+def _extract_pymupdf(path: str) -> str:
+    """Fallback for damaged or partly truncated PDFs: PyMuPDF."""
+    import pymupdf
+
+    with pymupdf.open(path) as document:
+        return "\n".join(page.get_text() for page in document)
+
+
+def _extract_ocr(path: str) -> str:
+    """Last resort for scanned pages: render with PyMuPDF, OCR with pytesseract."""
+    import io
+
+    import pymupdf
+    import pytesseract
+    from PIL import Image
+
+    chunks: list[str] = []
+    with pymupdf.open(path) as document:
+        for page in document:
+            pixmap = page.get_pixmap()
+            image = Image.open(io.BytesIO(pixmap.tobytes("png")))
+            chunks.append(pytesseract.image_to_string(image, lang="eng"))
+    return "\n".join(chunks)
+
+
+EXTRACTORS = (
+    ("pdfplumber", _extract_pdfplumber),
+    ("pymupdf", _extract_pymupdf),
+    ("ocr", _extract_ocr),
+)
+
+
 def extract_text(snapshot: dict[str, Any]) -> tuple[str, dict[str, Any]]:
-    """Download and extract PDF text; return (text, request metadata)."""
+    """Extract PDF text with a pdfplumber -> PyMuPDF -> OCR fallback chain.
+
+    A failed extractor is recorded, never guessed. An empty result means no
+    verifiable text could be recovered from the archived snapshot.
+    """
     meta = fetch_url(snapshot["snapshot_url"])
     if meta["error"] or not meta.get("cache_path"):
         return "", meta
-    try:
-        import pdfplumber
-    except ImportError:
-        meta["error"] = "pdfplumber_unavailable"
-        return "", meta
-    try:
-        with pdfplumber.open(meta["cache_path"]) as document:
-            text = "\n".join((page.extract_text() or "") for page in document.pages)
-        return text, meta
-    except Exception as exc:  # noqa: BLE001
-        meta["error"] = f"pdf_extract_failed: {type(exc).__name__}"
-        return "", meta
+    attempts: list[str] = []
+    for name, extractor in EXTRACTORS:
+        try:
+            text = extractor(meta["cache_path"])
+        except ImportError as exc:
+            attempts.append(f"{name}:unavailable({str(exc)[:40]})")
+            continue
+        except Exception as exc:  # noqa: BLE001 - recorded, never guessed
+            attempts.append(f"{name}:{type(exc).__name__}")
+            continue
+        if text and text.strip():
+            meta["extractor"] = name
+            meta["error"] = None
+            return text, meta
+        attempts.append(f"{name}:no_text")
+    meta["error"] = "all_extractors_failed: " + "; ".join(attempts)
+    return "", meta
 
 
 def build_evidence(variants: list[dict[str, Any]]) -> tuple[dict, dict, dict]:

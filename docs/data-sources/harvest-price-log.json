@@ -64,6 +64,13 @@
       "timestamp": "20190724165759"
     },
     {
+      "date": "2019-07-18",
+      "host": "www.skoda.at",
+      "original": "https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "snapshot_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "timestamp": "20190718182206"
+    },
+    {
       "date": "2017-12-01",
       "host": "www.nissan.at",
       "original": "https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
@@ -71,47 +78,47 @@
       "timestamp": "20171201040232"
     }
   ],
-  "harvested_at": "2026-11-21T17:14:45+00:00",
+  "harvested_at": "2026-11-21T18:33:17+00:00",
   "rate_limit_seconds": 2.0,
   "requests": [
     {
       "error": null,
       "host": "www.skoda.at",
-      "retrieved_at": "2026-11-21T17:14:46+00:00",
+      "retrieved_at": "2026-11-21T18:33:17+00:00",
       "status": 200,
       "url": "https://web.archive.org/cdx/search/cdx?url=www.skoda.at/*&from=2017&to=2019&output=json&filter=statuscode:200&filter=mimetype:application/pdf&collapse=urlkey&limit=25"
     },
     {
       "error": null,
       "host": "www.nissan.at",
-      "retrieved_at": "2026-11-21T17:15:01+00:00",
+      "retrieved_at": "2026-11-21T18:33:17+00:00",
       "status": 200,
       "url": "https://web.archive.org/cdx/search/cdx?url=www.nissan.at/*&from=2017&to=2019&output=json&filter=statuscode:200&filter=mimetype:application/pdf&collapse=urlkey&limit=25"
     },
     {
       "error": null,
-      "retrieved_at": "2026-11-21T17:15:37+00:00",
+      "retrieved_at": "2026-11-21T18:33:17+00:00",
       "snapshot_url": "https://web.archive.org/web/20171202110055id_/http://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/121-394_brochures-list-2053-downloadTag/default/8115e6bd/1496994000/citigo-preisliste-05-2017.pdf",
       "status": 200,
       "text_chars": 14577
     },
     {
-      "error": "pdf_extract_failed: PdfminerException",
-      "retrieved_at": "2026-11-21T17:15:40+00:00",
+      "error": "all_extractors_failed: pdfplumber:PdfminerException; pymupdf:no_text; ocr:unavailable(No module named 'pytesseract')",
+      "retrieved_at": "2026-11-21T18:33:18+00:00",
       "snapshot_url": "https://web.archive.org/web/20190917022347id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/126-33548_brochures-list-65728-downloadTag/default/fbd2e46b/1564489454/FABIA-Preisliste-07-2019.pdf",
       "status": 200,
       "text_chars": 0
     },
     {
       "error": null,
-      "retrieved_at": "2026-11-21T17:15:42+00:00",
+      "retrieved_at": "2026-11-21T18:33:18+00:00",
       "snapshot_url": "https://web.archive.org/web/20181124205331id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/128-211_brochures-list-2064-downloadTag/default/e18e77c0/1536245169/rapid-preisliste-09-2018.pdf",
       "status": 200,
       "text_chars": 23199
     },
     {
-      "error": "pdf_extract_failed: PdfminerException",
-      "retrieved_at": "2026-11-21T17:15:58+00:00",
+      "error": "all_extractors_failed: pdfplumber:PdfminerException; pymupdf:no_text; ocr:unavailable(No module named 'pytesseract')",
+      "retrieved_at": "2026-11-21T18:33:19+00:00",
       "snapshot_url": "https://web.archive.org/web/20191022035826id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/00a178b0/1568205005/octavia-preisliste-08-2019.pdf",
       "status": 200,
       "text_chars": 0

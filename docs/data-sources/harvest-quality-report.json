@@ -1,10 +1,10 @@
 {
-  "catalog_eligible_count": 31,
+  "catalog_eligible_count": 36,
   "checked_variants": 58,
-  "gate_ready_count": 31,
-  "generated_at": "2026-11-21T17:33:40+00:00",
+  "gate_ready_count": 36,
+  "generated_at": "2026-11-21T18:34:48+00:00",
   "identity_pass_count": 58,
-  "price_pass_count": 31,
+  "price_pass_count": 36,
   "schema_version": 1,
   "single_source_identity_count": 0,
   "tco_ready_count": 0,
@@ -366,8 +366,8 @@
       "variant": "NAM6AM6BB0037CP5NS7N1C7A"
     },
     {
-      "catalog_eligible": false,
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -377,19 +377,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
       "tco_ready": false,
       "variant": "NFD7FD7CW0017CPN1C7A"
     },
     {
-      "catalog_eligible": false,
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -399,13 +400,14 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
       "tco_ready": false,
       "variant": "NFD7FD7CW0017CPN1C8A"
     },
@@ -934,8 +936,8 @@
       "variant": "NFM5FM5A40517CPSTVLN1C7B"
     },
     {
-      "catalog_eligible": false,
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -945,19 +947,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
       "tco_ready": false,
       "variant": "NFM5FM5CF0087CPN1C7A"
     },
     {
-      "catalog_eligible": false,
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -967,19 +970,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
       "tco_ready": false,
       "variant": "NFM5FM5DF0027CPN1C7A"
     },
     {
-      "catalog_eligible": false,
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -989,13 +993,14 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
       "tco_ready": false,
       "variant": "NFM5FM5DF0027CPN1C8A"
     },
