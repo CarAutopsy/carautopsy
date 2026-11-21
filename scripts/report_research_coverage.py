@@ -41,9 +41,10 @@ REPORT_DATE = "2026-11-21"
 SCHEMA_VERSION = 1
 
 IDENTITY_ROW_FIELDS = (
-    "consumer_make", "consumer_model", "trim", "generation", "source_url",
-    "license", "retrieved_at", "reviewed_by",
+    "consumer_make", "consumer_model", "source_url", "license",
+    "retrieved_at", "reviewed_by",
 )
+OPTIONAL_IDENTITY_FIELDS = ("trim", "generation")
 PRICE_ROW_FIELDS = (
     "purchase_price_excl_vat_eur", "price_date", "currency", "market",
     "source_url", "license", "retrieved_at",
@@ -116,6 +117,17 @@ def _positive(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0
 
 
+def identity_row_problems(row: dict[str, Any]) -> list[str]:
+    """Required identity evidence; trim/generation stay optional if undocumented."""
+    problems = missing_fields(row, IDENTITY_ROW_FIELDS)
+    if (
+        str(row.get("consumer_make") or "").casefold()
+        == str(row.get("consumer_model") or "").casefold()
+    ):
+        problems.append("consumer_model_equals_make")
+    return problems
+
+
 def enrich_record(
     record: dict[str, Any],
     identity_row: dict[str, Any] | None,
@@ -126,9 +138,12 @@ def enrich_record(
     if identity_row is not None:
         enriched["identity"]["make"] = identity_row["consumer_make"]
         enriched["identity"]["model"] = identity_row["consumer_model"]
-        # The resolved consumer trim replaces the EEA approval code for display;
-        # the original code stays in source_fields for audit.
-        enriched["identity"]["variant_name"] = identity_row["trim"]
+        # The documented consumer trim replaces the EEA approval code for
+        # display; where no trim is documented, the documented model is used.
+        # The original code stays in source_fields for audit.
+        enriched["identity"]["variant_name"] = (
+            identity_row.get("trim") or identity_row["consumer_model"]
+        )
         enriched["identity"]["trim"] = identity_row["trim"]
         enriched["identity"]["generation"] = identity_row["generation"]
         enriched["identity"]["resolution"] = {
@@ -193,7 +208,7 @@ def analyze_sample(
             identity_reasons["no_identity_evidence_file"] += 1
         elif identity_row is None:
             identity_reasons["no_exact_identity_mapping_row"] += 1
-        elif missing_fields(identity_row, IDENTITY_ROW_FIELDS):
+        elif identity_row_problems(identity_row):
             identity_reasons["incomplete_identity_mapping_row"] += 1
         else:
             identity_ok += 1
@@ -212,7 +227,7 @@ def analyze_sample(
 
         if identity_row is None or price_row is None:
             continue
-        if missing_fields(identity_row, IDENTITY_ROW_FIELDS) or missing_fields(
+        if identity_row_problems(identity_row) or missing_fields(
             price_row, PRICE_ROW_FIELDS
         ):
             continue

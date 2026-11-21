@@ -123,7 +123,7 @@ class ResearchCoverageTests(unittest.TestCase):
 
     def test_incomplete_identity_row_is_not_resolved(self):
         row = valid_identity_row(self.record)
-        del row["generation"]
+        del row["consumer_model"]
         report = self.report([row], [valid_price_row(self.record)])
         self.assertEqual(report["identity"]["resolvable"], 0)
         self.assertEqual(report["gate_ready_after_resolution"]["count"], 0)

@@ -1,0 +1,472 @@
+{
+  "harvested_at": "2026-11-21T17:14:08+00:00",
+  "rate_limit_seconds": 2.0,
+  "requests": [
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.nissan.at/index.pages-sitemap.xml",
+      "variant": "A02"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7DL0037CP0GS5N1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7DL0037CP0GS5V1B7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7DL0037CP5NS7S1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0027CPSTMLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0057CNSTN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0107CP0GS5N1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0107CP0GS5S1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0107CP0GS5V1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0107CP0NS5N1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0107CP0NS5S1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAD7AD7GC0107CP6NS7V1B7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAM6AM62Q0017CP164N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAM6AM62Q0327CPSTMLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAM6AM6BB0037CP0NS5V1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NAM6AM6BB0037CP5NS7N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0017CPN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0017CPN1C8A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0017CPSTVLN1B7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CP155N1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CP156N1C8B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CP5N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CP6N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CPS1VLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CPSTN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CPSTVLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CPSTVLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CPSTVLN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CPSTVLN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7CW0027CPV2VLN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7GC0027CPS1VLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7GC0027CPSTVLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7GC0027CPSTVLN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7GC0047CNS1N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7GC0047CNSTN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7GC0047CNV2N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFD7FD7GC0097CP4NS7N1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5A40517CPS1VLN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5A40517CPSTVLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5A40517CPSTVLN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5A40517CPSTVLN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5CF0087CPN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5DF0027CPN1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5DF0027CPN1C8A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM5FM5DF0027CPSTN71CSKA"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM62Q0287CNV2N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM62S0227CPSTVLN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM62S0327CP155N1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM62S0327CP156N1C8B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM62S0327CPS1N1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM62S0347CP5N1C7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM6AJ0167CPSTVLN1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM6AJ0167CPSTVLN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM6AJ0167CPV2VLN1C7B"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM6AJ0187CP155N1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM6AJ0187CP4N1B7A"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "NFM6FM6DQ0027CPSTN71CSKB"
+    },
+    {
+      "error": null,
+      "matched": true,
+      "retrieved_at": "2026-11-21T17:14:10+00:00",
+      "source": "oem_sitemap",
+      "url": "https://www.skoda.at/sitemap.xml",
+      "variant": "SAD7AD7GC0027CPSCMLN1C7A"
+    }
+  ],
+  "schema_version": 1,
+  "user_agent": "CarAutopsyHarvest/1.0"
+}
