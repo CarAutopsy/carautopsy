@@ -29,6 +29,7 @@ ROW = {
     "ID": "110900", "MS": "AT", "Mh": "VOLKSWAGEN", "Mk": "VOLKSWAGEN, VW",
     "Ve": "KOMBI", "Ct": "M1", "m (kg)": "2001", "Mt": "", "Enedc (g/km)": "164",
     "Ewltp (g/km)": "", "Ft": "DIESEL", "ep (KW)": "110", "TAN": "E1*2001/116*0220*46",
+    "z (Wh/km)": "",
 }
 
 
@@ -110,12 +111,18 @@ class AdapterIntegrationTests(unittest.TestCase):
             out = PROPOSALS_ROOT
             report = run_validation(sample, dataset_year=2017, price_source=None,
                                     output_dir=out, with_taxes=False)
-        self.assertEqual(report["sampled"], 20)
-        self.assertFalse(report["wltp_era"])
-        self.assertEqual(report["rejected"], 20)
-        self.assertEqual(report["artifacts_written"], 20)
-        self.assertEqual(report["rejection_reasons"], {NEDC_REJECTION: 20})
-        self.assertEqual(report["catalog_variants_written"], 0)
+            self.assertEqual(report["sampled"], 20)
+            self.assertFalse(report["wltp_era"])
+            self.assertEqual(report["rejected"], 20)
+            self.assertEqual(report["artifacts_written"], 0)
+            self.assertEqual(report["rejection_reasons"], {NEDC_REJECTION: 20})
+            self.assertEqual(report["catalog_variants_written"], 0)
+
+            # Diagnostic mode still records rejected proposals when requested.
+            diagnostic = run_validation(sample, dataset_year=2017, price_source=None,
+                                        output_dir=out, with_taxes=False,
+                                        include_rejected=True)
+            self.assertEqual(diagnostic["artifacts_written"], 20)
         artifacts = list(out.glob("*.json"))
         self.assertGreaterEqual(len(artifacts), 20)
         for artifact in artifacts[:3]:

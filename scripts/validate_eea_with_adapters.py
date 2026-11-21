@@ -122,11 +122,15 @@ def map_row(
     if co2 is None:
         co2 = _number(row.get("Enedc (g/km)", ""))
         co2_basis = "nedc"
-    derived = derive_fuel_consumption(co2, powertrain) if co2_basis == "nedc" else None
+    derived = derive_fuel_consumption(co2, powertrain)
+    if derived is not None:
+        derived["co2_basis"] = co2_basis
     price = attach_price(variant_id, price_source)
 
     power_kw = _number(row.get("ep (KW)", ""))
     mass_kg = _number(row.get("m (kg)", ""))
+    own_weight_kg = _number(row.get("Mt", ""))
+    electric_wh_km = _number(row.get("z (Wh/km)", ""))
     vehicle_class = (row.get("Ct") or row.get("Cr") or "").strip().upper()
 
     result: dict[str, Any] = {
@@ -162,8 +166,15 @@ def map_row(
         result["identity"]["powertrain"] = powertrain
     if vehicle_class:
         result["identity"]["vehicle_class"] = vehicle_class
+    dimensions: dict[str, Any] = {}
     if mass_kg is not None:
-        result["dimensions"] = {"max_permissible_mass_kg": mass_kg}
+        dimensions["max_permissible_mass_kg"] = mass_kg
+    if own_weight_kg is not None:
+        dimensions["own_weight_kg"] = own_weight_kg
+    if dimensions:
+        result["dimensions"] = dimensions
+    if electric_wh_km is not None:
+        result["energy"] = {"consumption_wh_km": {"wltp_combined": electric_wh_km}}
     if power_kw is not None and powertrain in {"ice_petrol", "ice_diesel", "hev", "phev"}:
         result.setdefault("performance", {})["combustion_engine_power_w"] = power_kw * 1000
     if power_kw is not None and powertrain == "bev":
@@ -277,6 +288,7 @@ def run_validation(
     price_source: dict[str, Any] | None,
     output_dir: Path,
     with_taxes: bool,
+    include_rejected: bool = False,
 ) -> dict[str, Any]:
     if output_dir.resolve() != PROPOSALS_ROOT.resolve():
         raise ValueError("proposals may only be written under docs/data-sources/proposals")
@@ -303,6 +315,8 @@ def run_validation(
             reasons.update(findings)
         else:
             passed += 1
+        if findings and not include_rejected:
+            continue
         proposal = build_proposal(record, year=dataset_year, findings=findings, dataset_year=dataset_year)
         path = proposal_path(record, dataset_year)
         path.write_text(json.dumps(proposal, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -341,6 +355,7 @@ def main() -> int:
     parser.add_argument("--price-source", default=None, help="optional JSON of attributed prices")
     parser.add_argument("--output-dir", default=str(PROPOSALS_ROOT))
     parser.add_argument("--no-taxes", action="store_true")
+    parser.add_argument("--include-rejected", action="store_true", help="write artifacts for rejected records too")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -353,6 +368,7 @@ def main() -> int:
         price_source=load_price_source(Path(args.price_source) if args.price_source else None),
         output_dir=Path(args.output_dir),
         with_taxes=not args.no_taxes,
+        include_rejected=args.include_rejected,
     )
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))

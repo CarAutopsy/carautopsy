@@ -1,0 +1,89 @@
+{
+  "catalog_written": false,
+  "derived_fields": {
+    "fuel_consumption_l_per_100km": null
+  },
+  "gate": {
+    "findings": [],
+    "passed": true
+  },
+  "price": {
+    "price_pending": true,
+    "price_source": null,
+    "purchase_price_excl_vat_eur": null
+  },
+  "provenance": {
+    "dataset_year": 2018,
+    "extraction_date": "2026-11-21",
+    "license": "CC BY 4.0",
+    "record_id": "2887803",
+    "source_name": "EEA type-approval CO2 microdata",
+    "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+  },
+  "requires_owner_approval": true,
+  "schema_version": 1,
+  "status": "proposed",
+  "variant": {
+    "dimensions": {
+      "max_permissible_mass_kg": 1580.0,
+      "own_weight_kg": 1705.0
+    },
+    "emissions": {
+      "co2_wltp_gpkm": 0.0
+    },
+    "energy": {
+      "consumption_wh_km": {
+        "wltp_combined": 206.0
+      }
+    },
+    "identity": {
+      "make": "NISSAN",
+      "model": "NISSAN",
+      "powertrain": "bev",
+      "variant_name": "A02",
+      "vehicle_class": "M1"
+    },
+    "offers": [
+      {
+        "price_pending": true,
+        "price_source": null,
+        "price_source_url": null,
+        "purchase_price_excl_vat_eur": null
+      }
+    ],
+    "performance": {
+      "electric_motor_continuous_power_w": 85000.0
+    },
+    "price_pending": true,
+    "provenance": {
+      "confidence": "low",
+      "sources": [
+        {
+          "license": "CC BY 4.0",
+          "record_id": "2887803",
+          "source_id": "eea-co2-mrv",
+          "url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+        }
+      ]
+    },
+    "registration": {
+      "first_registration_date": "2018-01-01"
+    },
+    "schema_version": "1.0.0",
+    "source_fields": {
+      "co2_basis": "wltp",
+      "co2_g_per_km": 0.0,
+      "fuel_code": "ELECTRIC",
+      "make": "NISSAN",
+      "mass_kg": 1580.0,
+      "model": "NISSAN",
+      "power_kw": 85.0,
+      "powertrain": "bev",
+      "record_id": "2887803",
+      "variant": "A02",
+      "vehicle_class": "M1"
+    },
+    "status": "proposed",
+    "variant_id": "eea-2887803-nissan-nissan"
+  }
+}
