@@ -1,6 +1,7 @@
 source: EEA type-approval CO2 microdata year=2018 wltp_era=True
 sampled: 154 passed: 9 rejected: 145
 proposal artifacts: 9 -> docs\data-sources\proposals
+identity requires_manual_curation: 9
 coverage %:
   identity.make: 100.0
   identity.model: 100.0

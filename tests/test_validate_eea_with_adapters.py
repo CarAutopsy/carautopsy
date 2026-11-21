@@ -1,4 +1,5 @@
 """Offline unit tests for the attributed EEA adapters (STEP 2)."""
+import copy
 import json
 import sys
 import tempfile
@@ -14,11 +15,14 @@ from validate_eea_with_adapters import (
     CO2_DIVISOR,
     DEFAULT_STATUTORY_RULES,
     DERIVED_FROM,
+    IDENTITY_QUALITY_CURATION,
+    IDENTITY_QUALITY_OK,
     NEDC_REJECTION,
     PROPOSALS_ROOT,
     attach_price,
     build_proposal,
     derive_fuel_consumption,
+    evaluate_identity_quality,
     evaluate_statutory,
     field_coverage,
     is_wltp_era,
@@ -215,6 +219,104 @@ class StatutoryGateTests(unittest.TestCase):
             for field in ("tax", "powertrain", "applicable_from", "applicable_to",
                           "exemption", "legal_basis", "source_url", "publisher", "retrieved"):
                 self.assertIn(field, rule)
+
+
+class IdentityQualityTests(unittest.TestCase):
+    """Pre-ingestion curation marker for non-consumer-facing EEA identities."""
+
+    def setUp(self):
+        self.record = map_row(ROW, 2018, None)
+
+    def test_make_equals_model_is_flagged(self):
+        self.record["identity"]["model"] = self.record["identity"]["make"]
+        result = evaluate_identity_quality(self.record)
+        self.assertEqual(result["identity_quality"], IDENTITY_QUALITY_CURATION)
+        self.assertTrue(any("model equals make" in reason for reason in result["reasons"]))
+        self.assertIn("model equals make", result["curation_reason"])
+
+    def test_missing_model_is_flagged(self):
+        self.record["identity"]["model"] = ""
+        result = evaluate_identity_quality(self.record)
+        self.assertEqual(result["identity_quality"], IDENTITY_QUALITY_CURATION)
+        self.assertIn("model is missing", result["reasons"])
+
+    def test_non_descriptive_variant_code_is_flagged(self):
+        self.record["identity"]["variant_name"] = "A02"
+        result = evaluate_identity_quality(self.record)
+        self.assertEqual(result["identity_quality"], IDENTITY_QUALITY_CURATION)
+        self.assertTrue(any("non-descriptive" in reason for reason in result["reasons"]))
+        self.assertIn("A02", result["curation_reason"])
+
+    def test_type_approval_signature_is_flagged(self):
+        self.record["identity"]["variant_name"] = "E1*2001/116*0220*46"
+        result = evaluate_identity_quality(self.record)
+        self.assertEqual(result["identity_quality"], IDENTITY_QUALITY_CURATION)
+        self.assertTrue(any("non-descriptive" in reason for reason in result["reasons"]))
+
+    def test_differentiated_identity_passes_without_curation(self):
+        # ROW maps to make=VOLKSWAGEN, model=VOLKSWAGEN, VW, variant=KOMBI.
+        result = evaluate_identity_quality(self.record)
+        self.assertEqual(result["identity_quality"], IDENTITY_QUALITY_OK)
+        self.assertIsNone(result["curation_reason"])
+        self.assertEqual(result["reasons"], [])
+
+    def test_build_proposal_carries_markers_without_touching_source_fields(self):
+        self.record["identity"]["model"] = self.record["identity"]["make"]
+        self.record["identity"]["variant_name"] = "A02"
+        source_before = copy.deepcopy(self.record["source_fields"])
+        provenance_before = copy.deepcopy(self.record["provenance"])
+        proposal = build_proposal(
+            self.record, year=2018, findings=[], dataset_year=2018
+        )
+        self.assertEqual(proposal["identity_quality"], IDENTITY_QUALITY_CURATION)
+        self.assertIn("model equals make", proposal["curation_reason"])
+        self.assertEqual(proposal["variant"]["source_fields"], source_before)
+        self.assertEqual(proposal["variant"]["provenance"], provenance_before)
+
+    def test_canonical_artifact_is_marked_and_every_fact_preserved(self):
+        path = PROPOSALS_ROOT / "nissan.nissan.a02.2018.2887803.json"
+        proposal = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(proposal["identity_quality"], IDENTITY_QUALITY_CURATION)
+        self.assertIn("NISSAN", proposal["curation_reason"])
+        self.assertIn("A02", proposal["curation_reason"])
+        self.assertIn("model equals make", proposal["curation_reason"])
+        self.assertFalse(proposal["catalog_written"])
+        self.assertTrue(proposal["requires_owner_approval"])
+        self.assertTrue(proposal["gate"]["passed"])
+        self.assertEqual(proposal["deduplication_role"], "canonical")
+        self.assertIsNone(proposal["duplicate_of"])
+        variant = proposal["variant"]
+        self.assertEqual(variant["source_fields"]["record_id"], "2887803")
+        self.assertEqual(variant["source_fields"]["make"], "NISSAN")
+        self.assertEqual(variant["source_fields"]["model"], "NISSAN")
+        self.assertEqual(variant["source_fields"]["variant"], "A02")
+        self.assertEqual(variant["source_fields"]["co2_g_per_km"], 0.0)
+        self.assertEqual(variant["source_fields"]["powertrain"], "bev")
+        self.assertEqual(variant["provenance"]["sources"][0]["record_id"], "2887803")
+        self.assertTrue(proposal["statutory"]["verified"])
+        self.assertTrue(proposal["price"]["price_pending"])
+        self.assertIsNone(proposal["price"]["purchase_price_excl_vat_eur"])
+
+    def test_run_reports_curation_without_catalog_writes(self):
+        import validate_eea_with_adapters as adapter_module
+
+        sample = ROOT / "docs" / "data-sources" / "sample" / "eea_at_2018_wltp_sample.tsv"
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "proposals"
+            with patch.object(adapter_module, "PROPOSALS_ROOT", out):
+                report = run_validation(
+                    sample, dataset_year=2018, price_source=None,
+                    output_dir=out, with_taxes=True,
+                )
+            self.assertEqual(report["catalog_variants_written"], 0)
+            self.assertEqual(report["artifacts_written"], 9)
+            self.assertEqual(report["identity_curation_required_count"], 9)
+            artifacts = sorted(out.glob("*.json"))
+            self.assertEqual(len(artifacts), 9)
+            for artifact in artifacts:
+                data = json.loads(artifact.read_text(encoding="utf-8"))
+                self.assertEqual(data["identity_quality"], IDENTITY_QUALITY_CURATION)
+                self.assertFalse(data["catalog_written"])
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections import Counter
 from datetime import UTC, date, datetime
@@ -33,6 +34,15 @@ CO2_DIVISOR = {"ice_petrol": 23.2, "ice_diesel": 26.5}
 PROPOSALS_ROOT = ROOT / "docs" / "data-sources" / "proposals"
 DEFAULT_STATUTORY_RULES = ROOT / "docs" / "data-sources" / "statutory" / "at-rules-v1.json"
 STATUTORY_FIELDS = ("statutory.nova.verified", "statutory.motor_tax.verified")
+IDENTITY_QUALITY_OK = "ok"
+IDENTITY_QUALITY_CURATION = "requires_manual_curation"
+# A short uppercase letter code followed by digits (e.g. "A02") or a
+# type-approval signature (e.g. "E1*2001/116*...") is not a consumer-facing
+# model identity. Deliberately conservative: descriptive names with spaces or
+# mixed case are not matched.
+NON_DESCRIPTIVE_VARIANT_RE = re.compile(
+    r"^(?:[A-Z]{1,3}\d{1,4}|[A-Za-z0-9]{1,5}[*/][A-Za-z0-9*/]+)$"
+)
 GATE_FIELDS = (
     "identity.make",
     "identity.model",
@@ -361,6 +371,55 @@ def _present(record: dict[str, Any], path: str) -> bool:
     return value is not None and value != ""
 
 
+def evaluate_identity_quality(record: dict[str, Any]) -> dict[str, Any]:
+    """Conservatively assess whether the EEA identity is consumer-facing.
+
+    This is a pre-ingestion curation marker, not a hard data-readiness gate. It
+    never invents or guesses a model name, trim, market name or specification:
+    when the source identity cannot be verified, the proposal is marked for
+    manual curation with an explicit reason.
+    """
+    identity = record.get("identity") or {}
+    make = str(identity.get("make") or "").strip()
+    model = str(identity.get("model") or "").strip()
+    variant = str(identity.get("variant_name") or "").strip()
+    reasons: list[str] = []
+
+    if not make:
+        reasons.append("make is missing")
+    if not model:
+        reasons.append("model is missing")
+    elif model.casefold() == make.casefold():
+        reasons.append(
+            f"model equals make ('{model}'); no distinct commercial model identity"
+        )
+    if not variant:
+        reasons.append("variant_name is missing")
+    elif NON_DESCRIPTIVE_VARIANT_RE.fullmatch(variant):
+        reasons.append(
+            f"variant_name '{variant}' is a non-descriptive approval/type code; "
+            "no documented commercial model identity supplied"
+        )
+
+    requires_curation = bool(reasons)
+    curation_reason = None
+    if requires_curation:
+        curation_reason = (
+            f"EEA source provides make='{make}', model='{model}', variant='{variant}', "
+            "which does not establish a consumer-facing vehicle identity: "
+            + "; ".join(reasons)
+            + ". No commercial model name, trim, market name or specification was "
+            "invented; a human curator must verify the identity before ingestion."
+        )
+    return {
+        "identity_quality": (
+            IDENTITY_QUALITY_CURATION if requires_curation else IDENTITY_QUALITY_OK
+        ),
+        "curation_reason": curation_reason,
+        "reasons": reasons,
+    }
+
+
 def field_coverage(records: list[dict[str, Any]]) -> dict[str, float]:
     if not records:
         return {field: 0.0 for field in GATE_FIELDS}
@@ -390,8 +449,11 @@ def build_proposal(
     dataset_year: int,
 ) -> dict[str, Any]:
     """Return a deterministic proposal artifact with full provenance."""
+    identity_quality = evaluate_identity_quality(record)
     proposal: dict[str, Any] = {
         "schema_version": 1,
+        "identity_quality": identity_quality["identity_quality"],
+        "curation_reason": identity_quality["curation_reason"],
         "variant": record,
         "derived_fields": {
             "fuel_consumption_l_per_100km": derive_fuel_consumption(
@@ -443,6 +505,7 @@ def run_validation(
     passed, rejected, reasons = 0, 0, Counter()
     output_dir.mkdir(parents=True, exist_ok=True)
     artifacts = 0
+    curation_required = 0
 
     for record in records:
         findings: list[str] = []
@@ -480,6 +543,8 @@ def run_validation(
                     proposal[field] = previous[field]
         path.write_text(json.dumps(proposal, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
         artifacts += 1
+        if proposal["identity_quality"] == IDENTITY_QUALITY_CURATION:
+            curation_required += 1
 
     return {
         "source": SOURCE_NAME,
@@ -494,6 +559,7 @@ def run_validation(
         "coverage_percent": field_coverage(records),
         "rejection_reasons": dict(sorted(reasons.items())),
         "price_source_records": len(price_source or {}),
+        "identity_curation_required_count": curation_required,
         "statutory_rules_applied": statutory_rules is not None,
         "statutory_verified_count": sum(
             1 for record in records if record.get("statutory", {}).get("verified") is True
@@ -539,6 +605,7 @@ def main() -> int:
         print(f"source: {report['source']} year={report['dataset_year']} wltp_era={report['wltp_era']}")
         print(f"sampled: {report['sampled']} passed: {report['passed']} rejected: {report['rejected']}")
         print(f"proposal artifacts: {report['artifacts_written']} -> {report['artifact_dir']}")
+        print(f"identity requires_manual_curation: {report['identity_curation_required_count']}")
         print("coverage %:")
         for field, value in report["coverage_percent"].items():
             print(f"  {field}: {value}")

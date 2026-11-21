@@ -1,5 +1,6 @@
 {
   "catalog_written": false,
+  "curation_reason": "EEA source provides make='NISSAN', model='NISSAN', variant='A02', which does not establish a consumer-facing vehicle identity: model equals make ('NISSAN'); no distinct commercial model identity; variant_name 'A02' is a non-descriptive approval/type code; no documented commercial model identity supplied. No commercial model name, trim, market name or specification was invented; a human curator must verify the identity before ingestion.",
   "deduplication_role": "canonical",
   "derived_fields": {
     "fuel_consumption_l_per_100km": null
@@ -9,6 +10,7 @@
     "findings": [],
     "passed": true
   },
+  "identity_quality": "requires_manual_curation",
   "price": {
     "price_pending": true,
     "price_source": null,
