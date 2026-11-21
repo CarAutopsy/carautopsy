@@ -34,24 +34,28 @@ Run: `python scripts/catalog_quality.py --report reports/catalog-quality.json
 --now 2026-11-25T12:00:00Z`. The report contains `catalog_sha256`,
 `report_sha256`, gates, structural error count, blocking finding count,
 completeness ratios, confidence counts, per-variant evidence, findings and the
-refresh plan. `report_sha256` excludes `generated_at` so identical catalog state
-yields the same digest at different evaluation times. [STATIC_READ]
+refresh plan. `report_sha256` excludes `generated_at`, but it still includes
+evaluation-dependent content such as source `age_days`. A matching digest
+therefore requires unchanged catalog state **and** unchanged
+evaluation-dependent report content. To compare catalog state alone, use
+`catalog_sha256`, which excludes evaluation-dependent report fields. [STATIC_READ]
 
 CI runs the tool in `.github/workflows/validate-catalog.yml` and uploads the
 report as an artifact. [STATIC_READ]
 
 ## Measured baseline
 
-Measured on `main` HEAD `4e4398fe4632e071964f3b094073573df5313c4b` with
-`--now 2026-11-25T12:00:00Z`: [TRACE_EXECUTION]
+Measured with `--now 2026-11-25T12:00:00Z` after the PR #140 review fixes
+(offer-field completeness now feeds the ratio and complete-variant count):
+[TRACE_EXECUTION]
 
 | Metric | Baseline |
 |---|---:|
 | Variants | 6 |
 | Structural errors | 0 |
 | Blocking findings | 0 |
-| Overall completeness | 0.3277 |
-| Complete variants | 0 |
+| Overall completeness | 0.3287 |
+| Complete variants | 1 |
 | Refresh-plan entries | 6 |
 
 The committed clean fixture `tests/fixtures/catalog_quality/clean.json` reaches

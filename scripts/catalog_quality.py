@@ -31,6 +31,8 @@ DEFAULT_MAX_SOURCE_AGE_DAYS = 365
 TIER_SCORE = {"unknown": 0, "low": 1, "medium": 2, "high": 3, "official": 4}
 GATES = {"HIVE_RESEARCH_PAUSED": True, "VERIFIED_RETRIEVAL_AVAILABLE": False}
 
+OFFER_FIELDS = ("country", "currency", "list_price_minor", "price_as_of", "availability")
+
 FIELD_SPECS: tuple[tuple[str, str, bool, frozenset[str] | None], ...] = (
     ("identity.make", "identity", True, None),
     ("identity.model", "identity", True, None),
@@ -56,11 +58,9 @@ FIELD_SPECS: tuple[tuple[str, str, bool, frozenset[str] | None], ...] = (
     ("dimensions.curb_mass_kg", "dimensions", True, None),
     ("warranty.vehicle_years", "warranty", False, None),
     ("warranty.battery_years", "warranty", False, frozenset({"bev", "phev"})),
-    ("offers", "offers", True, None),
+    *((f"offers.{field}", "offers", True, None) for field in OFFER_FIELDS),
     ("provenance.sources", "provenance", True, None),
 )
-OFFER_FIELDS = ("country", "currency", "list_price_minor", "price_as_of", "availability")
-
 
 class QualityError(ValueError):
     """Raised when quality evidence cannot be built."""
@@ -88,6 +88,8 @@ def present(value: Any) -> bool:
     """Return True for a populated value; null means unknown by protocol."""
     if value is None:
         return False
+    if isinstance(value, bool):
+        return value
     if isinstance(value, str):
         return bool(value.strip())
     if isinstance(value, (list, tuple, dict)):
@@ -120,7 +122,9 @@ def normalize_identity(record: dict[str, Any], variant_id: str) -> dict[str, Any
     make_slug = slugify(identity.get("make")) or slugify(variant_id.split(".")[0] if "." in variant_id else None)
     model_slug = slugify(identity.get("model")) or slugify(identity.get("model_slug"))
     generation_slug = slugify(identity.get("generation")) or slugify(identity.get("generation_slug"))
-    variant_slug = slugify(identity.get("variant_name")) or slugify(identity.get("variant_slug"))
+    # The stable variant slug is the identity component; the display name may
+    # be shared by different variants and must not collapse their keys.
+    variant_slug = slugify(identity.get("variant_slug")) or slugify(identity.get("variant_name"))
     year = identity.get("model_year_from")
     if isinstance(year, bool) or not isinstance(year, int):
         year = None
@@ -145,19 +149,22 @@ def confidence_tier(record: dict[str, Any]) -> dict[str, Any]:
         return {"tier": "unknown", "score": 0, "independent_sources": 0, "reviewed": False}
     sources = provenance.get("sources")
     sources = sources if isinstance(sources, list) else []
+    # Each tier must stay attached to the evidence reference that supports it;
+    # a URL from one entry cannot promote an unrelated entry's confidence.
     tiers: list[str] = []
     urls: set[str] = set()
     for source in sources:
         if not isinstance(source, dict):
+            continue
+        url = source.get("url")
+        if not isinstance(url, str) or not url.strip():
             continue
         raw = source.get("confidence") or source.get("tier") or "low"
         tier = str(raw).strip().casefold()
         if tier not in TIER_SCORE:
             tier = "low"
         tiers.append(tier)
-        url = source.get("url")
-        if isinstance(url, str) and url.strip():
-            urls.add(url.strip())
+        urls.add(url.strip())
     independent = len(urls)
     if not tiers:
         return {
@@ -197,7 +204,15 @@ def coverage(record: dict[str, Any], identity: dict[str, Any]) -> dict[str, Any]
         info = sections.setdefault(section, {"required": 0, "populated": 0, "missing": []})
         required_total += 1
         info["required"] += 1
-        value = nested(record, path)
+        if path.startswith("offers."):
+            field = path.split(".", 1)[1]
+            value = any(
+                present(offer.get(field))
+                for offer in (record.get("offers") or [])
+                if isinstance(offer, dict)
+            ) if isinstance(record.get("offers"), list) else False
+        else:
+            value = nested(record, path)
         if present(value):
             populated_total += 1
             info["populated"] += 1
@@ -301,6 +316,17 @@ def catalog_sha256(records: list[tuple[Path, dict[str, Any]]]) -> str:
     ).hexdigest()
 
 
+def has_sufficient_identity(identity: dict[str, Any]) -> bool:
+    """Whether an identity is specific enough to support a duplicate verdict."""
+    return bool(
+        identity.get("make_slug")
+        and identity.get("model_slug")
+        and isinstance(identity.get("model_year_from"), int)
+        and (identity.get("generation_slug") or identity.get("variant_slug"))
+        and identity.get("canonical_key")
+    )
+
+
 def detect_duplicates(
     records: list[tuple[Path, dict[str, Any]]],
     identities: dict[str, dict[str, Any]],
@@ -312,7 +338,9 @@ def detect_duplicates(
     for path, record in records:
         variant_id = str(record.get("variant_id") or path.stem)
         by_variant_id.setdefault(variant_id, []).append(variant_id)
-        by_identity.setdefault(identities[variant_id]["canonical_key"], []).append(variant_id)
+        identity = identities[variant_id]
+        if has_sufficient_identity(identity):
+            by_identity.setdefault(identity["canonical_key"], []).append(variant_id)
     for variant_id, items in sorted(by_variant_id.items()):
         if len(items) > 1:
             findings.append(_finding("DUPLICATE_VARIANT_ID", variant_id, f"used by {len(items)} records", "ERROR"))
@@ -373,6 +401,29 @@ def refresh_plan(
     return plan
 
 
+def preflight_input_sizes(catalog_dir: Path) -> None:
+    """Reject oversized catalog files before any structural validation loads them."""
+    catalog_dir = catalog_dir.resolve()
+    if not catalog_dir.is_dir():
+        return
+    for path in sorted(catalog_dir.glob("*.json")):
+        if path.stat().st_size > MAX_INPUT_BYTES:
+            raise QualityError(f"{path}: record exceeds {MAX_INPUT_BYTES} bytes")
+
+
+def assert_safe_report_path(report_path: Path, catalog_dir: Path) -> Path:
+    """Resolve a report path and reject any alias that points into the catalog."""
+    resolved_report = report_path.resolve()
+    resolved_catalog = catalog_dir.resolve()
+    if resolved_report == resolved_catalog or resolved_report.is_relative_to(resolved_catalog):
+        raise QualityError("report path must not overlap the catalog directory")
+    if resolved_catalog.is_dir():
+        for record_path in sorted(resolved_catalog.glob("*.json")):
+            if resolved_report == record_path.resolve():
+                raise QualityError("report path must not overwrite a catalog record")
+    return resolved_report
+
+
 def build_report(
     catalog_dir: Path = DEFAULT_CATALOG,
     schema_path: Path = DEFAULT_SCHEMA,
@@ -384,6 +435,7 @@ def build_report(
     if evaluation_time.tzinfo is None or evaluation_time.utcoffset() is None:
         raise QualityError("now must include a timezone")
     evaluation_time = evaluation_time.astimezone(UTC)
+    preflight_input_sizes(catalog_dir)
     structural_errors = validate_catalog(catalog_dir, schema_path)
     findings = [
         _finding("STRUCTURAL_ERROR", "<catalog>", message, "ERROR")
@@ -392,13 +444,16 @@ def build_report(
     records = load_catalog(catalog_dir) if catalog_dir.is_dir() else []
     identities: dict[str, dict[str, Any]] = {}
     coverages: dict[str, dict[str, Any]] = {}
+    coverage_records: list[dict[str, Any]] = []
     confidences: dict[str, dict[str, Any]] = {}
     freshness: dict[str, list[dict[str, Any]]] = {}
     for path, record in records:
         variant_id = str(record.get("variant_id") or path.stem)
         identity = normalize_identity(record, variant_id)
         identities[variant_id] = identity
-        coverages[variant_id] = coverage(record, identity)
+        record_coverage = coverage(record, identity)
+        coverage_records.append(record_coverage)
+        coverages[variant_id] = record_coverage
         confidences[variant_id] = confidence_tier(record)
         details, freshness_findings = source_freshness(record, evaluation_time, max_source_age_days, variant_id)
         freshness[variant_id] = details
@@ -407,10 +462,12 @@ def build_report(
             findings.append(_finding("MISSING_CRITICAL_FIELD", variant_id, field, "WARNING"))
     findings.extend(detect_duplicates(records, identities))
     findings.sort(key=lambda item: (item["severity"], item["category"], item["record_id"], item["message"]))
-    required = sum(item["required_fields"] for item in coverages.values())
-    populated = sum(item["populated_fields"] for item in coverages.values())
+    # Aggregate per record so duplicate variant IDs still contribute every
+    # record's measurements to the catalog-level totals.
+    required = sum(item["required_fields"] for item in coverage_records)
+    populated = sum(item["populated_fields"] for item in coverage_records)
     sections: dict[str, dict[str, int]] = {}
-    for cov in coverages.values():
+    for cov in coverage_records:
         for name, info in cov["sections"].items():
             summary = sections.setdefault(name, {"required": 0, "populated": 0})
             summary["required"] += int(info["required"])
@@ -432,7 +489,8 @@ def build_report(
             "required_fields": required,
             "populated_fields": populated,
             "ratio": round(populated / required, 4) if required else 1.0,
-            "complete_variants": sum(1 for item in coverages.values() if item["complete"]),
+            "complete_variants": sum(1 for item in coverage_records if item["complete"]),
+            "measured_records": len(coverage_records),
             "sections": sections,
         },
         "confidence_counts": {
@@ -493,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
             raise QualityError("--now must include a timezone")
         if args.max_source_age_days < 1:
             raise QualityError("--max-source-age-days must be positive")
+        assert_safe_report_path(args.report, args.catalog_dir)
         report = build_report(args.catalog_dir, args.schema, now, args.max_source_age_days)
         write_report(report, args.report)
     except (QualityError, ValueError) as exc:
