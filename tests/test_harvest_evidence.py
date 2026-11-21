@@ -51,7 +51,7 @@ class HarvestEvidenceTests(unittest.TestCase):
             self.assertFalse(row["price_pending"])
         self.assertEqual(unresolved["count"], 22)
         for row in unresolved["variants"]:
-            self.assertEqual(row["reason"], "no_model_level_price_source")
+            self.assertEqual(row["reason"], "no_source_found_after_exhaustive_search")
             self.assertTrue(row["detail"])
 
     def test_no_fabrication_when_identity_source_is_blank(self):
