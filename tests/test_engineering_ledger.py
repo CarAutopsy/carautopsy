@@ -2,8 +2,10 @@
 import copy
 import hashlib
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +48,28 @@ BASE = {
     "requires_owner_approval": True,
 }
 DIGEST = "d" * 64
+
+
+def real_verification_artifact(contract):
+    """Produce a genuine artifact from engineering_verification.run_verification."""
+    from engineering_verification import _Completed, run_verification, snapshot_manifest
+
+    target = contract["allowed_paths"][0]
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        path = root / target
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"ok": true}\n', encoding="utf-8")
+        manifest = snapshot_manifest(root, contract["allowed_paths"])
+        return run_verification(
+            contract,
+            manifest,
+            "f" * 64,
+            root=root,
+            check_names=("repo_audit",),
+            runner=lambda argv, **kwargs: _Completed(0, b"17 passed\n", b""),
+            status_probe=lambda _root: "",
+        )
 
 
 def fixture():
@@ -196,12 +220,111 @@ class EngineeringLedgerTests(unittest.TestCase):
                     PROVIDER_TRANSPORT_FAILURE,
                 )
                 self.assertEqual(entry["digest"], DIGEST)
+        # Priority: bundle_sha256 wins for bundles, even if another digest is present.
+        _, entry, _ = record_engineering_outcome(
+            self.ledger, self.contract, self.reservation,
+            {"bundle_sha256": DIGEST, "evidence_digest": "e" * 64},
+            PROVIDER_TRANSPORT_FAILURE,
+        )
+        self.assertEqual(entry["digest"], DIGEST)
+        # A present but malformed authoritative field fails closed (no fallback).
         with self.assertRaises(EngineeringLedgerError):
             record_engineering_outcome(
                 self.ledger, self.contract, self.reservation,
-                {"bundle_sha256": DIGEST, "evidence_digest": "e" * 64},
+                {"bundle_sha256": "not-a-digest", "evidence_digest": DIGEST},
                 PROVIDER_TRANSPORT_FAILURE,
             )
+
+
+    def test_real_run_verification_artifact_is_accepted(self):
+        artifact = real_verification_artifact(self.contract)
+        self.assertIn("snapshot_digest", artifact)
+        self.assertIn("evidence_digest", artifact)
+        self.assertNotEqual(artifact["snapshot_digest"], artifact["evidence_digest"])
+        ledger, entry, retryable = record_engineering_outcome(
+            self.ledger, self.contract, self.reservation, artifact,
+            PROVIDER_TRANSPORT_FAILURE,
+        )
+        # evidence_digest is authoritative for real artifacts.
+        self.assertEqual(entry["digest"], artifact["evidence_digest"])
+        self.assertTrue(retryable)
+        self.assertEqual(ledger["namespace"], LEDGER_NAMESPACE)
+
+    def test_terminal_and_exhausted_entries_are_sticky(self):
+        for terminal in (AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED):
+            ledger, _entry, _ = record_engineering_outcome(
+                self.ledger, self.contract, self.reservation, self.bundle, terminal
+            )
+            with self.assertRaisesRegex(EngineeringLedgerError, "terminal engineering outcome is sticky"):
+                record_engineering_outcome(
+                    ledger, self.contract, self.reservation,
+                    {"bundle_sha256": "e" * 64}, PROVIDER_TRANSPORT_FAILURE,
+                )
+
+        ledger = empty_ledger()
+        for attempt in range(MAX_ENGINEERING_ATTEMPTS):
+            bundle = {"bundle_sha256": format(attempt + 1, "064x")}
+            ledger, entry, retryable = record_engineering_outcome(
+                ledger, self.contract, self.reservation, bundle, VEHICLE_QUALITY_REJECTION
+            )
+        self.assertFalse(retryable)
+        self.assertTrue(is_exhausted(entry))
+        with self.assertRaisesRegex(EngineeringLedgerError, "exhausted engineering outcome is sticky"):
+            record_engineering_outcome(
+                ledger, self.contract, self.reservation,
+                {"bundle_sha256": "f" * 64}, VEHICLE_QUALITY_REJECTION,
+            )
+
+    def test_provider_faults_do_not_consume_revision_allowance(self):
+        ledger = empty_ledger()
+        for attempt in range(MAX_ENGINEERING_ATTEMPTS):
+            bundle = {"bundle_sha256": format(attempt + 1, "064x")}
+            ledger, entry, retryable = record_engineering_outcome(
+                ledger, self.contract, self.reservation, bundle, PROVIDER_TRANSPORT_FAILURE
+            )
+            self.assertEqual(entry["counters"]["attempts"], 0)
+            self.assertEqual(entry["counters"]["provider_attempts"], attempt + 1)
+        # Provider retry budget is exhausted but the code-revision allowance is intact.
+        self.assertFalse(retryable)
+        self.assertEqual(entry["counters"]["verification_attempts"], 0)
+
+    def test_seen_attempt_history_is_bounded_and_idempotent(self):
+        from engineering_ledger import MAX_SEEN_ATTEMPT_IDS
+
+        first_bundle = {"bundle_sha256": "1" * 64}
+        ledger, first_entry, _ = record_engineering_outcome(
+            self.ledger, self.contract, self.reservation, first_bundle,
+            VEHICLE_QUALITY_REJECTION,
+        )
+        self.assertEqual(first_entry["seen_attempt_ids"], [first_entry["attempt_id"]])
+
+        before = copy.deepcopy(ledger)
+        replayed, replay_entry, _ = record_engineering_outcome(
+            ledger, self.contract, self.reservation, first_bundle,
+            VEHICLE_QUALITY_REJECTION,
+        )
+        self.assertEqual(replayed, before)
+        self.assertEqual(replay_entry, first_entry)
+
+        second_bundle = {"bundle_sha256": "2" * 64}
+        ledger, second_entry, _ = record_engineering_outcome(
+            ledger, self.contract, self.reservation, second_bundle,
+            VEHICLE_QUALITY_REJECTION,
+        )
+        self.assertEqual(
+            second_entry["seen_attempt_ids"],
+            [first_entry["attempt_id"], second_entry["attempt_id"]],
+        )
+        self.assertLessEqual(len(second_entry["seen_attempt_ids"]), MAX_SEEN_ATTEMPT_IDS)
+
+        # The stored history itself is bounded and validated on load.
+        oversized = copy.deepcopy(second_entry)
+        oversized["seen_attempt_ids"] = [format(i, "064x") for i in range(MAX_SEEN_ATTEMPT_IDS + 1)]
+        oversized["attempt_id"] = oversized["seen_attempt_ids"][-1]
+        bad_ledger = empty_ledger()
+        bad_ledger["entries"][namespaced_key(self.contract["task_id"])] = oversized
+        with self.assertRaises(EngineeringLedgerError):
+            load_safe_ledger(bad_ledger)
 
 
 class LedgerPurityTests(unittest.TestCase):
@@ -220,11 +343,27 @@ class LedgerPurityTests(unittest.TestCase):
                 imports.append(path.name)
         self.assertEqual(imports, [])
 
-    def test_determinism_of_ids(self):
-        self.assertEqual(
-            hashlib.sha256(b"r" * 24 + b":" + DIGEST.encode() + b":" + PROVIDER_TRANSPORT_FAILURE.encode()).hexdigest(),
-            hashlib.sha256(f"{'r' * 24}:{DIGEST}:{PROVIDER_TRANSPORT_FAILURE}".encode()).hexdigest(),
+    def test_record_is_deterministic_and_pure(self):
+        contract = validate_task_contract(BASE)
+        reservation = {
+            "reservation_id": "r" * 24,
+            "task_id": contract["task_id"],
+            "base_sha": contract["base_sha"],
+        }
+        source = empty_ledger()
+        before = copy.deepcopy(source)
+        first = record_engineering_outcome(
+            source, contract, reservation, {"bundle_sha256": DIGEST},
+            PROVIDER_TRANSPORT_FAILURE,
         )
+        second = record_engineering_outcome(
+            source, contract, reservation, {"bundle_sha256": DIGEST},
+            PROVIDER_TRANSPORT_FAILURE,
+        )
+        self.assertEqual(first, second)
+        self.assertEqual(source, before)
+        self.assertEqual(first[1]["attempt_id"], second[1]["attempt_id"])
+        self.assertEqual(first[1]["seen_attempt_ids"], second[1]["seen_attempt_ids"])
 
 
 if __name__ == "__main__":

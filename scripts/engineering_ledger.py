@@ -24,6 +24,7 @@ class EngineeringLedgerError(ValueError):
 LEDGER_NAMESPACE = "engineering"
 LEDGER_SCHEMA_VERSION = 1
 MAX_ENGINEERING_ATTEMPTS = 3
+MAX_SEEN_ATTEMPT_IDS = 10
 MAX_LEDGER_ENTRIES = 500
 COUNTER_NAMES = ("attempts", "provider_attempts", "format_attempts", "verification_attempts")
 ALLOWED_CODES = frozenset(FAILURE_CODES) | {AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED}
@@ -32,7 +33,7 @@ _NAMESPACE_KEY = re.compile(r"engineering:eng-[a-z0-9][a-z0-9-]{1,63}\Z")
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _ENTRY_FIELDS = frozenset({
     "task_id", "reservation_id", "digest", "code", "counters", "retryable",
-    "attempt_id", "execution_enabled", "publication_enabled",
+    "attempt_id", "seen_attempt_ids", "execution_enabled", "publication_enabled",
     "requires_owner_approval",
 })
 # Keys that would indicate a Hive vehicle-curation or legacy outcome record.
@@ -45,6 +46,10 @@ _CODE_COUNTER = {
     "provenance_rejection": "verification_attempts",
     "vehicle_quality_rejection": "verification_attempts",
 }
+# The design proposal says provider transport/format faults do not consume the
+# code-revision allowance (docs/operations/ENGINEERING_AGENT_DESIGN_PROPOSAL.md,
+# sections 7 and 9, following CivLab #87/#136).
+_NON_REVISION_CODES = frozenset({"provider_transport_failure", "response_format_failure"})
 
 
 def namespaced_key(task_id: Any) -> str:
@@ -98,6 +103,14 @@ def load_safe_ledger(data: Any) -> dict[str, Any]:
             raise EngineeringLedgerError(f"ledger entry has an invalid digest: {key}")
         if not isinstance(entry.get("attempt_id"), str) or _DIGEST.fullmatch(entry["attempt_id"]) is None:
             raise EngineeringLedgerError(f"ledger entry has an invalid attempt id: {key}")
+        seen = entry.get("seen_attempt_ids")
+        if (
+            not isinstance(seen, list) or not seen or len(seen) > MAX_SEEN_ATTEMPT_IDS
+            or any(not isinstance(item, str) or _DIGEST.fullmatch(item) is None for item in seen)
+            or len(set(seen)) != len(seen)
+            or entry["attempt_id"] != seen[-1]
+        ):
+            raise EngineeringLedgerError(f"ledger entry has invalid attempt history: {key}")
         counters = entry.get("counters")
         if not isinstance(counters, dict) or set(counters) != set(COUNTER_NAMES):
             raise EngineeringLedgerError(f"ledger entry counters are malformed: {key}")
@@ -123,15 +136,17 @@ def load_safe_ledger(data: Any) -> dict[str, Any]:
 def _outcome_digest(bundle_or_artifact: Any) -> str:
     if not isinstance(bundle_or_artifact, dict):
         raise EngineeringLedgerError("bundle or artifact must be an object")
-    candidates = [
-        bundle_or_artifact.get(field)
-        for field in ("bundle_sha256", "evidence_digest", "snapshot_digest")
-        if field in bundle_or_artifact
-    ]
-    values = [value for value in candidates if isinstance(value, str) and _DIGEST.fullmatch(value)]
-    if not values or len(set(values)) != 1:
-        raise EngineeringLedgerError("a single valid 64-hex digest is required")
-    return values[0]
+    # Bundles carry ``bundle_sha256``; real run_verification artifacts carry
+    # both ``snapshot_digest`` and ``evidence_digest``. The first present field
+    # is authoritative and must be valid — never silently fall back to another
+    # digest when the preferred binding is malformed.
+    for field in ("bundle_sha256", "evidence_digest", "snapshot_digest"):
+        if field in bundle_or_artifact:
+            value = bundle_or_artifact[field]
+            if not isinstance(value, str) or _DIGEST.fullmatch(value) is None:
+                raise EngineeringLedgerError(f"{field} is not a valid 64-hex digest")
+            return value
+    raise EngineeringLedgerError("a 64-hex digest is required")
 
 
 def is_exhausted(entry: Any) -> bool:
@@ -181,27 +196,35 @@ def record_engineering_outcome(
         raise EngineeringLedgerError("reservation base SHA does not match the contract")
 
     digest = _outcome_digest(bundle_or_artifact)
+    attempt_id = hashlib.sha256(
+        f"{reservation_id}:{digest}:{code}".encode("utf-8")
+    ).hexdigest()
     safe = load_safe_ledger(ledger)
     key = namespaced_key(normalized["task_id"])
     existing = safe["entries"].get(key)
 
     if existing is not None:
-        if (
-            existing["reservation_id"] == reservation_id
-            and existing["digest"] == digest
-            and existing["code"] == code
-        ):
-            return copy.deepcopy(safe), copy.deepcopy(existing), existing["retryable"]
         if existing["reservation_id"] != reservation_id:
             raise EngineeringLedgerError("ledger entry belongs to a different reservation")
+        # Any previously seen attempt id replays as an exact no-op, including
+        # terminal or exhausted outcomes — replay must never fabricate a new
+        # revision or mutate counters.
+        if attempt_id in existing["seen_attempt_ids"]:
+            return copy.deepcopy(safe), copy.deepcopy(existing), existing["retryable"]
+        if existing["code"] in {AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED}:
+            raise EngineeringLedgerError("terminal engineering outcome is sticky")
+        if existing["retryable"] is False:
+            raise EngineeringLedgerError("exhausted engineering outcome is sticky")
 
     counters = dict(existing["counters"]) if existing is not None else {name: 0 for name in COUNTER_NAMES}
     field = _CODE_COUNTER.get(code)
-    if field is not None and code not in {AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED}:
-        counters["attempts"] = min(counters["attempts"] + 1, MAX_ENGINEERING_ATTEMPTS)
+    if field is not None:
         counters[field] = min(counters[field] + 1, MAX_ENGINEERING_ATTEMPTS)
+        # Provider transport/format faults are bounded separately and do NOT
+        # consume the code-revision allowance (design proposal sections 7/9).
+        if code not in _NON_REVISION_CODES:
+            counters["attempts"] = min(counters["attempts"] + 1, MAX_ENGINEERING_ATTEMPTS)
 
-    attempt_source = f"{reservation_id}:{digest}:{code}".encode("utf-8")
     entry = {
         "task_id": normalized["task_id"],
         "reservation_id": reservation_id,
@@ -209,11 +232,13 @@ def record_engineering_outcome(
         "code": code,
         "counters": counters,
         "retryable": False,
-        "attempt_id": hashlib.sha256(attempt_source).hexdigest(),
+        "attempt_id": attempt_id,
+        "seen_attempt_ids": (existing["seen_attempt_ids"] if existing is not None else []) + [attempt_id],
         "execution_enabled": False,
         "publication_enabled": False,
         "requires_owner_approval": True,
     }
+    entry["seen_attempt_ids"] = entry["seen_attempt_ids"][-MAX_SEEN_ATTEMPT_IDS:]
     if code in {AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED}:
         entry["retryable"] = False
     else:
