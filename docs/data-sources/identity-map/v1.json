@@ -1,0 +1,2389 @@
+{
+  "dataset_year": 2018,
+  "entries": [
+    {
+      "confidence": "high",
+      "consumer_make": "Nissan",
+      "consumer_model": "Leaf 40KWH",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.nissan.at/fahrzeuge/neuwagen/leaf/innenraumgestaltung.html",
+          "retrieved_at": "2026-11-21T17:14:08+00:00",
+          "robots_checked": true,
+          "source": "https://www.nissan.at/index.pages-sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "NISSAN LEAF 40KWH",
+        "eea_record_ids": [
+          "2887803",
+          "2888953",
+          "2887804",
+          "2887805",
+          "2887806",
+          "2887807",
+          "2888955",
+          "2888956",
+          "2888954"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e9*2007/46*6537*00"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "NISSAN",
+      "market": "AT",
+      "model": "NISSAN",
+      "model_year": 2018,
+      "powertrain": "bev",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "A02"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:08+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2697130",
+          "2776694"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7DL0037CP0GS5N1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2776424",
+          "2776422"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7DL0037CP0GS5V1B7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2730849"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7DL0037CP5NS7S1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2817152"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0027CPSTMLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Superb",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/superb/superb",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "SUPERB",
+        "eea_record_ids": [
+          "2681708",
+          "2685315",
+          "2682695"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0317*03",
+          "e8*2007/46*0317*01",
+          "e8*2007/46*0317*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0057CNSTN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2777716"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0107CP0GS5N1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2779124"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0107CP0GS5S1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2777578",
+          "2777580"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0107CP0GS5V1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2696812"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0107CP0NS5N1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2777163"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0107CP0NS5S1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2696964"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*08"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAD7AD7GC0107CP6NS7V1B7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2657228",
+          "2727649",
+          "2707989",
+          "2708217"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*06"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAM6AM62Q0017CP164N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2820131"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAM6AM62Q0327CPSTMLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2730272"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*07"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAM6AM6BB0037CP0NS5V1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2730274"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*07"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NAM6AM6BB0037CP5NS7N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Fabia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/service-und-zubehoer/reifen-und-raeder/felgen/skoda-fabia-felgen",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "FABIA",
+        "eea_record_ids": [
+          "2859538",
+          "2859346",
+          "2859340"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0319*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0017CPN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Fabia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/service-und-zubehoer/reifen-und-raeder/felgen/skoda-fabia-felgen",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "FABIA",
+        "eea_record_ids": [
+          "2857644"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0319*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0017CPN1C8A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2785216",
+          "2820780"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01",
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0017CPSTVLN1B7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2727289"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*06"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CP155N1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2709442",
+          "2710114"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*05"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CP156N1C8B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2713575",
+          "2721257",
+          "2688220",
+          "2738398",
+          "2738406",
+          "2721258",
+          "2731163"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*04"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CP5N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2724406",
+          "2720810"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*04"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CP6N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2818411"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CPS1VLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Superb",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/superb/superb",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "SUPERB",
+        "eea_record_ids": [
+          "2680770"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0317*04"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CPSTN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2782240",
+          "2817814",
+          "2781937"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01",
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CPSTVLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2809169"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CPSTVLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2782882",
+          "2810936",
+          "2818146",
+          "2782349",
+          "2818258"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01",
+          "e8*2007/46*0318*02",
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CPSTVLN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2821825",
+          "2780633",
+          "2813013",
+          "2809284",
+          "2814837",
+          "11324757",
+          "2812728",
+          "2812729",
+          "2809614",
+          "2813008",
+          "11324761",
+          "2780626",
+          "2809172"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*04",
+          "e8*2007/46*0318*01",
+          "e8*2007/46*0318*03",
+          "e8*2007/46*0318*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CPSTVLN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2814944"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7CW0027CPV2VLN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2810650"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7GC0027CPS1VLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2810545",
+          "2816327",
+          "2809025",
+          "2781929",
+          "2815341",
+          "2810142",
+          "2781774"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*02",
+          "e8*2007/46*0318*03",
+          "e8*2007/46*0318*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7GC0027CPSTVLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2816466"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7GC0027CPSTVLN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Superb",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/superb/superb",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "SUPERB",
+        "eea_record_ids": [
+          "2683305"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0317*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7GC0047CNS1N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Superb",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/superb/superb",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "SUPERB",
+        "eea_record_ids": [
+          "2684266",
+          "2743915",
+          "2683420",
+          "2683295",
+          "2744933",
+          "2683190",
+          "2743329",
+          "2744461",
+          "2684511"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0317*02",
+          "e8*2007/46*0317*04",
+          "e8*2007/46*0317*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7GC0047CNSTN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Superb",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/superb/superb",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "SUPERB",
+        "eea_record_ids": [
+          "2743987"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0317*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7GC0047CNV2N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Kodiaq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/kodiaq/kodiaq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KODIAQ",
+        "eea_record_ids": [
+          "2778438"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0249*07"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFD7FD7GC0097CP4NS7N1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2811761"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5A40517CPS1VLN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2783531",
+          "2783289",
+          "2783701",
+          "2811334",
+          "2811328",
+          "2783066",
+          "2783288",
+          "2818689"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01",
+          "e8*2007/46*0318*02",
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5A40517CPSTVLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2812443",
+          "2780060"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03",
+          "e8*2007/46*0318*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5A40517CPSTVLN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2784728",
+          "2811754",
+          "2819515",
+          "2819788",
+          "2819672",
+          "2819793"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01",
+          "e8*2007/46*0318*02",
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5A40517CPSTVLN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Fabia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/service-und-zubehoer/reifen-und-raeder/felgen/skoda-fabia-felgen",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "FABIA",
+        "eea_record_ids": [
+          "2858564",
+          "2856198",
+          "2849852",
+          "2853929",
+          "2849190",
+          "2857892",
+          "2854050",
+          "2855905",
+          "2855909",
+          "2855239",
+          "2849698"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0319*03",
+          "e8*2007/46*0319*02",
+          "e8*2007/46*0319*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5CF0087CPN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Fabia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/service-und-zubehoer/reifen-und-raeder/felgen/skoda-fabia-felgen",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "FABIA",
+        "eea_record_ids": [
+          "2854698"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0319*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5DF0027CPN1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Fabia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/service-und-zubehoer/reifen-und-raeder/felgen/skoda-fabia-felgen",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "FABIA",
+        "eea_record_ids": [
+          "2851891",
+          "2852489",
+          "2852977"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0319*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5DF0027CPN1C8A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Rapid",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/markenwelt/skoda-geschichte/skoda-zeitachse/overlay-skoda-421-rapid",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "RAPID",
+        "eea_record_ids": [
+          "2866226",
+          "2865578"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0320*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM5FM5DF0027CPSTN71CSKA"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Superb",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/superb/superb",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "SUPERB",
+        "eea_record_ids": [
+          "2685842",
+          "2682463"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0317*01",
+          "e8*2007/46*0317*02"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM62Q0287CNV2N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2781180"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM62S0227CPSTVLN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2709602"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*05"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM62S0327CP155N1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2726853"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*05"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM62S0327CP156N1C8B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Superb",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/superb/superb",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "SUPERB",
+        "eea_record_ids": [
+          "2680890"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0317*04"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM62S0327CPS1N1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2712814",
+          "2724583",
+          "2720347"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*04"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM62S0347CP5N1C7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2807879"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM6AJ0167CPSTVLN1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2821553",
+          "2821549",
+          "2808617",
+          "2807887",
+          "2807888",
+          "2808893"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03",
+          "e8*2007/46*0318*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM6AJ0167CPSTVLN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2809016"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM6AJ0167CPV2VLN1C7B"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2727906"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*06"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM6AJ0187CP155N1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Karoq",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/karoq/karoq",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "KAROQ",
+        "eea_record_ids": [
+          "2711252",
+          "2657017",
+          "2711304"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0272*04"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM6AJ0187CP4N1B7A"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Rapid",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/markenwelt/skoda-geschichte/skoda-zeitachse/overlay-skoda-421-rapid",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "RAPID",
+        "eea_record_ids": [
+          "2868174",
+          "2865044"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0320*01"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "NFM6FM6DQ0027CPSTN71CSKB"
+    },
+    {
+      "confidence": "high",
+      "consumer_make": "Skoda",
+      "consumer_model": "Octavia",
+      "cross_checks": [
+        {
+          "error": null,
+          "matched": true,
+          "matched_url": "https://www.skoda.at/octavia/octavia",
+          "retrieved_at": "2026-11-21T17:14:10+00:00",
+          "robots_checked": true,
+          "source": "https://www.skoda.at/sitemap.xml"
+        }
+      ],
+      "evidence": {
+        "dataset_year": 2018,
+        "eea_commercial_name": "OCTAVIA",
+        "eea_record_ids": [
+          "2817594"
+        ],
+        "mapping": "EEA Cn is the documented consumer/commercial name for this exact variant key",
+        "sample_file": "docs\\data-sources\\sample\\eea_at_2018_wltp_sample.tsv",
+        "type_approval_numbers": [
+          "e8*2007/46*0318*03"
+        ]
+      },
+      "generation": "",
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+      "trim": "",
+      "variant": "SAD7AD7GC0027CPSCMLN1C7A"
+    }
+  ],
+  "harvested_at": "2026-11-21T17:14:08+00:00",
+  "jurisdiction": "AT",
+  "method": "eea_commercial_name_plus_oem_sitemap_crosscheck",
+  "schema_version": 1
+}

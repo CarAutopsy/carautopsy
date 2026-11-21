@@ -1,0 +1,217 @@
+{
+  "catalog_eligible": true,
+  "catalog_written": false,
+  "curation_reason": null,
+  "deduplication_role": "duplicate",
+  "derived_fields": {
+    "fuel_consumption_l_per_100km": null
+  },
+  "duplicate_of": "2887803",
+  "gate": {
+    "findings": [],
+    "passed": true
+  },
+  "identity_quality": "identity_resolved",
+  "price": {
+    "price_pending": false,
+    "price_source": "https://web.archive.org/web/20171201040232id_/https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
+    "price_source_url": "https://web.archive.org/web/20171201040232id_/https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
+    "purchase_price_excl_vat_eur": 19151.67
+  },
+  "price_verification": {
+    "catalog_eligible": true,
+    "confidence": "low",
+    "currency": "EUR",
+    "license": "OEM price list, public archived snapshot; terms per source publisher",
+    "market": "AT",
+    "price_date": "2017-05-01",
+    "price_match": {
+      "evidence_line": "VISIA 24 kWh Elektromotor 80 (109) Automatikgetriebe, stufenlos 22.982,\u2013 28.882,\u2013",
+      "matched_fields": [
+        "consumer_model",
+        "market",
+        "model_year_window"
+      ],
+      "matched_model": "leaf",
+      "uncertainty": "model_level_from_price; not variant-specific"
+    },
+    "price_precision": "model_level",
+    "purchase_price_excl_vat_eur": 19151.67,
+    "purchase_price_incl_vat_eur": 22982.0,
+    "retrieved_at": "2026-11-21T17:32:05+00:00",
+    "source_url": "https://web.archive.org/web/20171201040232id_/https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
+    "tco_ready": false
+  },
+  "provenance": {
+    "dataset_year": 2018,
+    "extraction_date": "2026-11-21",
+    "license": "CC BY 4.0",
+    "record_id": "2888955",
+    "source_name": "EEA type-approval CO2 microdata",
+    "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+  },
+  "requires_owner_approval": true,
+  "resolved_identity": {
+    "confidence": "high",
+    "consumer_make": "Nissan",
+    "consumer_model": "Leaf 40KWH",
+    "cross_checks": [
+      {
+        "error": null,
+        "matched": true,
+        "matched_url": "https://www.nissan.at/fahrzeuge/neuwagen/leaf/innenraumgestaltung.html",
+        "retrieved_at": "2026-11-21T17:14:08+00:00",
+        "robots_checked": true,
+        "source": "https://www.nissan.at/index.pages-sitemap.xml"
+      }
+    ],
+    "generation": null,
+    "license": "CC BY 4.0 (EEA type-approval microdata)",
+    "retrieved_at": "2026-11-21T17:14:08+00:00",
+    "reviewed_by": "automated-harvest-v1 (pending owner review)",
+    "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+    "trim": null
+  },
+  "schema_version": 1,
+  "status": "proposed",
+  "statutory": {
+    "findings": [],
+    "motor_tax": {
+      "exemption": true,
+      "legal_basis": "Pre-2025 exemption for electric vehicles; ended by BSMG 2025, BGBl. I Nr. 7/2025 effective 2025-04-01",
+      "outcome": "verified statutory exemption",
+      "rate_eur_per_month": 0,
+      "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/motorbezogene-versicherungsteuer/befreiungen-motorbezogene-vers/informationen-zur-gratis-vignette.html",
+      "verified": true
+    },
+    "nova": {
+      "exemption": true,
+      "legal_basis": "Sec. 3 Abs. 1 Z 1 NoVAG 1991 - zero-CO2 electric/hydrogen vehicles are exempt from NoVA; hybrids with another fuel source are not",
+      "outcome": "verified statutory exemption",
+      "rate_eur": 0,
+      "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/normverbrauchsabgabe-uebersicht/nova-befreiung.html",
+      "verified": true
+    },
+    "taxes": {
+      "motorbezogene_versicherungssteuer": {
+        "annual_rules": {},
+        "bev_m1": {
+          "exemption": true,
+          "legal_basis": "Pre-2025 exemption for electric vehicles; ended by BSMG 2025, BGBl. I Nr. 7/2025 effective 2025-04-01",
+          "rate_eur_per_month": 0,
+          "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/motorbezogene-versicherungsteuer/befreiungen-motorbezogene-vers/informationen-zur-gratis-vignette.html"
+        }
+      },
+      "nova": {
+        "annual_rules": {},
+        "exemptions": [
+          "bev",
+          "fcev"
+        ]
+      }
+    },
+    "verified": true
+  },
+  "tco_ready": false,
+  "variant": {
+    "dimensions": {
+      "max_permissible_mass_kg": 1580.0,
+      "own_weight_kg": 1705.0
+    },
+    "emissions": {
+      "co2_wltp_gpkm": 0.0
+    },
+    "energy": {
+      "consumption_wh_km": {
+        "wltp_combined": 206.0
+      }
+    },
+    "identity": {
+      "make": "NISSAN",
+      "model": "NISSAN",
+      "powertrain": "bev",
+      "variant_name": "A02",
+      "vehicle_class": "M1"
+    },
+    "offers": [
+      {
+        "price_pending": true,
+        "price_source": null,
+        "price_source_url": null,
+        "purchase_price_excl_vat_eur": null
+      }
+    ],
+    "performance": {
+      "electric_motor_continuous_power_w": 85000.0
+    },
+    "price_pending": true,
+    "provenance": {
+      "confidence": "low",
+      "sources": [
+        {
+          "license": "CC BY 4.0",
+          "record_id": "2888955",
+          "source_id": "eea-co2-mrv",
+          "url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+        }
+      ]
+    },
+    "registration": {
+      "first_registration_date": "2018-01-01"
+    },
+    "schema_version": "1.0.0",
+    "source_fields": {
+      "co2_basis": "wltp",
+      "co2_g_per_km": 0.0,
+      "fuel_code": "ELECTRIC",
+      "make": "NISSAN",
+      "mass_kg": 1580.0,
+      "model": "NISSAN",
+      "power_kw": 85.0,
+      "powertrain": "bev",
+      "record_id": "2888955",
+      "variant": "A02",
+      "vehicle_class": "M1"
+    },
+    "status": "proposed",
+    "statutory": {
+      "findings": [],
+      "motor_tax": {
+        "exemption": true,
+        "legal_basis": "Pre-2025 exemption for electric vehicles; ended by BSMG 2025, BGBl. I Nr. 7/2025 effective 2025-04-01",
+        "outcome": "verified statutory exemption",
+        "rate_eur_per_month": 0,
+        "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/motorbezogene-versicherungsteuer/befreiungen-motorbezogene-vers/informationen-zur-gratis-vignette.html",
+        "verified": true
+      },
+      "nova": {
+        "exemption": true,
+        "legal_basis": "Sec. 3 Abs. 1 Z 1 NoVAG 1991 - zero-CO2 electric/hydrogen vehicles are exempt from NoVA; hybrids with another fuel source are not",
+        "outcome": "verified statutory exemption",
+        "rate_eur": 0,
+        "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/normverbrauchsabgabe-uebersicht/nova-befreiung.html",
+        "verified": true
+      },
+      "taxes": {
+        "motorbezogene_versicherungssteuer": {
+          "annual_rules": {},
+          "bev_m1": {
+            "exemption": true,
+            "legal_basis": "Pre-2025 exemption for electric vehicles; ended by BSMG 2025, BGBl. I Nr. 7/2025 effective 2025-04-01",
+            "rate_eur_per_month": 0,
+            "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/motorbezogene-versicherungsteuer/befreiungen-motorbezogene-vers/informationen-zur-gratis-vignette.html"
+          }
+        },
+        "nova": {
+          "annual_rules": {},
+          "exemptions": [
+            "bev",
+            "fcev"
+          ]
+        }
+      },
+      "verified": true
+    },
+    "variant_id": "eea-2888955-nissan-nissan"
+  }
+}

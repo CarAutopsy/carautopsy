@@ -1,0 +1,16 @@
+source: EEA type-approval CO2 microdata year=2018 wltp_era=True
+sampled: 154 passed: 9 rejected: 145
+proposal artifacts: 9 -> docs\data-sources\proposals
+coverage %:
+  identity.make: 100.0
+  identity.model: 100.0
+  identity.powertrain: 100.0
+  identity.vehicle_class: 100.0
+  registration.first_registration_date: 100.0
+  dimensions.max_permissible_mass_kg: 100.0
+  performance.combustion_engine_power_w: 94.2
+  extensions.fuel_consumption_l_100km.real_world: 94.2
+  offers.price_or_pending: 100.0
+rejection reasons:
+  145x offers[0].purchase_price_excl_vat_eur must be a finite positive number
+catalog/variants written: 0

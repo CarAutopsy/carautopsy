@@ -1,0 +1,227 @@
+{
+  "count": 22,
+  "harvested_at": "2026-11-21T18:34:39+00:00",
+  "schema_version": 1,
+  "variants": [
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7DL0037CP0GS5N1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7DL0037CP0GS5V1B7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7DL0037CP5NS7S1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7GC0107CP0GS5N1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7GC0107CP0GS5S1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7GC0107CP0GS5V1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7GC0107CP0NS5N1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7GC0107CP0NS5S1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAD7AD7GC0107CP6NS7V1B7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAM6AM62Q0017CP164N1C7A"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAM6AM6BB0037CP0NS5V1C7A"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NAM6AM6BB0037CP5NS7N1C7A"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "reason": "no_model_level_price_source",
+      "variant": "NFD7FD7CW0027CP155N1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "reason": "no_model_level_price_source",
+      "variant": "NFD7FD7CW0027CP156N1C8B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NFD7FD7CW0027CP5N1C7A"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NFD7FD7CW0027CP6N1C7A"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NFD7FD7GC0097CP4NS7N1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "reason": "no_model_level_price_source",
+      "variant": "NFM6FM62S0327CP155N1C7B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "reason": "no_model_level_price_source",
+      "variant": "NFM6FM62S0327CP156N1C8B"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_diesel",
+      "reason": "no_model_level_price_source",
+      "variant": "NFM6FM62S0347CP5N1C7A"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "reason": "no_model_level_price_source",
+      "variant": "NFM6FM6AJ0187CP155N1B7A"
+    },
+    {
+      "detail": "No dated archived AT price list found for this consumer model",
+      "make": "SKODA",
+      "market": "AT",
+      "model": "SKODA",
+      "model_year": 2018,
+      "powertrain": "ice_petrol",
+      "reason": "no_model_level_price_source",
+      "variant": "NFM6FM6AJ0187CP4N1B7A"
+    }
+  ]
+}

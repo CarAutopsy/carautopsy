@@ -1,0 +1,23 @@
+source: EEA CO2 passenger cars (public type-approval microdata)
+sampled: 20 passed: 0 rejected: 20
+field coverage %:
+  variant_id: 100.0
+  identity.make: 100.0
+  identity.model: 100.0
+  identity.powertrain: 100.0
+  identity.vehicle_class: 100.0
+  registration.first_registration_date: 100.0
+  dimensions.max_permissible_mass_kg: 100.0
+  performance.combustion_engine_power_w: 100.0
+  performance.electric_motor_continuous_power_w: 0.0
+  energy.consumption_wh_km: 0.0
+  emissions.co2_wltp_gpkm: 0.0
+  emissions.co2_nedc_gpkm: 100.0
+  offers.purchase_price_excl_vat_eur: 0.0
+  extensions.fuel_consumption: 0.0
+rejection reasons:
+  20x Motor-tax ICE rules unavailable for first-registration year 2017
+  20x NoVA rules unavailable for first-registration year 2017
+  20x emissions.co2_wltp_gpkm
+  20x extensions.fuel_consumption_l_100km.real_world or wltp_combined must be a finite positive number
+  20x offers[0].purchase_price_excl_vat_eur must be a finite positive number

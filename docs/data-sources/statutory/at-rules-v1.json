@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "jurisdiction": "AT",
+  "retrieved": "2026-11-21",
+  "rules": [
+    {
+      "id": "nova-electric-zero-co2-exempt",
+      "tax": "nova",
+      "powertrain": "bev",
+      "applicable_from": "2014-03-01",
+      "applicable_to": null,
+      "exemption": true,
+      "rate_eur": 0,
+      "eligibility": {"co2_wltp_gpkm_max": 0},
+      "legal_basis": "Sec. 3 Abs. 1 Z 1 NoVAG 1991 - zero-CO2 electric/hydrogen vehicles are exempt from NoVA; hybrids with another fuel source are not",
+      "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/normverbrauchsabgabe-uebersicht/nova-befreiung.html",
+      "publisher": "Bundesministerium fuer Finanzen (BMF)",
+      "retrieved": "2026-11-21"
+    },
+    {
+      "id": "nova-m1-non-electric-2014-2019",
+      "tax": "nova",
+      "powertrain": "non_electric",
+      "applicable_from": "2014-03-01",
+      "applicable_to": "2019-12-31",
+      "exemption": false,
+      "formula": {
+        "co2_basis": "nedc",
+        "co2_deduction_gkm": 90,
+        "divisor": 5,
+        "min_percentage": 0,
+        "max_percentage": 32,
+        "rounding": "commercial_half_up",
+        "malus_threshold_gkm": 250,
+        "malus_eur_per_gkm": 20,
+        "fixed_deduction_eur": 300
+      },
+      "legal_basis": "BMF Rechtslage 2014-03-01 bis 2019-12-31 (NoVA-Tarif M1)",
+      "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/normverbrauchsabgabe-uebersicht/nova-steuersatz/rechtslage_von_1_maerz_2014_bis_31_dezember_2019.html",
+      "publisher": "Bundesministerium fuer Finanzen (BMF)",
+      "retrieved": "2026-11-21"
+    },
+    {
+      "id": "motor-tax-bev-exempt-until-2025-03-31",
+      "tax": "motorbezogene_versicherungssteuer",
+      "powertrain": "bev",
+      "applicable_from": "2014-01-01",
+      "applicable_to": "2025-03-31",
+      "exemption": true,
+      "rate_eur_per_month": 0,
+      "legal_basis": "Pre-2025 exemption for electric vehicles; ended by BSMG 2025, BGBl. I Nr. 7/2025 effective 2025-04-01",
+      "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/motorbezogene-versicherungsteuer/befreiungen-motorbezogene-vers/informationen-zur-gratis-vignette.html",
+      "publisher": "Bundesministerium fuer Finanzen (BMF)",
+      "retrieved": "2026-11-21"
+    },
+    {
+      "id": "motor-tax-m1-non-electric-until-2020-09-30",
+      "tax": "motorbezogene_versicherungssteuer",
+      "powertrain": "non_electric",
+      "applicable_from": "2014-01-01",
+      "applicable_to": "2020-09-30",
+      "exemption": false,
+      "formula": {
+        "power_tiers_eur_per_kw": [
+          {"up_to_kw": 24, "rate": 0.0},
+          {"up_to_kw": 90, "rate": 0.62},
+          {"up_to_kw": 110, "rate": 0.66},
+          {"up_to_kw": null, "rate": 0.75}
+        ],
+        "minimum_eur_per_month": 6.2,
+        "payment_basis": "annual"
+      },
+      "legal_basis": "BMF Steuersatz - M1 first registered before 2025-10-01 (pre-2020-10-01 schedule)",
+      "source_url": "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/motorbezogene-versicherungsteuer/steuersatz-motorbezogene-vers.html",
+      "publisher": "Bundesministerium fuer Finanzen (BMF)",
+      "retrieved": "2026-11-21"
+    }
+  ]
+}
