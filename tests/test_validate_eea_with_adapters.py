@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,33 +103,37 @@ class AdapterUnitTests(unittest.TestCase):
 
 class AdapterIntegrationTests(unittest.TestCase):
     def test_run_writes_only_rejected_proposals_to_docs(self):
+        import validate_eea_with_adapters as adapter_module
+
         sample = ROOT / "docs" / "data-sources" / "sample" / "eea_at_2017_sample.tsv"
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory) / "proposals"
             with self.assertRaisesRegex(ValueError, "only be written"):
                 run_validation(sample, dataset_year=2017, price_source=None,
                                output_dir=out, with_taxes=False)
-            out = PROPOSALS_ROOT
-            report = run_validation(sample, dataset_year=2017, price_source=None,
-                                    output_dir=out, with_taxes=False)
-            self.assertEqual(report["sampled"], 20)
-            self.assertFalse(report["wltp_era"])
-            self.assertEqual(report["rejected"], 20)
-            self.assertEqual(report["artifacts_written"], 0)
-            self.assertEqual(report["rejection_reasons"], {NEDC_REJECTION: 20})
-            self.assertEqual(report["catalog_variants_written"], 0)
 
-            # Diagnostic mode still records rejected proposals when requested.
-            diagnostic = run_validation(sample, dataset_year=2017, price_source=None,
-                                        output_dir=out, with_taxes=False,
-                                        include_rejected=True)
-            self.assertEqual(diagnostic["artifacts_written"], 20)
-        artifacts = list(out.glob("*.json"))
-        self.assertGreaterEqual(len(artifacts), 20)
-        for artifact in artifacts[:3]:
-            data = json.loads(artifact.read_text(encoding="utf-8"))
-            self.assertFalse(data["catalog_written"])
-            self.assertEqual(data["gate"]["findings"], [NEDC_REJECTION])
+            # Isolate the artifact directory: tests must never read or write the
+            # committed docs/data-sources/proposals/ tree.
+            with patch.object(adapter_module, "PROPOSALS_ROOT", out):
+                report = run_validation(sample, dataset_year=2017, price_source=None,
+                                        output_dir=out, with_taxes=False)
+                self.assertEqual(report["sampled"], 20)
+                self.assertFalse(report["wltp_era"])
+                self.assertEqual(report["rejected"], 20)
+                self.assertEqual(report["artifacts_written"], 0)
+                self.assertEqual(report["rejection_reasons"], {NEDC_REJECTION: 20})
+                self.assertEqual(report["catalog_variants_written"], 0)
+
+                diagnostic = run_validation(sample, dataset_year=2017, price_source=None,
+                                            output_dir=out, with_taxes=False,
+                                            include_rejected=True)
+                self.assertEqual(diagnostic["artifacts_written"], 20)
+                artifacts = sorted(out.glob("*.json"))
+                self.assertEqual(len(artifacts), 20)
+                for artifact in artifacts:
+                    data = json.loads(artifact.read_text(encoding="utf-8"))
+                    self.assertFalse(data["catalog_written"])
+                    self.assertEqual(data["gate"]["findings"], [NEDC_REJECTION])
 
     def test_no_catalog_files_were_modified(self):
         status = PROPOSALS_ROOT.parents[2] / "catalog" / "variants"

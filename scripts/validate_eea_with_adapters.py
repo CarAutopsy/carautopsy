@@ -331,7 +331,7 @@ def run_validation(
         "passed": passed,
         "rejected": rejected,
         "artifacts_written": artifacts,
-        "artifact_dir": str(output_dir.relative_to(ROOT)),
+        "artifact_dir": str(output_dir.relative_to(ROOT)) if output_dir.is_relative_to(ROOT) else str(output_dir),
         "coverage_percent": field_coverage(records),
         "rejection_reasons": dict(sorted(reasons.items())),
         "price_source_records": len(price_source or {}),
