@@ -1,0 +1,154 @@
+{
+  "catalog_eligible": true,
+  "catalog_written": true,
+  "derived_fields": {
+    "fuel_consumption_l_per_100km": {
+      "conversion_formula": "CO2_g_per_km / 23.2 = L_per_100km",
+      "derived": true,
+      "derived_from": "co2_nedc_wltp",
+      "measured": false,
+      "value": 5.474
+    }
+  },
+  "dimensions": {
+    "max_permissible_mass_kg": 1141.0,
+    "own_weight_kg": 1267.0
+  },
+  "emissions": {
+    "co2_wltp_gpkm": 127.0
+  },
+  "extensions": {
+    "fuel_consumption_l_100km": {
+      "conversion_formula": "CO2_g_per_km / 23.2 = L_per_100km",
+      "derived": true,
+      "derived_from": "co2_nedc_wltp",
+      "measured": false,
+      "real_world": 5.474
+    }
+  },
+  "gate": {
+    "findings": [],
+    "passed": true
+  },
+  "identity": {
+    "generation": "",
+    "make": "Skoda",
+    "model": "Fabia",
+    "powertrain": "ice_petrol",
+    "resolution": {
+      "license": "CC BY 4.0 (EEA type-approval microdata)",
+      "matched_fields": [
+        "make",
+        "model",
+        "variant",
+        "powertrain",
+        "model_year",
+        "market"
+      ],
+      "method": "curated_mapping",
+      "retrieved_at": "2026-11-21T17:14:08+00:00",
+      "reviewed_by": "automated-harvest-v1 (pending owner review)",
+      "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+    },
+    "trim": "",
+    "variant_name": "Fabia",
+    "vehicle_class": "M1"
+  },
+  "identity_quality": "identity_resolved",
+  "offers": [
+    {
+      "currency": "EUR",
+      "license": "OEM price list, public archived snapshot; terms per source publisher",
+      "market": "AT",
+      "price_date": "2019-03-01",
+      "price_pending": true,
+      "price_source": null,
+      "price_source_url": null,
+      "purchase_price_excl_vat_eur": 9566.67,
+      "retrieved_at": "2026-11-21T18:34:38+00:00",
+      "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+      "uncertainty": "none"
+    }
+  ],
+  "performance": {
+    "combustion_engine_power_w": 70000.0
+  },
+  "price_pending": false,
+  "price_verification": {
+    "catalog_eligible": true,
+    "confidence": "low",
+    "currency": "EUR",
+    "license": "OEM price list, public archived snapshot; terms per source publisher",
+    "market": "AT",
+    "price_date": "2019-03-01",
+    "price_match": {
+      "evidence_line": "60 PS 5-Gang • 5 Jahre ŠKODA Plus Garantie3) 11.480,– 4 – – | 75 PS 5-Gang • Active Austria-Paket 11.980,– 4 12.850,– 4 | VORTEILS-PAKET | FABIA 20 | • 5 Jahre ŠKODA Plus Garantie 3)",
+      "matched_fields": [
+        "consumer_model",
+        "market",
+        "model_year_window"
+      ],
+      "matched_model": "fabia",
+      "uncertainty": "model_level_from_price; not variant-specific"
+    },
+    "price_precision": "model_level",
+    "purchase_price_excl_vat_eur": 9566.67,
+    "purchase_price_incl_vat_eur": 11480.0,
+    "retrieved_at": "2026-11-21T18:34:38+00:00",
+    "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+    "tco_ready": false
+  },
+  "provenance": {
+    "confidence": "low",
+    "sources": [
+      {
+        "license": "CC BY 4.0",
+        "record_id": "2851891",
+        "source_id": "eea-co2-mrv",
+        "url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
+      }
+    ]
+  },
+  "registration": {
+    "first_registration_date": "2018-01-01"
+  },
+  "resolved_identity": {
+    "confidence": "high",
+    "consumer_make": "Skoda",
+    "consumer_model": "Fabia",
+    "cross_checks": [
+      {
+        "error": null,
+        "matched": true,
+        "matched_url": "https://www.skoda.at/service-und-zubehoer/reifen-und-raeder/felgen/skoda-fabia-felgen",
+        "retrieved_at": "2026-11-21T17:14:10+00:00",
+        "robots_checked": true,
+        "source": "https://www.skoda.at/sitemap.xml"
+      }
+    ],
+    "generation": null,
+    "license": "CC BY 4.0 (EEA type-approval microdata)",
+    "retrieved_at": "2026-11-21T17:14:08+00:00",
+    "reviewed_by": "automated-harvest-v1 (pending owner review)",
+    "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+    "trim": null
+  },
+  "schema_version": "1.0.0",
+  "source_fields": {
+    "co2_basis": "wltp",
+    "co2_g_per_km": 127.0,
+    "fuel_code": "PETROL",
+    "make": "SKODA",
+    "mass_kg": 1141.0,
+    "model": "SKODA",
+    "power_kw": 70.0,
+    "powertrain": "ice_petrol",
+    "record_id": "2851891",
+    "variant": "NFM5FM5DF0027CPN1C8A",
+    "vehicle_class": "M1"
+  },
+  "status": "proposed",
+  "statutory": {},
+  "tco_ready": false,
+  "variant_id": "eea-2851891-skoda-skoda"
+}
