@@ -1,0 +1,52 @@
+{
+  "baseline": {
+    "distinct_variant_codes": 57,
+    "identity_quality_ok_before_research": 0,
+    "readiness_gate_passing_before_research": 9,
+    "statutory_verified": 154
+  },
+  "catalog_variants_written": 0,
+  "dataset_year": 2018,
+  "gate_ready_after_resolution": {
+    "count": 0,
+    "pct": 0.0,
+    "prerequisites": [
+      "identity_resolved",
+      "price_verified",
+      "statutory_verified",
+      "wltp_era",
+      "structural_readiness"
+    ],
+    "variant_ids": []
+  },
+  "identity": {
+    "approach": "curated_mapping",
+    "evidence_available": false,
+    "evidence_file": "docs/data-sources/identity-map/v1.json",
+    "evidence_rows": 0,
+    "reasons": {
+      "no_identity_evidence_file": 154
+    },
+    "resolvable": 0,
+    "resolvable_pct": 0.0,
+    "resolved_variant_ids": []
+  },
+  "price": {
+    "approach": "curated_price_evidence",
+    "compliant_bulk_source_available": false,
+    "evidence_available": false,
+    "evidence_file": "docs/data-sources/price-evidence/v1.json",
+    "evidence_rows": 0,
+    "priced_variant_ids": [],
+    "reasons": {
+      "no_price_evidence_file": 154
+    },
+    "verified": 0,
+    "verified_pct": 0.0
+  },
+  "report_date": "2026-11-21",
+  "sample_file": "docs/data-sources/sample/eea_at_2018_wltp_sample.tsv",
+  "sampled": 154,
+  "sampled_only": true,
+  "schema_version": 1
+}
