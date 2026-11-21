@@ -182,6 +182,9 @@ def analyze_sample(
     price_reasons: Counter[str] = Counter()
     identity_ok = price_ok = gate_ready = statutory_verified = 0
     baseline_gate_pass = 0
+    tco_ready = 0
+    model_level_count = 0
+    variant_level_count = 0
     resolved_variants: list[str] = []
     priced_variants: list[str] = []
     ready_variants: list[str] = []
@@ -224,6 +227,10 @@ def analyze_sample(
         else:
             price_ok += 1
             priced_variants.append(str(record.get("variant_id")))
+            if str(price_row.get("price_precision") or "variant_level") == "model_level":
+                model_level_count += 1
+            else:
+                variant_level_count += 1
 
         if identity_row is None or price_row is None:
             continue
@@ -241,6 +248,8 @@ def analyze_sample(
         ):
             gate_ready += 1
             ready_variants.append(str(record.get("variant_id")))
+            if str(price_row.get("price_precision") or "variant_level") != "model_level":
+                tco_ready += 1
 
     total = len(records)
 
@@ -274,10 +283,19 @@ def analyze_sample(
             "verified_pct": percentage(price_ok),
             "reasons": dict(sorted(price_reasons.items())),
             "priced_variant_ids": sorted(set(priced_variants)),
+            "precision_breakdown": {
+                "model_level": model_level_count,
+                "variant_level": variant_level_count,
+            },
         },
         "gate_ready_after_resolution": {
             "count": gate_ready,
             "pct": percentage(gate_ready),
+            "semantics": "catalog_eligible under owner-approved model-level price relaxation",
+            "catalog_eligible_count": gate_ready,
+            "tco_ready_count": tco_ready,
+            "strict_variant_level_count": tco_ready,
+            "model_level_not_tco_ready_count": gate_ready - tco_ready,
             "variant_ids": sorted(set(ready_variants)),
             "prerequisites": [
                 "identity_resolved", "price_verified", "statutory_verified",

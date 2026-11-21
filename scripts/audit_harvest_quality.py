@@ -78,6 +78,14 @@ def audit_price(
                   "purchase_price_excl_vat_eur"):
         if entry.get(field) in (None, ""):
             reasons.append(f"price_missing_{field}")
+    precision = str(entry.get("price_precision") or "variant_level")
+    if precision not in {"variant_level", "model_level"}:
+        reasons.append("price_invalid_precision")
+    if precision == "model_level":
+        if entry.get("confidence") != "low":
+            reasons.append("price_model_level_must_be_low_confidence")
+        if entry.get("tco_ready") is not False or entry.get("catalog_eligible") is not True:
+            reasons.append("price_model_level_flags_inconsistent")
     value = entry.get("purchase_price_excl_vat_eur")
     if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
         reasons.append("price_invalid_amount")
@@ -93,10 +101,16 @@ def audit_price(
         reasons.append("price_wrong_market")
     if str(entry.get("currency") or "").upper() != "EUR":
         reasons.append("price_wrong_currency")
-    evidence = str(entry.get("price_match_evidence") or "")
+    evidence = str(
+        entry.get("price_match_evidence")
+        or (entry.get("price") or {}).get("match", {}).get("evidence_line", "")
+    )
     if entry["powertrain"] == "bev" and "kwh" not in evidence.lower():
         reasons.append("price_powertrain_not_corroborated")
     result["sources"] = 1 if entry.get("source_url") else 0
+    result["precision"] = precision
+    result["tco_ready"] = entry.get("tco_ready") is True
+    result["catalog_eligible"] = entry.get("catalog_eligible") is True
     result["pass"] = not any(reason.startswith("price_") for reason in reasons)
     return result
 
@@ -118,6 +132,8 @@ def build_report(sample: Path, identity_path: Path, price_path: Path) -> dict[st
             "powertrain": item["powertrain"],
             "identity": identity,
             "price": price,
+            "catalog_eligible": identity["pass"] and price["pass"],
+            "tco_ready": identity["pass"] and price["pass"] and price.get("tco_ready", False),
             "gate_ready": identity["pass"] and price["pass"],
             "reasons": reasons,
         })
@@ -128,6 +144,8 @@ def build_report(sample: Path, identity_path: Path, price_path: Path) -> dict[st
         "identity_pass_count": sum(1 for row in rows if row["identity"]["pass"]),
         "price_pass_count": sum(1 for row in rows if row["price"]["pass"]),
         "gate_ready_count": sum(1 for row in rows if row["gate_ready"]),
+        "catalog_eligible_count": sum(1 for row in rows if row["catalog_eligible"]),
+        "tco_ready_count": sum(1 for row in rows if row["tco_ready"]),
         "single_source_identity_count": sum(
             1 for row in rows if "identity_single_source_claim" in row["reasons"]
         ),

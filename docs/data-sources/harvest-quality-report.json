@@ -1,14 +1,17 @@
 {
+  "catalog_eligible_count": 31,
   "checked_variants": 58,
-  "gate_ready_count": 0,
-  "generated_at": "2026-11-21T17:16:09+00:00",
+  "gate_ready_count": 31,
+  "generated_at": "2026-11-21T17:33:40+00:00",
   "identity_pass_count": 58,
-  "price_pass_count": 0,
+  "price_pass_count": 31,
   "schema_version": 1,
   "single_source_identity_count": 0,
+  "tco_ready_count": 0,
   "variants": [
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -18,16 +21,19 @@
       "model": "NISSAN",
       "powertrain": "bev",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "A02"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -45,9 +51,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7DL0037CP0GS5N1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -65,9 +73,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7DL0037CP0GS5V1B7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -85,10 +95,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7DL0037CP5NS7S1C7B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -98,17 +110,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0027CPSTMLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -118,16 +133,19 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0057CNSTN1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -145,9 +163,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0107CP0GS5N1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -165,9 +185,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0107CP0GS5S1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -185,9 +207,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0107CP0GS5V1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -205,9 +229,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0107CP0NS5N1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -225,9 +251,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0107CP0NS5S1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -245,9 +273,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAD7AD7GC0107CP6NS7V1B7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -265,10 +295,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAM6AM62Q0017CP164N1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -278,16 +310,19 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NAM6AM62Q0327CPSTMLN1B7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -305,9 +340,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAM6AM6BB0037CP0NS5V1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -325,9 +362,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NAM6AM6BB0037CP5NS7N1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -345,9 +384,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0017CPN1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -365,10 +406,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0017CPN1C8A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -378,16 +421,19 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0017CPSTVLN1B7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -405,9 +451,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CP155N1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -425,9 +473,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CP156N1C8B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -445,9 +495,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CP5N1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -465,10 +517,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CP6N1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -478,17 +532,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CPS1VLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -498,17 +555,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CPSTN1C7B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -518,17 +578,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CPSTVLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -538,17 +601,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CPSTVLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -558,17 +624,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CPSTVLN1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -578,17 +647,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CPSTVLN1C7B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -598,17 +670,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7CW0027CPV2VLN1C7B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -618,17 +693,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7GC0027CPS1VLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -638,17 +716,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7GC0027CPSTVLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -658,17 +739,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7GC0027CPSTVLN1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -678,17 +762,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7GC0047CNS1N1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -698,17 +785,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7GC0047CNSTN1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -718,16 +808,19 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFD7FD7GC0047CNV2N1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -745,10 +838,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFD7FD7GC0097CP4NS7N1C7B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -758,17 +853,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM5FM5A40517CPS1VLN1C7B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -778,17 +876,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM5FM5A40517CPSTVLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -798,17 +899,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM5FM5A40517CPSTVLN1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -818,16 +922,19 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM5FM5A40517CPSTVLN1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -845,9 +952,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM5FM5CF0087CPN1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -865,9 +974,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM5FM5DF0027CPN1C7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -885,10 +996,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM5FM5DF0027CPN1C8A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -898,17 +1011,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM5FM5DF0027CPSTN71CSKA"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -918,17 +1034,20 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM6FM62Q0287CNV2N1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -938,16 +1057,19 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM6FM62S0227CPSTVLN1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -965,9 +1087,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM6FM62S0327CP155N1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -985,10 +1109,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM6FM62S0327CP156N1C8B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -998,16 +1124,19 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM6FM62S0327CPS1N1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -1025,10 +1154,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM6FM62S0347CP5N1C7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -1038,17 +1169,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM6FM6AJ0167CPSTVLN1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -1058,17 +1192,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM6FM6AJ0167CPSTVLN1C7B"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -1078,16 +1215,19 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM6FM6AJ0167CPV2VLN1C7B"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -1105,9 +1245,11 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM6FM6AJ0187CP155N1B7A"
     },
     {
+      "catalog_eligible": false,
       "gate_ready": false,
       "identity": {
         "pass": true,
@@ -1125,10 +1267,12 @@
       "reasons": [
         "price_evidence_missing"
       ],
+      "tco_ready": false,
       "variant": "NFM6FM6AJ0187CP4N1B7A"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -1138,17 +1282,20 @@
       "model": "SKODA",
       "powertrain": "ice_petrol",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "NFM6FM6DQ0027CPSTN71CSKB"
     },
     {
-      "gate_ready": false,
+      "catalog_eligible": true,
+      "gate_ready": true,
       "identity": {
         "pass": true,
         "present": true,
@@ -1158,13 +1305,15 @@
       "model": "SKODA",
       "powertrain": "ice_diesel",
       "price": {
-        "pass": false,
-        "present": false,
-        "sources": 0
+        "catalog_eligible": true,
+        "pass": true,
+        "precision": "model_level",
+        "present": true,
+        "sources": 1,
+        "tco_ready": false
       },
-      "reasons": [
-        "price_evidence_missing"
-      ],
+      "reasons": [],
+      "tco_ready": false,
       "variant": "SAD7AD7GC0027CPSCMLN1C7A"
     }
   ]

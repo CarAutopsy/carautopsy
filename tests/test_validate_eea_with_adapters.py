@@ -276,10 +276,13 @@ class IdentityQualityTests(unittest.TestCase):
     def test_canonical_artifact_is_marked_and_every_fact_preserved(self):
         path = PROPOSALS_ROOT / "nissan.nissan.a02.2018.2887803.json"
         proposal = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(proposal["identity_quality"], IDENTITY_QUALITY_CURATION)
-        self.assertIn("NISSAN", proposal["curation_reason"])
-        self.assertIn("A02", proposal["curation_reason"])
-        self.assertIn("model equals make", proposal["curation_reason"])
+        # Owner-approved research evidence now resolves both identity and price.
+        self.assertEqual(proposal["identity_quality"], "identity_resolved")
+        self.assertIsNone(proposal["curation_reason"])
+        self.assertEqual(proposal["resolved_identity"]["consumer_model"], "Leaf 40KWH")
+        self.assertEqual(proposal["price_verification"]["price_precision"], "model_level")
+        self.assertFalse(proposal["tco_ready"])
+        self.assertTrue(proposal["catalog_eligible"])
         self.assertFalse(proposal["catalog_written"])
         self.assertTrue(proposal["requires_owner_approval"])
         self.assertTrue(proposal["gate"]["passed"])
@@ -294,8 +297,8 @@ class IdentityQualityTests(unittest.TestCase):
         self.assertEqual(variant["source_fields"]["powertrain"], "bev")
         self.assertEqual(variant["provenance"]["sources"][0]["record_id"], "2887803")
         self.assertTrue(proposal["statutory"]["verified"])
-        self.assertTrue(proposal["price"]["price_pending"])
-        self.assertIsNone(proposal["price"]["purchase_price_excl_vat_eur"])
+        self.assertFalse(proposal["price"]["price_pending"])
+        self.assertGreater(proposal["price"]["purchase_price_excl_vat_eur"], 0)
 
     def test_run_reports_curation_without_catalog_writes(self):
         import validate_eea_with_adapters as adapter_module

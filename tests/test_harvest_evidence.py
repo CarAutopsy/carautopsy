@@ -39,13 +39,19 @@ class HarvestEvidenceTests(unittest.TestCase):
             self.assertEqual(entry["model_year"], 2018)
             self.assertTrue(any(check.get("matched") for check in entry["cross_checks"]))
 
-    def test_price_evidence_is_empty_and_unresolved_is_explicit(self):
+    def test_price_evidence_is_owner_approved_model_level_and_unresolved_is_explicit(self):
         data = json.loads(PRICE.read_text(encoding="utf-8"))
         unresolved = json.loads(PRICE.with_name("unresolved.json").read_text(encoding="utf-8"))
-        self.assertEqual(data["entries"], [])
-        self.assertEqual(unresolved["count"], 58)
+        self.assertEqual(len(data["entries"]), 31)
+        for row in data["entries"]:
+            self.assertEqual(row["price_precision"], "model_level")
+            self.assertEqual(row["confidence"], "low")
+            self.assertFalse(row["tco_ready"])
+            self.assertTrue(row["catalog_eligible"])
+            self.assertFalse(row["price_pending"])
+        self.assertEqual(unresolved["count"], 27)
         for row in unresolved["variants"]:
-            self.assertEqual(row["reason"], "no_variant_level_price_in_source")
+            self.assertEqual(row["reason"], "no_model_level_price_source")
             self.assertTrue(row["detail"])
 
     def test_no_fabrication_when_identity_source_is_blank(self):
@@ -125,12 +131,14 @@ class HarvestEvidenceTests(unittest.TestCase):
         report = build_report(SAMPLE, IDENTITY, PRICE)
         self.assertEqual(report["checked_variants"], 58)
         self.assertEqual(report["identity_pass_count"], 58)
-        self.assertEqual(report["price_pass_count"], 0)
-        self.assertEqual(report["gate_ready_count"], 0)
+        self.assertEqual(report["price_pass_count"], 31)
+        self.assertEqual(report["catalog_eligible_count"], 31)
+        self.assertEqual(report["tco_ready_count"], 0)
         self.assertEqual(report["single_source_identity_count"], 0)
         first = report["variants"][0]
         self.assertEqual(first["identity"]["sources"], 2)
-        self.assertEqual(first["reasons"], ["price_evidence_missing"])
+        self.assertTrue(first["catalog_eligible"])
+        self.assertFalse(first["tco_ready"])
 
     def test_coverage_report_reads_harvested_evidence_without_catalog_writes(self):
         catalog = ROOT / "catalog" / "variants"
@@ -142,8 +150,10 @@ class HarvestEvidenceTests(unittest.TestCase):
         )
         self.assertEqual(report["identity"]["resolvable"], 154)
         self.assertEqual(report["identity"]["resolvable_pct"], 100.0)
-        self.assertEqual(report["price"]["verified"], 0)
-        self.assertEqual(report["gate_ready_after_resolution"]["count"], 0)
+        self.assertEqual(report["price"]["verified"], 95)
+        self.assertEqual(report["price"]["precision_breakdown"]["model_level"], 95)
+        self.assertEqual(report["gate_ready_after_resolution"]["count"], 95)
+        self.assertEqual(report["gate_ready_after_resolution"]["tco_ready_count"], 0)
         self.assertEqual(report["catalog_variants_written"], 0)
         self.assertEqual({path.name: path.read_bytes() for path in catalog.glob("*.json")}, before)
 

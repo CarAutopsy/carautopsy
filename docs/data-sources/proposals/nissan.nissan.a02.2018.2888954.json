@@ -1,6 +1,7 @@
 {
+  "catalog_eligible": true,
   "catalog_written": false,
-  "curation_reason": "EEA source provides make='NISSAN', model='NISSAN', variant='A02', which does not establish a consumer-facing vehicle identity: model equals make ('NISSAN'); no distinct commercial model identity; variant_name 'A02' is a non-descriptive approval/type code; no documented commercial model identity supplied. No commercial model name, trim, market name or specification was invented; a human curator must verify the identity before ingestion.",
+  "curation_reason": null,
   "deduplication_role": "duplicate",
   "derived_fields": {
     "fuel_consumption_l_per_100km": null
@@ -10,11 +11,36 @@
     "findings": [],
     "passed": true
   },
-  "identity_quality": "requires_manual_curation",
+  "identity_quality": "identity_resolved",
   "price": {
-    "price_pending": true,
-    "price_source": null,
-    "purchase_price_excl_vat_eur": null
+    "price_pending": false,
+    "price_source": "https://web.archive.org/web/20171201040232id_/https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
+    "price_source_url": "https://web.archive.org/web/20171201040232id_/https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
+    "purchase_price_excl_vat_eur": 19151.67
+  },
+  "price_verification": {
+    "catalog_eligible": true,
+    "confidence": "low",
+    "currency": "EUR",
+    "license": "OEM price list, public archived snapshot; terms per source publisher",
+    "market": "AT",
+    "price_date": "2017-05-01",
+    "price_match": {
+      "evidence_line": "VISIA 24 kWh Elektromotor 80 (109) Automatikgetriebe, stufenlos 22.982,\u2013 28.882,\u2013",
+      "matched_fields": [
+        "consumer_model",
+        "market",
+        "model_year_window"
+      ],
+      "matched_model": "leaf",
+      "uncertainty": "model_level_from_price; not variant-specific"
+    },
+    "price_precision": "model_level",
+    "purchase_price_excl_vat_eur": 19151.67,
+    "purchase_price_incl_vat_eur": 22982.0,
+    "retrieved_at": "2026-11-21T17:32:05+00:00",
+    "source_url": "https://web.archive.org/web/20171201040232id_/https://www.nissan.at/content/dam/Nissan/at/brochures/pkw/leaf-preisliste.pdf",
+    "tco_ready": false
   },
   "provenance": {
     "dataset_year": 2018,
@@ -25,6 +51,27 @@
     "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20"
   },
   "requires_owner_approval": true,
+  "resolved_identity": {
+    "confidence": "high",
+    "consumer_make": "Nissan",
+    "consumer_model": "Leaf 40KWH",
+    "cross_checks": [
+      {
+        "error": null,
+        "matched": true,
+        "matched_url": "https://www.nissan.at/fahrzeuge/neuwagen/leaf/innenraumgestaltung.html",
+        "retrieved_at": "2026-11-21T17:14:08+00:00",
+        "robots_checked": true,
+        "source": "https://www.nissan.at/index.pages-sitemap.xml"
+      }
+    ],
+    "generation": null,
+    "license": "CC BY 4.0 (EEA type-approval microdata)",
+    "retrieved_at": "2026-11-21T17:14:08+00:00",
+    "reviewed_by": "automated-harvest-v1 (pending owner review)",
+    "source_url": "https://www.eea.europa.eu/data-and-maps/data/co2-cars-emission-20",
+    "trim": null
+  },
   "schema_version": 1,
   "status": "proposed",
   "statutory": {
@@ -65,6 +112,7 @@
     },
     "verified": true
   },
+  "tco_ready": false,
   "variant": {
     "dimensions": {
       "max_permissible_mass_kg": 1580.0,
