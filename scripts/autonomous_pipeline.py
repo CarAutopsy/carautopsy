@@ -14,10 +14,14 @@ from hive_candidate import validate_evidence_bundle
 from hive_outcomes import AUDIT_SUCCESS, MANUAL_REVIEW_REQUIRED, classify_audit_results, classify_defect_category, record_outcome, requires_manual_review, migrate_legacy_entry, exhausted_outcome
 from tco_publication import (
     PublicationBlocked,
+    assert_only_publication_paths_changed,
     assert_publication_gate,
     build_attestation,
+    build_run_url,
     catalog_digest,
+    country_pack_digest,
     draft_publication_proposal,
+    publication_needs_refresh,
     PUBLICATION_PATH,
 )
 
@@ -684,14 +688,26 @@ if audit_failures_this_run:
 base_sha = subprocess.run(
     ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
 ).stdout.strip()
+country = payload["envelope"]["country_pack"].split("@", 1)[0]
 attestation = build_attestation(
     payload=payload,
     base_sha=base_sha,
     catalog_sha256=catalog_digest(ROOT),
     country_pack=payload["envelope"]["country_pack"],
+    country_pack_sha256=country_pack_digest(ROOT, country),
     engine_version=payload["envelope"]["engine_version"],
-    run_url=os.environ.get("GITHUB_RUN_URL") or None,
+    run_url=build_run_url(
+        os.environ.get("GITHUB_SERVER_URL"),
+        os.environ.get("GITHUB_REPOSITORY"),
+        os.environ.get("GITHUB_RUN_ID"),
+    ),
 )
+
+status_output = subprocess.run(
+    ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+).stdout
+# Check stray files before ANY artifact write, not only before git writes.
+assert_only_publication_paths_changed(status_output)
 
 out = ROOT / PUBLICATION_PATH
 published = dict(payload)
@@ -700,10 +716,10 @@ changed = True
 if out.exists():
     try:
         old = json.loads(out.read_text(encoding="utf-8"))
-        changed = (
-            not publication_artifact_is_current(old, payload)
-            or old.get("attestation") != attestation
-        )
+        # Duplicate detection ignores HEAD-specific evidence, but the stored
+        # attestation is reconciled on every run so the post-write gate never
+        # compares a stale binding against the current inputs.
+        changed = publication_needs_refresh(old, payload, attestation)
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         changed = True
 
@@ -711,15 +727,15 @@ if changed:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(published, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Wrote {len(results)} autopsies with input attestation")
-
-status_output = subprocess.run(
+post_write_status = subprocess.run(
     ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
 ).stdout
+assert_only_publication_paths_changed(post_write_status)
 try:
     written = json.loads(out.read_text(encoding="utf-8"))
     staged_paths = assert_publication_gate(
         audit_failures=audit_failures_this_run,
-        status_output=status_output,
+        status_output=post_write_status,
         attestation=written.get("attestation"),
         expected_attestation=attestation,
     )

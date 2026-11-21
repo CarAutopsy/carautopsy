@@ -16,12 +16,15 @@ from tco_publication import (  # noqa: E402
     assert_only_publication_paths_changed,
     assert_publication_gate,
     build_attestation,
+    build_run_url,
     canonical_bytes,
     catalog_digest,
+    country_pack_digest,
     classify_publication_response,
     draft_publication_proposal,
     is_duplicate_publication,
     parse_status_paths,
+    publication_needs_refresh,
 )
 
 
@@ -33,6 +36,7 @@ ATTESTATION = build_attestation(
     base_sha=SHA,
     catalog_sha256=DIGEST,
     country_pack="AT@2026.1",
+    country_pack_sha256="d" * 64,
     engine_version="1.0.0",
     run_url="https://github.com/CarAutopsy/carautopsy/actions/runs/1",
 )
@@ -63,7 +67,8 @@ class TcoPublicationGuardTests(unittest.TestCase):
         changed = dict(PAYLOAD, summary={"variants": 2})
         other = build_attestation(
             payload=changed, base_sha=SHA, catalog_sha256=DIGEST,
-            country_pack="AT@2026.1", engine_version="1.0.0",
+            country_pack="AT@2026.1", country_pack_sha256="d" * 64,
+            engine_version="1.0.0",
         )
         self.assertNotEqual(ATTESTATION["payload_sha256"], other["payload_sha256"])
         for kwargs in (
@@ -76,19 +81,26 @@ class TcoPublicationGuardTests(unittest.TestCase):
             with self.subTest(kwargs=kwargs):
                 values = dict(
                     payload=PAYLOAD, base_sha=SHA, catalog_sha256=DIGEST,
-                    country_pack="AT@2026.1", engine_version="1.0.0",
+                    country_pack="AT@2026.1", country_pack_sha256="d" * 64,
+                    engine_version="1.0.0",
                 )
                 values.update(kwargs)
                 with self.assertRaises(PublicationBlocked):
                     build_attestation(**values)
+
+    def test_run_specific_evidence_does_not_change_binding(self):
+        relaxed = dict(ATTESTATION, base_sha="c" * 40,
+                       run_url="https://github.com/CarAutopsy/carautopsy/actions/runs/999")
+        assert_attestation({"attestation": relaxed}, ATTESTATION)
 
     def test_attestation_mismatch_is_detected(self):
         assert_attestation({"attestation": ATTESTATION}, ATTESTATION)
         for bad in (
             {},
             {"attestation": None},
-            {"attestation": dict(ATTESTATION, base_sha="c" * 40)},
             {"attestation": dict(ATTESTATION, payload_sha256="d" * 64)},
+            {"attestation": dict(ATTESTATION, catalog_sha256="e" * 64)},
+            {"attestation": dict(ATTESTATION, country_pack_sha256="1" * 64)},
         ):
             with self.subTest(bad=bad):
                 with self.assertRaises(PublicationBlocked):
@@ -170,9 +182,63 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
     def test_no_duplicate_publication_when_inputs_unchanged(self):
         existing = {"results": PAYLOAD["results"], "attestation": ATTESTATION}
         self.assertTrue(is_duplicate_publication(existing, ATTESTATION))
-        drifted = dict(ATTESTATION, base_sha="c" * 40)
-        self.assertFalse(is_duplicate_publication(existing, drifted))
+        same_payload_new_head = dict(ATTESTATION, base_sha="c" * 40)
+        self.assertTrue(is_duplicate_publication(existing, same_payload_new_head))
+        changed_payload = dict(ATTESTATION, payload_sha256="f" * 64)
+        self.assertFalse(is_duplicate_publication(existing, changed_payload))
+        changed_catalog = dict(ATTESTATION, catalog_sha256="e" * 64)
+        self.assertFalse(is_duplicate_publication(existing, changed_catalog))
+        changed_pack = dict(ATTESTATION, country_pack_sha256="1" * 64)
+        self.assertFalse(is_duplicate_publication(existing, changed_pack))
         self.assertFalse(is_duplicate_publication({}, ATTESTATION))
+
+    def test_unchanged_inputs_do_not_rewrite_on_new_head_or_run(self):
+        envelope = {"country_pack": "AT@2026.1", "engine_version": "1.0.0",
+                    "generated_utc": "2026-11-20T12:00:00Z"}
+        payload = dict(PAYLOAD, envelope=envelope)
+        new_evidence = dict(ATTESTATION, base_sha="c" * 40,
+                            run_url="https://github.com/CarAutopsy/carautopsy/actions/runs/999")
+        existing = {"results": payload["results"], "summary": payload["summary"],
+                    "envelope": envelope, "attestation": new_evidence}
+        self.assertTrue(is_duplicate_publication(existing, new_evidence))
+        self.assertFalse(publication_needs_refresh(existing, payload, new_evidence))
+        assert_attestation(existing, new_evidence)
+
+    def test_changed_input_binding_forces_refresh_and_blocks_stale_artifact(self):
+        envelope = {"country_pack": "AT@2026.1", "engine_version": "1.0.0",
+                    "generated_utc": "2026-11-20T12:00:00Z"}
+        payload = dict(PAYLOAD, envelope=envelope)
+        stale = {"results": payload["results"], "summary": payload["summary"],
+                 "envelope": envelope,
+                 "attestation": dict(ATTESTATION, catalog_sha256="e" * 64)}
+        self.assertTrue(publication_needs_refresh(stale, payload, ATTESTATION))
+        with self.assertRaises(PublicationBlocked):
+            assert_attestation(stale, ATTESTATION)
+
+    def test_engine_import_is_local_and_pack_digest_is_bounded(self):
+        source = (ROOT / "scripts" / "tco_publication.py").read_text(encoding="utf-8")
+        self.assertNotIn("\nfrom tco_engine import", source)
+        self.assertIn("    from tco_engine import publication_artifact_is_current", source)
+        self.assertIn("MAX_PACK_FILES", source)
+        self.assertIn("not path.is_symlink()", source)
+
+    def test_run_url_builder_is_pure_and_bounded(self):
+        self.assertEqual(
+            build_run_url("https://github.com", "CarAutopsy/carautopsy", "123"),
+            "https://github.com/CarAutopsy/carautopsy/actions/runs/123",
+        )
+        self.assertEqual(
+            build_run_url("https://github.com/", "CarAutopsy/carautopsy", "123"),
+            "https://github.com/CarAutopsy/carautopsy/actions/runs/123",
+        )
+        for args in (
+            ("http://github.com", "CarAutopsy/carautopsy", "123"),
+            ("https://github.com", "../repo", "123"),
+            ("https://github.com", "CarAutopsy/carautopsy", "not-a-number"),
+            (None, "CarAutopsy/carautopsy", "123"),
+        ):
+            with self.subTest(args=args):
+                self.assertIsNone(build_run_url(*args))
 
     def test_uncertain_response_never_authorizes_retry(self):
         self.assertEqual(classify_publication_response(None), "uncertain")
@@ -219,6 +285,32 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
         for marker in ("build_attestation(", "json.dumps(published", "assert_publication_gate("):
             with self.subTest(marker=marker):
                 self.assertLess(failure, source.index(marker))
+
+
+    def test_country_pack_rules_are_bound_into_attestation(self):
+        digest = country_pack_digest(ROOT)
+        self.assertEqual(len(digest), 64)
+        self.assertEqual(digest, country_pack_digest(ROOT))
+        attestation = dict(ATTESTATION, country_pack_sha256=digest)
+        self.assertEqual(attestation["country_pack_sha256"], digest)
+        with self.assertRaises(PublicationBlocked):
+            build_attestation(
+                payload=PAYLOAD, base_sha=SHA, catalog_sha256=DIGEST,
+                country_pack="AT@2026.1", engine_version="1.0.0",
+                country_pack_sha256="not-a-digest",
+            )
+
+    def test_runtime_uses_wired_helpers_and_standard_run_url(self):
+        source = (ROOT / "scripts" / "autonomous_pipeline.py").read_text(encoding="utf-8")
+        self.assertIn("publication_needs_refresh(old, payload, attestation)", source)
+        self.assertIn("country_pack_sha256=country_pack_digest(ROOT, country)", source)
+        self.assertIn('os.environ.get("GITHUB_RUN_ID"', source)
+        self.assertNotIn("GITHUB_RUN_URL", source)
+        self.assertIn("status_output=post_write_status", source)
+        self.assertLess(
+            source.index("assert_only_publication_paths_changed(status_output)"),
+            source.index("json.dumps(published"),
+        )
 
 
 if __name__ == "__main__":

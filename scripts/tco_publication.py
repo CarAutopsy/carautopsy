@@ -15,6 +15,15 @@ from typing import Any
 
 
 PUBLICATION_PATH = "apps/web/public/data/autopsies.json"
+ATTESTATION_BINDING_FIELDS = (
+    "schema_version",
+    "payload_sha256",
+    "catalog_sha256",
+    "country_pack",
+    "country_pack_sha256",
+    "engine_version",
+)
+MAX_PACK_FILES = 200
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _SHA1 = re.compile(r"[0-9a-f]{40}\Z")
 
@@ -44,6 +53,44 @@ def catalog_digest(root: Path) -> str:
     return hasher.hexdigest()
 
 
+def country_pack_digest(root: Path, country: str = "AT") -> str:
+    """Hash every rule file in the pack; a rule edit changes this digest."""
+    if not re.fullmatch(r"[A-Z]{2}", country):
+        raise PublicationBlocked("country code must be two uppercase letters")
+    pack = Path(root) / "country-packs" / country
+    files = sorted(
+        path for path in pack.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    )
+    if not files:
+        raise PublicationBlocked(f"country pack has no rule files: {country}")
+    if len(files) > MAX_PACK_FILES:
+        raise PublicationBlocked(f"country pack exceeds {MAX_PACK_FILES} rule files")
+    hasher = hashlib.sha256()
+    for path in files:
+        relative = path.relative_to(pack).as_posix()
+        hasher.update(relative.encode("utf-8"))
+        hasher.update(b"\x00")
+        hasher.update(path.read_bytes())
+        hasher.update(b"\x00")
+    return hasher.hexdigest()
+
+
+def build_run_url(server: Any, repository: Any, run_id: Any) -> str | None:
+    """Build exact run evidence from standard GitHub Actions values (pure)."""
+    if not isinstance(server, str) or not server.startswith("https://"):
+        return None
+    if not isinstance(repository, str) or re.fullmatch(
+        r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository
+    ) is None:
+        return None
+    if any(part in {".", ".."} for part in repository.split("/")):
+        return None
+    if not isinstance(run_id, str) or not run_id.isdigit():
+        return None
+    return f"{server.rstrip('/')}/{repository}/actions/runs/{run_id}"
+
+
 def build_attestation(
     *,
     payload: dict[str, Any],
@@ -51,6 +98,7 @@ def build_attestation(
     catalog_sha256: str,
     country_pack: str,
     engine_version: str,
+    country_pack_sha256: str,
     run_url: str | None = None,
 ) -> dict[str, Any]:
     """Bind a payload to the exact inputs and run evidence that produced it."""
@@ -65,11 +113,14 @@ def build_attestation(
             raise PublicationBlocked(f"{label} is missing")
     if run_url is not None and (not isinstance(run_url, str) or len(run_url) > 300):
         raise PublicationBlocked("run_url must be a bounded string")
+    if not isinstance(country_pack_sha256, str) or _SHA256.fullmatch(country_pack_sha256) is None:
+        raise PublicationBlocked("country_pack_sha256 must be a SHA-256 digest")
     return {
         "schema_version": 1,
         "base_sha": base_sha,
         "catalog_sha256": catalog_sha256,
         "country_pack": country_pack,
+        "country_pack_sha256": country_pack_sha256,
         "engine_version": engine_version,
         "run_url": run_url,
         "payload_sha256": hashlib.sha256(canonical_bytes(payload)).hexdigest(),
@@ -77,10 +128,11 @@ def build_attestation(
 
 
 def assert_attestation(artifact: Any, expected: dict[str, Any]) -> None:
-    """Reject any artifact whose attestation is missing or does not match."""
+    """Reject an artifact whose input binding differs. HEAD/run evidence is ignored."""
     if not isinstance(artifact, dict) or not isinstance(artifact.get("attestation"), dict):
         raise PublicationBlocked("published artifact lacks an attestation")
-    if artifact["attestation"] != expected:
+    actual = artifact["attestation"]
+    if any(actual.get(field) != expected.get(field) for field in ATTESTATION_BINDING_FIELDS):
         raise PublicationBlocked("published artifact attestation does not match inputs")
 
 
@@ -137,13 +189,39 @@ def assert_publication_gate(
 
 
 def is_duplicate_publication(existing: Any, attestation: dict[str, Any]) -> bool:
-    """True only when an existing artifact is bound to identical input evidence."""
+    """True when the same payload is already published, ignoring a new HEAD SHA.
+
+    Duplicate detection is based on the payload digest so that a new commit
+    which does not change the calculation is not treated as a new publication.
+    """
+    existing_attestation = existing.get("attestation") if isinstance(existing, dict) else None
     return (
         isinstance(existing, dict)
-        and isinstance(existing.get("attestation"), dict)
-        and existing["attestation"] == attestation
+        and isinstance(existing_attestation, dict)
         and isinstance(existing.get("results"), list)
+        and all(
+            existing_attestation.get(field) == attestation.get(field)
+            for field in ("payload_sha256", "catalog_sha256", "country_pack_sha256")
+        )
     )
+
+
+def publication_needs_refresh(existing: Any, payload: dict[str, Any], attestation: dict[str, Any]) -> bool:
+    """Decide whether the local artifact must be rewritten (no git write).
+
+    HEAD SHA and run URL are run-specific evidence, not input bindings: they
+    must not force a rewrite on every scheduled run.
+    """
+    from tco_engine import publication_artifact_is_current
+
+    if not isinstance(existing, dict):
+        return True
+    actual = existing.get("attestation")
+    binding_changed = (
+        not isinstance(actual, dict)
+        or any(actual.get(field) != attestation.get(field) for field in ATTESTATION_BINDING_FIELDS)
+    )
+    return binding_changed or not publication_artifact_is_current(existing, payload)
 
 
 def classify_publication_response(response: Any) -> str:
