@@ -18,7 +18,9 @@ python scripts/pilot_staging_runner.py \
 ```
 
 Arguments: `--candidates` (required), `--output-dir` (required unless dry-run),
-`--report` (optional), `--dry-run` (no files written).
+`--report` (optional; when supplied with `--dry-run`, the report file is still
+written), `--dry-run` (writes no staging records; it does not suppress a
+requested report file).
 Exit codes: `0` success or dry-run, `3` unsafe output/report path, `4` batch
 rejected by validation.
 
@@ -63,10 +65,13 @@ injected transport/clock/sleeper for deterministic tests.
 ## 2. Remaining engineering work
 
 - **Catalog-conflict detection.** The runner currently detects duplicates and
-  conflicts only within the candidate batch. Add a read-only comparison of each
-  staged identity against `catalog/variants/`, with explicit conflict counts and
-  a hard stop on collisions. This is a prerequisite for gate 7 of the staging
-  plan.
+  conflicts only within the candidate batch, and its deduplication key includes
+  the source URL. Two records for the same vehicle with different source URLs and
+  different prices are therefore not currently reported as a conflict. Add
+  identity-level within-batch price comparison plus a read-only comparison of
+  each staged identity against `catalog/variants/`, with explicit conflict counts
+  and a hard stop on collisions. These are prerequisites for gates 4 and 7 of the
+  staging plan.
 - **Per-run report persistence.** Decide whether the staging report is an
   external artifact or a committed documentation artifact; the runner supports
   `--report` but does not choose a repository location.

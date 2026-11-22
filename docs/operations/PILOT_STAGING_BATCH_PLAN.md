@@ -34,7 +34,10 @@ approval.
 - Never overwrite or modify an existing catalog record. A future catalog PR is a
   separate, owner-approved action.
 - Never silently resolve a conflict. Duplicate keys and conflicting prices are
-  counted and reported; a batch with conflicts is rejected.
+  counted and reported; a batch with conflicts is rejected. Current detection
+  keys include the source URL, so two records for the same vehicle with different
+  source URLs and different prices are not yet flagged; identity-level price
+  comparison is a documented remaining engineering gap.
 - Retain for every record: `price_tier`, `price_value`, `price_source_url`,
   `price_source_date`, `price_confidence`, `price_adjustment_method`, `vat_basis`,
   `currency`, `review_required`, and the original research evidence notes.
