@@ -1,0 +1,911 @@
+{
+  "schema_version": 1,
+  "artifact": "pilot-batch-001-price-candidates",
+  "generated_at": "2026-11-22",
+  "mode": "offline_research_only_no_live_retrieval",
+  "branch": "feat/pilot-approximate-price-coverage",
+  "base_commit": "bbffb53b014fe335e8d9963fe94cc80cb83c2683",
+  "source_documents": [
+    "docs/operations/PILOT_BATCH_001.md",
+    "docs/data-sources/approximate-price-protocol-v1.md",
+    "docs/operations/COVERAGE_SCOREBOARD.md",
+    "docs/operations/AUSTRIA_PRIORITY_BACKLOG.md"
+  ],
+  "evidence_files": [
+    "docs/data-sources/price-evidence/v1.json",
+    "docs/data-sources/price-evidence/unresolved.json",
+    "docs/data-sources/identity-map/v1.json",
+    "docs/data-sources/research-coverage-report.json",
+    "docs/data-sources/harvest-price-log.json",
+    "docs/data-sources/price-source-plan.md",
+    "docs/data-sources/bulk-ingestion.md",
+    "docs/data-sources/statutory/at-rules-v1.json"
+  ],
+  "model_count": 25,
+  "price_tier_summary": {
+    "approximate": 2,
+    "unavailable": 23
+  },
+  "summary": {
+    "models_with_committed_at_price_rows": [
+      "Octavia",
+      "Fabia"
+    ],
+    "models_with_identity_but_unresolved_price": [
+      "Kodiaq",
+      "Karoq"
+    ],
+    "models_with_no_committed_price_evidence": 21,
+    "catalog_variants_written": 0,
+    "staging_records_created": 0,
+    "live_retrieval_performed": false
+  },
+  "candidates": [
+    {
+      "brand": "Škoda",
+      "model": "Octavia",
+      "austria_priority": "2025_top_seller",
+      "model_years": [
+        "2018"
+      ],
+      "priority_powertrains": [
+        "diesel",
+        "petrol"
+      ],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "approximate",
+        "price_value": 22630.0,
+        "price_basis": "archived Austrian OEM list price (model-level entry price)",
+        "currency": "EUR",
+        "market": "AT",
+        "vat_basis": "incl_vat",
+        "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
+        "source_date": "2018-11-30",
+        "confidence": "low",
+        "adjustment_method": "excl-VAT 18858.33 in committed evidence = incl-VAT 22630.00 / 1.20 (AT standard VAT 20%)",
+        "excl_vat_value_derived": 18858.33,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "21 committed identity rows in docs/data-sources/identity-map/v1.json (2018 AT EEA sample); 13 diesel, 8 petrol.",
+        "21 committed price rows in docs/data-sources/price-evidence/v1.json all cite the same archived skoda.at Octavia price list dated 2018-11-30.",
+        "price.match.uncertainty = 'model_level_from_price; not variant-specific'; confidence low; reviewed_by 'automated-model-level-harvest-v1 (pending owner review)'.",
+        "Classified approximate, not verified: dated and attributable but model-level, low confidence and owner review pending."
+      ],
+      "gaps": [
+        "No variant-specific Austrian price for dominant diesel/petrol trims.",
+        "No committed 2019-2026 model-year price evidence; 2025 top-seller relevance is priority metadata only.",
+        "Body style is not evidenced by committed data (EEA Cn carries the model name, not a body style).",
+        "Owner evidence review and schema support for the new price tiers are still required."
+      ],
+      "recommended_action": "prepare_approximate_record"
+    },
+    {
+      "brand": "Volkswagen",
+      "model": "Golf",
+      "austria_priority": "2025_top_seller",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Candidate lead for later owner-authorized research: https://www.volkswagen.at/ (owner-brief lead; not fetched)"
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "BMW",
+      "model": "X1",
+      "austria_priority": "2025_top_seller",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Seat",
+      "model": "Ibiza",
+      "austria_priority": "2025_top_seller",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Toyota",
+      "model": "Yaris",
+      "austria_priority": "2025_top_seller",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Committed statutory context: at-rules-v1.json states NoVA exemption does not apply to hybrids with another fuel source; this is tax context, not a price."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Dacia",
+      "model": "Sandero",
+      "austria_priority": "2025_top_seller",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Dacia",
+      "model": "Duster",
+      "austria_priority": "2025_top_seller",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Škoda",
+      "model": "Fabia",
+      "austria_priority": "2025_top_seller",
+      "model_years": [
+        "2018"
+      ],
+      "priority_powertrains": [
+        "petrol"
+      ],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "approximate",
+        "price_value": 11480.0,
+        "price_basis": "archived Austrian OEM list price (model-level entry price)",
+        "currency": "EUR",
+        "market": "AT",
+        "vat_basis": "incl_vat",
+        "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+        "source_date": "2019-03-01",
+        "confidence": "low",
+        "adjustment_method": "excl-VAT 9566.67 in committed evidence = incl-VAT 11480.00 / 1.20 (AT standard VAT 20%)",
+        "excl_vat_value_derived": 9566.67,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "5 committed identity rows in docs/data-sources/identity-map/v1.json (2018 AT EEA sample), all petrol.",
+        "5 committed price rows in docs/data-sources/price-evidence/v1.json cite the archived skoda.at Fabia price list dated 2019-03-01.",
+        "Same model-level, low-confidence, pending-owner-review status as Octavia; therefore approximate, not verified."
+      ],
+      "gaps": [
+        "No variant-specific Austrian price for representative petrol trims.",
+        "No committed 2019-2026 model-year price evidence; 2025 top-seller relevance is priority metadata only.",
+        "Body style is not evidenced by committed data (EEA Cn carries the model name, not a body style).",
+        "Owner evidence review and schema support for the new price tiers are still required."
+      ],
+      "recommended_action": "prepare_approximate_record"
+    },
+    {
+      "brand": "Dacia",
+      "model": "Bigster",
+      "austria_priority": "2025_top_seller",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Volkswagen",
+      "model": "Tiguan",
+      "austria_priority": "high_registration_suv",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Candidate lead for later owner-authorized research: https://www.volkswagen.at/ (owner-brief lead; not fetched)"
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Volkswagen",
+      "model": "T-Roc",
+      "austria_priority": "high_registration_suv",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Candidate lead for later owner-authorized research: https://www.volkswagen.at/ (owner-brief lead; not fetched)"
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Škoda",
+      "model": "Kodiaq",
+      "austria_priority": "high_registration_suv_unresolved_price",
+      "model_years": [
+        "2018"
+      ],
+      "priority_powertrains": [
+        "diesel"
+      ],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "12 committed 2018 AT identity rows in docs/data-sources/identity-map/v1.json.",
+        "12 matching keys in docs/data-sources/price-evidence/unresolved.json, reason 'no_model_level_price_source', detail 'No dated archived AT price list found for this consumer model'.",
+        "docs/data-sources/harvest-price-log.json lists 11 archived AT price-list documents (Citigo, Fabia, Rapid, Octavia, Superb, Scala, Leaf); none covers Kodiaq or Karoq.",
+        "docs/data-sources/bulk-ingestion.md records Kodiaq/Karoq as unresolved after exhaustive search; research-coverage-report.json price.reasons = {'no_exact_price_row': 40} covering the 22 shared keys.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No dated, attributable Austrian list-price document in committed evidence.",
+        "No defensible cross-market proxy or credible range in committed evidence.",
+        "No committed 2019-2026 model-year evidence; 2025/high-registration relevance is priority metadata only.",
+        "Body style is not evidenced by committed data (EEA Cn carries the model name, not a body style)."
+      ],
+      "recommended_action": "reopen_evidence_trail"
+    },
+    {
+      "brand": "Škoda",
+      "model": "Karoq",
+      "austria_priority": "high_registration_suv_unresolved_price",
+      "model_years": [
+        "2018"
+      ],
+      "priority_powertrains": [
+        "petrol",
+        "diesel"
+      ],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "10 committed 2018 AT identity rows in docs/data-sources/identity-map/v1.json.",
+        "10 matching keys in docs/data-sources/price-evidence/unresolved.json, reason 'no_model_level_price_source', detail 'No dated archived AT price list found for this consumer model'.",
+        "docs/data-sources/harvest-price-log.json lists 11 archived AT price-list documents (Citigo, Fabia, Rapid, Octavia, Superb, Scala, Leaf); none covers Kodiaq or Karoq.",
+        "docs/data-sources/bulk-ingestion.md records Kodiaq/Karoq as unresolved after exhaustive search; research-coverage-report.json price.reasons = {'no_exact_price_row': 40} covering the 22 shared keys.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No dated, attributable Austrian list-price document in committed evidence.",
+        "No defensible cross-market proxy or credible range in committed evidence.",
+        "No committed 2019-2026 model-year evidence; 2025/high-registration relevance is priority metadata only.",
+        "Body style is not evidenced by committed data (EEA Cn carries the model name, not a body style)."
+      ],
+      "recommended_action": "reopen_evidence_trail"
+    },
+    {
+      "brand": "Audi",
+      "model": "A3",
+      "austria_priority": "high_registration_premium_compact",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Candidate lead for later owner-authorized research: https://www.audi.at/ (owner-brief lead; not fetched)"
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Audi",
+      "model": "Q3",
+      "austria_priority": "high_registration_premium_suv",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Candidate lead for later owner-authorized research: https://www.audi.at/ (owner-brief lead; not fetched)"
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "BMW",
+      "model": "3 Series",
+      "austria_priority": "high_registration_premium_sedan",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Mercedes-Benz",
+      "model": "GLC",
+      "austria_priority": "high_registration_premium_suv",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Candidate lead for later owner-authorized research: https://www.mercedes-benz.at/passengercars/configurator.html (owner-brief lead; not fetched)"
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Hyundai",
+      "model": "Tucson",
+      "austria_priority": "high_registration_suv",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Kia",
+      "model": "Sportage",
+      "austria_priority": "high_registration_suv",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Toyota",
+      "model": "Yaris Cross",
+      "austria_priority": "hybrid_priority_suv",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Committed statutory context: at-rules-v1.json states NoVA exemption does not apply to hybrids with another fuel source; this is tax context, not a price."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Toyota",
+      "model": "Corolla",
+      "austria_priority": "hybrid_priority",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Committed statutory context: at-rules-v1.json states NoVA exemption does not apply to hybrids with another fuel source; this is tax context, not a price."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Volkswagen",
+      "model": "ID.3",
+      "austria_priority": "bev_priority",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Candidate lead for later owner-authorized research: https://www.volkswagen.at/ (owner-brief lead; not fetched)",
+        "Committed statutory context: docs/data-sources/statutory/at-rules-v1.json records NoVA exemption for zero-CO2 BEVs (nova-electric-zero-co2-exempt) and motor-tax exemption ending 2025-03-31; this is tax context, not a price."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Škoda",
+      "model": "Enyaq",
+      "austria_priority": "bev_priority",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Committed statutory context: docs/data-sources/statutory/at-rules-v1.json records NoVA exemption for zero-CO2 BEVs (nova-electric-zero-co2-exempt) and motor-tax exemption ending 2025-03-31; this is tax context, not a price."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Tesla",
+      "model": "Model Y",
+      "austria_priority": "bev_priority",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Committed statutory context: docs/data-sources/statutory/at-rules-v1.json records NoVA exemption for zero-CO2 BEVs (nova-electric-zero-co2-exempt) and motor-tax exemption ending 2025-03-31; this is tax context, not a price."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    },
+    {
+      "brand": "Volvo",
+      "model": "XC40 / EX40",
+      "austria_priority": "bev_priority",
+      "model_years": [],
+      "priority_powertrains": [],
+      "body_styles": [],
+      "candidate_price": {
+        "price_tier": "unavailable",
+        "price_value": null,
+        "price_basis": null,
+        "currency": null,
+        "market": null,
+        "vat_basis": null,
+        "source_url": null,
+        "source_date": null,
+        "confidence": null,
+        "adjustment_method": null,
+        "excl_vat_value_derived": null,
+        "review_required": true
+      },
+      "evidence_notes": [
+        "No committed Austrian or cross-market price evidence for this model in docs/data-sources/price-evidence/v1.json, identity-map/v1.json, harvest-price-log.json or research-coverage-report.json.",
+        "Pilot scope 2017-2026 and 2025 registration priority come from docs/operations/PILOT_BATCH_001.md; they are priority metadata, not price evidence.",
+        "No live retrieval was performed. Any configurator URL below is an unfetched lead from the owner brief and is not treated as evidence.",
+        "Committed statutory context: docs/data-sources/statutory/at-rules-v1.json records NoVA exemption for zero-CO2 BEVs (nova-electric-zero-co2-exempt) and motor-tax exemption ending 2025-03-31; this is tax context, not a price."
+      ],
+      "gaps": [
+        "No committed Austrian MSRP/list price.",
+        "No committed cross-market proxy, FX rate, adjustment method or credible range.",
+        "No committed model-year, powertrain-share or body-style evidence for Austria."
+      ],
+      "recommended_action": "research_required_offline_evidence_missing"
+    }
+  ]
+}
