@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "oneautoapi",
+      "display_name": "One Auto API",
+      "access_mode": "api",
+      "status": "enabled_pending_adapter",
+      "secret_name": "ONEAUTOAPI_API_KEY",
+      "market_scope": ["to_be_verified"],
+      "primary_use": ["vehicle_data_enrichment", "cross_check"],
+      "price_tier_ceiling": "source_dependent",
+      "default_price_tier": "approximate",
+      "allowed_fields": [
+        "make",
+        "model",
+        "variant",
+        "model_year",
+        "fuel_type",
+        "body_style",
+        "power",
+        "engine",
+        "transmission",
+        "dimensions",
+        "weight",
+        "price_candidate"
+      ],
+      "forbidden_fields": [
+        "vin",
+        "owner_personal_data",
+        "secret",
+        "api_key"
+      ],
+      "provenance_required": true,
+      "rate_limit": {
+        "max_requests_per_run": 25,
+        "backoff_seconds": 2
+      },
+      "notes": "Austrian market coverage and permitted price use must be verified before any price field is ingested. Never expose or commit the API key."
+    },
+    {
+      "source_id": "ev_database",
+      "display_name": "EV Database",
+      "access_mode": "web_reference",
+      "status": "enabled_manual_research",
+      "base_url": "https://ev-database.org/",
+      "market_scope": ["EU", "EEA"],
+      "primary_use": [
+        "bev_specifications",
+        "battery_capacity",
+        "wltp_range",
+        "efficiency",
+        "dc_charging",
+        "body_style",
+        "weight",
+        "price_candidate"
+      ],
+      "price_tier_ceiling": "approximate",
+      "allowed_price_tiers": ["approximate", "range"],
+      "allowed_fields": [
+        "make",
+        "model",
+        "variant",
+        "model_year",
+        "body_style",
+        "battery_capacity_gross",
+        "battery_capacity_usable",
+        "wltp_range",
+        "efficiency",
+        "dc_charging_power",
+        "dc_charging_time_10_80",
+        "drivetrain",
+        "motor_count",
+        "power",
+        "seating_capacity",
+        "weight",
+        "price_candidate"
+      ],
+      "forbidden_fields": [
+        "vin",
+        "owner_personal_data",
+        "secret",
+        "api_key"
+      ],
+      "provenance_required": true,
+      "automation": "forbidden",
+      "notes": "Use the public web portal manually. Do not scrape or automate access. European prices are not Austrian MSRPs and must not be labeled verified."
+    }
+  ]
+}
