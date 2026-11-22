@@ -1,0 +1,31 @@
+[
+  {
+    "variant_id": "fixture-spec-invalid-1",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "",
+      "variant": "FixtureTrim",
+      "model_year": "2024",
+      "body_style": "spaceship",
+      "powertrain": "bev",
+      "fuel_type": "electric",
+      "drivetrain": "rwd",
+      "transmission": "single_speed"
+    },
+    "specifications": {
+      "battery_capacity_kwh": "60 kWh",
+      "electric_range_km": -5,
+      "dimensions": {"length_mm": 999999, "width_mm": 1800, "height_mm": 1600},
+      "weight_kg": 1800,
+      "seats": 5
+    },
+    "provenance": {
+      "source_id": "",
+      "source_url": "not-a-url",
+      "retrieval_date": "22-11-2026",
+      "source_type": "unknown_source",
+      "license_attribution_status": "unverified_claim",
+      "confidence": "certain"
+    }
+  }
+]

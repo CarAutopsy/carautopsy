@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://carautopsy.local/schemas/vehicle-specification.schema.json",
+  "title": "Canonical vehicle specification record",
+  "description": "Offline pilot specification record. Missing evidence is null; no value is inferred. This schema does not authorize a catalog write.",
+  "type": "object",
+  "required": ["schema_version", "variant_id", "identity", "specifications", "provenance", "evidence_status"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "enum": [1]},
+    "variant_id": {"type": "string", "minLength": 1},
+    "identity": {
+      "type": "object",
+      "required": ["make", "model", "variant", "model_year"],
+      "additionalProperties": false,
+      "properties": {
+        "make": {"type": "string", "minLength": 1},
+        "model": {"type": "string", "minLength": 1},
+        "variant": {"type": "string", "minLength": 1},
+        "model_year": {"type": "integer", "minimum": 1990, "maximum": 2035},
+        "body_style": {"type": ["string", "null"]},
+        "powertrain": {"type": ["string", "null"]},
+        "fuel_type": {"type": ["string", "null"]},
+        "drivetrain": {"type": ["string", "null"]},
+        "transmission": {"type": ["string", "null"]},
+        "model_specific_id": {"type": ["string", "null"]}
+      }
+    },
+    "specifications": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "battery_capacity_kwh": {"type": ["number", "null"], "minimum": 0},
+        "electric_range_km": {"type": ["number", "null"], "minimum": 0},
+        "dimensions": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "length_mm": {"type": ["number", "null"], "minimum": 0},
+            "width_mm": {"type": ["number", "null"], "minimum": 0},
+            "height_mm": {"type": ["number", "null"], "minimum": 0}
+          }
+        },
+        "weight_kg": {"type": ["number", "null"], "minimum": 0},
+        "seats": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source_id", "source_url", "retrieval_date", "source_type", "license_attribution_status", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "source_url": {"type": ["string", "null"]},
+        "retrieval_date": {"type": ["string", "null"]},
+        "source_type": {"type": ["string", "null"]},
+        "license_attribution_status": {"type": ["string", "null"]},
+        "confidence": {"type": ["string", "null"], "enum": ["low", "medium", "high", null]},
+        "limitation": {"type": ["string", "null"]}
+      }
+    },
+    "evidence_status": {
+      "type": "string",
+      "enum": ["complete", "partial", "conflicting", "invalid"]
+    }
+  }
+}

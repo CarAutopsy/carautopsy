@@ -1,0 +1,62 @@
+[
+  {
+    "variant_id": "fixture-spec-conflict-1",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureConflict",
+      "variant": "FixtureTrim",
+      "model_year": 2024,
+      "body_style": "suv",
+      "powertrain": "bev",
+      "fuel_type": "electric",
+      "drivetrain": "rwd",
+      "transmission": "single_speed"
+    },
+    "specifications": {
+      "battery_capacity_kwh": 60.0,
+      "electric_range_km": 400,
+      "dimensions": {"length_mm": 4500, "width_mm": 1800, "height_mm": 1600},
+      "weight_kg": 1800,
+      "seats": 5
+    },
+    "provenance": {
+      "source_id": "fixture-source-a",
+      "source_url": "https://fixture.example/conflict/a",
+      "retrieval_date": "2026-11-20",
+      "source_type": "manufacturer",
+      "license_attribution_status": "attributed",
+      "confidence": "high",
+      "limitation": "synthetic conflict fixture"
+    }
+  },
+  {
+    "variant_id": "fixture-spec-conflict-2",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureConflict",
+      "variant": "FixtureTrim",
+      "model_year": 2024,
+      "body_style": "suv",
+      "powertrain": "bev",
+      "fuel_type": "electric",
+      "drivetrain": "rwd",
+      "transmission": "single_speed"
+    },
+    "specifications": {
+      "battery_capacity_kwh": 75.0,
+      "electric_range_km": 500,
+      "dimensions": {"length_mm": 4500, "width_mm": 1800, "height_mm": 1600},
+      "weight_kg": 1900,
+      "seats": 5
+    },
+    "provenance": {
+      "source_id": "fixture-source-b",
+      "source_url": "https://fixture.example/conflict/b",
+      "retrieval_date": "2026-11-21",
+      "source_type": "dealer",
+      "license_attribution_status": "attributed",
+      "confidence": "low",
+      "limitation": "synthetic conflict fixture"
+    }
+  }
+]

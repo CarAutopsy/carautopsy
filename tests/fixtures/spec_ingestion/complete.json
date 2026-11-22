@@ -1,0 +1,64 @@
+[
+  {
+    "variant_id": "fixture-spec-complete-1",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel",
+      "variant": "FixtureTrim",
+      "model_year": 2024,
+      "body_style": "suv",
+      "powertrain": "bev",
+      "fuel_type": "electric",
+      "drivetrain": "rwd",
+      "transmission": "single_speed",
+      "model_specific_id": "FIXTURE-ID-1"
+    },
+    "specifications": {
+      "battery_capacity_kwh": 60.0,
+      "electric_range_km": 400,
+      "dimensions": {"length_mm": 4500, "width_mm": 1800, "height_mm": 1600},
+      "weight_kg": 1800,
+      "seats": 5
+    },
+    "provenance": {
+      "source_id": "fixture-manufacturer-page",
+      "source_url": "https://fixture.example/model/1",
+      "retrieval_date": "2026-11-22",
+      "source_type": "manufacturer",
+      "license_attribution_status": "attributed",
+      "confidence": "medium",
+      "limitation": "synthetic fixture"
+    }
+  },
+  {
+    "variant_id": "fixture-spec-complete-2",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModelTwo",
+      "variant": "FixtureTrim",
+      "model_year": 2025,
+      "body_style": "sedan",
+      "powertrain": "hybrid",
+      "fuel_type": "hybrid",
+      "drivetrain": "fwd",
+      "transmission": "automatic",
+      "model_specific_id": null
+    },
+    "specifications": {
+      "battery_capacity_kwh": null,
+      "electric_range_km": null,
+      "dimensions": {"length_mm": 4700, "width_mm": 1820, "height_mm": 1450},
+      "weight_kg": 1500,
+      "seats": 5
+    },
+    "provenance": {
+      "source_id": "fixture-dealer-page",
+      "source_url": "https://fixture.example/model/2",
+      "retrieval_date": "2026-11-22",
+      "source_type": "dealer",
+      "license_attribution_status": "attributed",
+      "confidence": "low",
+      "limitation": "synthetic fixture"
+    }
+  }
+]
