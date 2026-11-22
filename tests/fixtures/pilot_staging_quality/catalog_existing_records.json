@@ -1,0 +1,599 @@
+[
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-000",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel0",
+      "variant": "FixtureTrim0",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20000.0
+      }
+    ],
+    "price_tier": "approximate",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-001",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel0",
+      "variant": "FixtureTrim1",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20001.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "near_duplicate_identity",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-002",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel0",
+      "variant": "FixtureTrim2",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20002.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "near_duplicate_identity",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-003",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel3",
+      "variant": "FixtureTrim3",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20003.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "conflicting_price",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-004",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel4",
+      "variant": "FixtureTrim4",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20003.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "conflicting_price",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-005",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel5",
+      "variant": "FixtureTrim5",
+      "model_year": 2024
+    },
+    "provenance": {},
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20005.0
+      }
+    ],
+    "price_tier": "approximate",
+    "expected_outcome": "missing_provenance",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-006",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel0",
+      "variant": "FixtureTrim6",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20006.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-007",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel1",
+      "variant": "FixtureTrim7",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20007.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-008",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel2",
+      "variant": "FixtureTrim8",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20008.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-009",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel3",
+      "variant": "FixtureTrim9",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20009.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-010",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel4",
+      "variant": "FixtureTrim10",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20010.0
+      }
+    ],
+    "price_tier": "approximate",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-011",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel5",
+      "variant": "FixtureTrim11",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20011.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-012",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel0",
+      "variant": "FixtureTrim12",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20012.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-013",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel1",
+      "variant": "FixtureTrim13",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20013.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-014",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel2",
+      "variant": "FixtureTrim14",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20014.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-015",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel3",
+      "variant": "FixtureTrim15",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20015.0
+      }
+    ],
+    "price_tier": "approximate",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-016",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel4",
+      "variant": "FixtureTrim16",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20016.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-017",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel5",
+      "variant": "FixtureTrim17",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20017.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-018",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel0",
+      "variant": "FixtureTrim18",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20018.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-019",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel1",
+      "variant": "FixtureTrim19",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20019.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-020",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel2",
+      "variant": "FixtureTrim20",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20020.0
+      }
+    ],
+    "price_tier": "approximate",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-021",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel3",
+      "variant": "FixtureTrim21",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20021.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-022",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel4",
+      "variant": "FixtureTrim22",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20022.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  },
+  {
+    "schema_version": "1.0.0",
+    "variant_id": "fixture-catalog-023",
+    "status": "proposed",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel5",
+      "variant": "FixtureTrim23",
+      "model_year": 2024
+    },
+    "provenance": {
+      "confidence": "low",
+      "sources": []
+    },
+    "offers": [
+      {
+        "country": "AT",
+        "currency": "EUR",
+        "purchase_price_excl_vat_eur": 20023.0
+      }
+    ],
+    "price_tier": "unavailable",
+    "expected_outcome": "existing_record",
+    "synthetic": true
+  }
+]
