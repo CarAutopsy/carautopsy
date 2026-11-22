@@ -10,53 +10,53 @@
   "record_count": 10,
   "records": [
     {
-      "byte_size": 5064,
-      "sha256": "ed26ba01294819b8af3e767d536068f2f6a512f88d1d5a4fa2c19d5f711d7168",
+      "byte_size": 6441,
+      "sha256": "ae6bc4bcd2c47989f3f2109284432dc5890741ef2610df7319f8193b6a015af1",
       "variant_id": "003-volkswagen-golf-golf-preis-ab"
     },
     {
-      "byte_size": 4890,
-      "sha256": "fa4d6a06507ca3d777996b3887a5cd84533023f7d2e6573aa5935a3f141b98ef",
+      "byte_size": 6267,
+      "sha256": "c7ac34fac21ae2bad01fa6fe341238ba84be12324693eab7708026a1c7a8f156",
       "variant_id": "004-volkswagen-tiguan-tiguan-preis-ab"
     },
     {
-      "byte_size": 4816,
-      "sha256": "a5a22a85360b27231f930194cc71feab0136d66411df46b960706c9878689265",
+      "byte_size": 6193,
+      "sha256": "06255698e33e0920dde36f8a5aa3cc0028eca110a5776495fe6b5105afa57c8e",
       "variant_id": "005-volkswagen-t-roc-t-roc-preis-ab"
     },
     {
-      "byte_size": 6370,
-      "sha256": "db5080b1e8d13744ce59511f7a9abe99a82980e04fe1dfaab69104223b43cb02",
+      "byte_size": 7992,
+      "sha256": "02589356fd9aa089740f981c2a944360ee4bb92514eaf686ff297ebef1608048",
       "variant_id": "006-volkswagen-id.3-id.3-neo-trend"
     },
     {
-      "byte_size": 5410,
-      "sha256": "9ea3c5ffc4e459d74929754c16129cb2b58e5c3a17facba523f340e40d9dc0a2",
+      "byte_size": 7237,
+      "sha256": "9077531783424259420af7ad2dcffa5db2c1848932421488d4710682829755fc",
       "variant_id": "030-xpeng-g6-g6-rwd-standard-range"
     },
     {
-      "byte_size": 5455,
-      "sha256": "4dc594f86a23667d91d393ef20d1e79e276ee681e3f33135895466ee94caf18b",
+      "byte_size": 7282,
+      "sha256": "acd12c7b9dfa3e0219e43de069113eb5398ec6966ab7bd38297769bd24d26b1d",
       "variant_id": "031-xpeng-g9-g9-rwd-standard-range"
     },
     {
-      "byte_size": 5202,
-      "sha256": "5b45b374397fe6f72c0e576a47934aed4787209500c6e1d609ccb8ab221267b4",
+      "byte_size": 7038,
+      "sha256": "a245fb860cb3c877e36dd8aba62d6efa106e3bfb0466217ed205937271485a0e",
       "variant_id": "032-xpeng-p7--p7-rwd-standard-range"
     },
     {
-      "byte_size": 5363,
-      "sha256": "a80d09132042f61ba0c19f7e0be7640f7df2bfbaeab32a61ee0985c1222b2d64",
+      "byte_size": 7193,
+      "sha256": "fd7141e1ce10d3cfd40859e5b32c914cac118d44a1ffb8708724a401f8b86a2a",
       "variant_id": "033-xpeng-l03-l03-rwd-standard-range"
     },
     {
-      "byte_size": 4949,
-      "sha256": "fee1317122c09c08555793d47782e6b920685243ec5bbbeadc00f58de30a8ad9",
+      "byte_size": 6574,
+      "sha256": "9e62e531ad26fee0e9ce8fa2700fe3ed734c0735a5a1c96b01c2e00ed33e1301",
       "variant_id": "034-xpeng-x9-x9-fwd-standard-range"
     },
     {
-      "byte_size": 5331,
-      "sha256": "32c32de86b230cb06226bc41300d652222c09644a65378e91bfdd952b7638e15",
+      "byte_size": 6957,
+      "sha256": "7696ca9f6f03f3551ba4fa47aedc78668023f62935d8b4aad2f42d0fb93af595",
       "variant_id": "035-xpeng-g9l-g9l-long-range-2wd-7-seat-ultra"
     }
   ],
