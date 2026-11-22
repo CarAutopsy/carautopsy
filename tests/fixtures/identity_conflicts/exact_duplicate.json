@@ -1,0 +1,82 @@
+[
+  {
+    "variant_id": "fixture-exact-1",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel",
+      "variant": "FixtureTrim",
+      "model_year": 2024,
+      "powertrain": "bev",
+      "trim": "Base"
+    },
+    "spec": {
+      "body_style": "suv",
+      "battery_capacity_kwh": 60.0,
+      "range_km": 400,
+      "dimensions": {
+        "length_mm": 4500,
+        "width_mm": 1800
+      },
+      "weight_kg": 1800
+    },
+    "price": {
+      "price_tier": "approximate",
+      "price_value": 25000.0,
+      "source_url": "https://fixture.example/src/1",
+      "source_date": "2026-11-22",
+      "vat_basis": "incl_vat"
+    },
+    "provenance": {
+      "sources": [
+        {
+          "source_id": "fixture-source",
+          "url": "https://fixture.example/src/1",
+          "retrieved": "2026-11-22",
+          "licence_or_terms": "synthetic fixture"
+        }
+      ]
+    },
+    "synthetic": true,
+    "expected_outcome": "exact_duplicate"
+  },
+  {
+    "variant_id": "fixture-exact-2",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel",
+      "variant": "FixtureTrim",
+      "model_year": 2024,
+      "powertrain": "bev",
+      "trim": "Base"
+    },
+    "spec": {
+      "body_style": "suv",
+      "battery_capacity_kwh": 60.0,
+      "range_km": 400,
+      "dimensions": {
+        "length_mm": 4500,
+        "width_mm": 1800
+      },
+      "weight_kg": 1800
+    },
+    "price": {
+      "price_tier": "approximate",
+      "price_value": 25000.0,
+      "source_url": "https://fixture.example/src/1",
+      "source_date": "2026-11-22",
+      "vat_basis": "incl_vat"
+    },
+    "provenance": {
+      "sources": [
+        {
+          "source_id": "fixture-source",
+          "url": "https://fixture.example/src/1",
+          "retrieved": "2026-11-22",
+          "licence_or_terms": "synthetic fixture"
+        }
+      ]
+    },
+    "synthetic": true,
+    "expected_outcome": "exact_duplicate"
+  }
+]

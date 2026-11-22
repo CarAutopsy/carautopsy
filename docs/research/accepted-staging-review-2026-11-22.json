@@ -1,0 +1,1443 @@
+{
+  "accepted_count": 12,
+  "artifact": "accepted-staging-owner-review",
+  "catalog_records_read": 120,
+  "catalog_writes": 0,
+  "deterministic": true,
+  "entries": [
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": null,
+        "drivetrain": null,
+        "make": "Škoda",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "Octavia",
+        "model_year": null,
+        "powertrain": "petrol|diesel",
+        "variant": "model-level AT price-list entry"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "low",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 22630.0,
+        "source_date": "2018-11-30",
+        "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "archived Austrian OEM list price (model-level, pending owner review)",
+        "retrieval_date": "2018-11-30",
+        "source_id": "committed_price_evidence_v1",
+        "source_type": "committed_price_evidence_v1",
+        "url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": null,
+        "brand": "Škoda",
+        "catalog_written": false,
+        "confidence": "low",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": null,
+        "evidence_notes": [
+          "Carried from docs/research/pilot-batch-001-price-candidates.json; 2018-11-30 archived skoda.at list price.",
+          "21 committed 2018 AT identity rows (13 diesel, 8 petrol); source_date is the source document date."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "Octavia",
+        "model_year": null,
+        "powertrain": "petrol|diesel",
+        "price_adjustment_method": null,
+        "price_basis": "archived Austrian OEM list price (model-level, pending owner review)",
+        "price_confidence": "low",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2018-11-30",
+        "price_source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
+        "price_tier": "approximate",
+        "price_value": 22630.0,
+        "price_value_eur": 22630.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": null,
+        "source_date": "2018-11-30",
+        "source_id": "committed_price_evidence_v1",
+        "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
+        "staged_at": "2026-11-22T09:57:52.136103+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "model-level AT price-list entry",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "review_price_provenance",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": null,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "001-koda-octavia-model-level-at-price-list-entry"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": null,
+        "drivetrain": null,
+        "make": "Škoda",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "Fabia",
+        "model_year": null,
+        "powertrain": "petrol",
+        "variant": "model-level AT price-list entry"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "low",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 11480.0,
+        "source_date": "2019-03-01",
+        "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "archived Austrian OEM list price (model-level, pending owner review)",
+        "retrieval_date": "2019-03-01",
+        "source_id": "committed_price_evidence_v1",
+        "source_type": "committed_price_evidence_v1",
+        "url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": null,
+        "brand": "Škoda",
+        "catalog_written": false,
+        "confidence": "low",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": null,
+        "evidence_notes": [
+          "Carried from prior matrix; archived skoda.at list price dated 2019-03-01.",
+          "5 committed 2018 AT identity rows, all petrol."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "Fabia",
+        "model_year": null,
+        "powertrain": "petrol",
+        "price_adjustment_method": null,
+        "price_basis": "archived Austrian OEM list price (model-level, pending owner review)",
+        "price_confidence": "low",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2019-03-01",
+        "price_source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+        "price_tier": "approximate",
+        "price_value": 11480.0,
+        "price_value_eur": 11480.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": null,
+        "source_date": "2019-03-01",
+        "source_id": "committed_price_evidence_v1",
+        "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+        "staged_at": "2026-11-22T09:57:52.138106+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "model-level AT price-list entry",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "review_price_provenance",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": null,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "002-koda-fabia-model-level-at-price-list-entry"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "hatchback",
+        "drivetrain": null,
+        "make": "Volkswagen",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "Golf",
+        "model_year": null,
+        "powertrain": "petrol|diesel|mild_hybrid|full_hybrid|phev",
+        "variant": "Golf (Preis ab)"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 26790.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.volkswagen.at/golf/golf",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "retrieval_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_type": "vw_austria",
+        "url": "https://www.volkswagen.at/golf/golf"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "hatchback",
+        "brand": "Volkswagen",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": null,
+        "evidence_notes": [
+          "Official Volkswagen Austria model page; 'Preis ab €26.790,00 inkl. MwSt.' retrieved 2026-11-22.",
+          "Page lists petrol, diesel, mild-hybrid, full-hybrid and plug-in-hybrid as available powertrains.",
+          "Bonus-adjusted 'Preis inkl. Boni ab €21.290' deliberately excluded as promotional."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "Golf",
+        "model_year": null,
+        "powertrain": "petrol|diesel|mild_hybrid|full_hybrid|phev",
+        "price_adjustment_method": null,
+        "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.volkswagen.at/golf/golf",
+        "price_tier": "approximate",
+        "price_value": 26790.0,
+        "price_value_eur": 26790.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": null,
+        "source_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_url": "https://www.volkswagen.at/golf/golf",
+        "staged_at": "2026-11-22T09:57:52.139743+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "Golf (Preis ab)",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": null,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "003-volkswagen-golf-golf-preis-ab"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "suv",
+        "drivetrain": null,
+        "make": "Volkswagen",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "Tiguan",
+        "model_year": null,
+        "powertrain": "petrol|diesel|mild_hybrid|phev",
+        "variant": "Tiguan (Preis ab)"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 37490.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.volkswagen.at/tiguan/tiguan",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "retrieval_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_type": "vw_austria",
+        "url": "https://www.volkswagen.at/tiguan/tiguan"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "suv",
+        "brand": "Volkswagen",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": null,
+        "evidence_notes": [
+          "Official VW Austria page; 'Preis ab €37.490,00 inkl. MwSt.' retrieved 2026-11-22.",
+          "Powertrains listed: TSI, TDI, eTSI mild-hybrid, eHybrid plug-in hybrid.",
+          "Bonus-adjusted €30.490 price excluded."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "Tiguan",
+        "model_year": null,
+        "powertrain": "petrol|diesel|mild_hybrid|phev",
+        "price_adjustment_method": null,
+        "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.volkswagen.at/tiguan/tiguan",
+        "price_tier": "approximate",
+        "price_value": 37490.0,
+        "price_value_eur": 37490.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": null,
+        "source_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_url": "https://www.volkswagen.at/tiguan/tiguan",
+        "staged_at": "2026-11-22T09:57:52.141608+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "Tiguan (Preis ab)",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": null,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "004-volkswagen-tiguan-tiguan-preis-ab"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "suv",
+        "drivetrain": null,
+        "make": "Volkswagen",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "T-Roc",
+        "model_year": null,
+        "powertrain": "mild_hybrid|full_hybrid",
+        "variant": "T-Roc (Preis ab)"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 30390.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.volkswagen.at/t-roc/t-roc",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "retrieval_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_type": "vw_austria",
+        "url": "https://www.volkswagen.at/t-roc/t-roc"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "suv",
+        "brand": "Volkswagen",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": null,
+        "evidence_notes": [
+          "Official VW Austria page; 'Preis ab €30.390,00 inkl. MwSt.' retrieved 2026-11-22.",
+          "Page lists mild-hybrid and full-hybrid variants.",
+          "Bonus-adjusted €24.390 price excluded."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "T-Roc",
+        "model_year": null,
+        "powertrain": "mild_hybrid|full_hybrid",
+        "price_adjustment_method": null,
+        "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.volkswagen.at/t-roc/t-roc",
+        "price_tier": "approximate",
+        "price_value": 30390.0,
+        "price_value_eur": 30390.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": null,
+        "source_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_url": "https://www.volkswagen.at/t-roc/t-roc",
+        "staged_at": "2026-11-22T09:57:52.145934+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "T-Roc (Preis ab)",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": null,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "005-volkswagen-t-roc-t-roc-preis-ab"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "hatchback",
+        "drivetrain": "RWD",
+        "make": "Volkswagen",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "ID.3",
+        "model_year": null,
+        "powertrain": "bev",
+        "variant": "ID.3 Neo Trend"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 34490.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.volkswagen.at/id3/id3",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "retrieval_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_type": "vw_austria",
+        "url": "https://www.volkswagen.at/id3/id3"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": 50.0,
+        "body_style": "hatchback",
+        "brand": "Volkswagen",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": 183.0,
+        "dc_charging_time_10_80_min": 29,
+        "drivetrain": "RWD",
+        "evidence_notes": [
+          "Official VW Austria ID.3 Neo page; 'Preis ab €34.490,00 inkl. MwSt.' for Trend retrieved 2026-11-22.",
+          "Page states 50 kWh net battery for Trend, WLTP up to 629 km across range, DC up to 183 kW, ~29 min 10-80%.",
+          "Current Austrian name is ID.3 Neo; pilot model 'ID.3' mapped with explicit variant note.",
+          "Bonus-adjusted €28.990 price excluded.",
+          "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists.",
+          "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "ID.3",
+        "model_year": null,
+        "powertrain": "bev",
+        "price_adjustment_method": null,
+        "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.volkswagen.at/id3/id3",
+        "price_tier": "approximate",
+        "price_value": 34490.0,
+        "price_value_eur": 34490.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": null,
+        "source_date": "2026-11-22",
+        "source_id": "vw_austria",
+        "source_url": "https://www.volkswagen.at/id3/id3",
+        "staged_at": "2026-11-22T09:57:52.147621+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "ID.3 Neo Trend",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": 50.0,
+        "dimensions": null,
+        "missing_fields": [
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": null,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "006-volkswagen-id.3-id.3-neo-trend"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "suv_coupe",
+        "drivetrain": "RWD",
+        "make": "XPeng",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "G6",
+        "model_year": null,
+        "powertrain": "bev",
+        "variant": "G6 RWD Standard Range"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 43600.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.xpeng.com/at/model/g6",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "retrieval_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_type": "xpeng_austria",
+        "url": "https://www.xpeng.com/at/model/g6"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "suv_coupe",
+        "brand": "XPeng",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": "RWD",
+        "evidence_notes": [
+          "AT page displays 'Unverbindlicher Kaufpreis 43.600,-' in leasing footnote; all amounts incl. 20% USt; offer valid to 30.09./31.12.2026.",
+          "Page states 20-80% charging in 10 min (not the 10-80% field); WLTP 455 km for Standard Range RWD.",
+          "Austrian offering confirmed at xpeng.com/at/model/g6."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "G6",
+        "model_year": null,
+        "powertrain": "bev",
+        "price_adjustment_method": null,
+        "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.xpeng.com/at/model/g6",
+        "price_tier": "approximate",
+        "price_value": 43600.0,
+        "price_value_eur": 43600.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": 5,
+        "source_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_url": "https://www.xpeng.com/at/model/g6",
+        "staged_at": "2026-11-22T09:57:52.202715+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "G6 RWD Standard Range",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": 455
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": 455,
+        "seats": 5,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "030-xpeng-g6-g6-rwd-standard-range"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "suv",
+        "drivetrain": "RWD",
+        "make": "XPeng",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "G9",
+        "model_year": null,
+        "powertrain": "bev",
+        "variant": "G9 RWD Standard Range"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 59600.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.xpeng.com/at/model/g9",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "retrieval_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_type": "xpeng_austria",
+        "url": "https://www.xpeng.com/at/model/g9"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "suv",
+        "brand": "XPeng",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": 445.0,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": "RWD",
+        "evidence_notes": [
+          "AT page displays 'Unverbindlicher Kaufpreis 59.600,-'; incl. 20% USt; valid to 31.12.2026.",
+          "Page states DC 445 kW, 20-80% in 10 min, WLTP 502 km.",
+          "Austrian offering confirmed at xpeng.com/at/model/g9."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "G9",
+        "model_year": null,
+        "powertrain": "bev",
+        "price_adjustment_method": null,
+        "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.xpeng.com/at/model/g9",
+        "price_tier": "approximate",
+        "price_value": 59600.0,
+        "price_value_eur": 59600.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": 5,
+        "source_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_url": "https://www.xpeng.com/at/model/g9",
+        "staged_at": "2026-11-22T09:57:52.205200+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "G9 RWD Standard Range",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": 502
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": 502,
+        "seats": 5,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "031-xpeng-g9-g9-rwd-standard-range"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "fastback_sedan",
+        "drivetrain": "RWD",
+        "make": "XPeng",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "P7+",
+        "model_year": null,
+        "powertrain": "bev",
+        "variant": "P7+ RWD Standard Range"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 47600.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.xpeng.com/at/model/p7plus",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "retrieval_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_type": "xpeng_austria",
+        "url": "https://www.xpeng.com/at/model/p7plus"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "fastback_sedan",
+        "brand": "XPeng",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": 446.0,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": "RWD",
+        "evidence_notes": [
+          "AT page displays 'Kaufpreis 47.600,-'; incl. 20% USt; valid to 31.12.2026.",
+          "Page states up to 446 kW charging power and 20-80% in 10 min; no numeric WLTP displayed."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "P7+",
+        "model_year": null,
+        "powertrain": "bev",
+        "price_adjustment_method": null,
+        "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.xpeng.com/at/model/p7plus",
+        "price_tier": "approximate",
+        "price_value": 47600.0,
+        "price_value_eur": 47600.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": 5,
+        "source_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_url": "https://www.xpeng.com/at/model/p7plus",
+        "staged_at": "2026-11-22T09:57:52.207591+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "P7+ RWD Standard Range",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": 5,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "032-xpeng-p7--p7-rwd-standard-range"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "suv_coupe",
+        "drivetrain": "RWD",
+        "make": "XPeng",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "L03",
+        "model_year": null,
+        "powertrain": "bev",
+        "variant": "L03 RWD Standard Range"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 36600.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.xpeng.com/at/model/L03",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "retrieval_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_type": "xpeng_austria",
+        "url": "https://www.xpeng.com/at/model/L03"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "suv_coupe",
+        "brand": "XPeng",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": 20,
+        "drivetrain": "RWD",
+        "evidence_notes": [
+          "AT page displays 'Kaufpreis 36.600,-' and 'UVP ab 36.600 €'; incl. 20% USt; valid to 31.12.2026.",
+          "Page explicitly states 10-80% charging in 20 minutes and WLTP 445 km."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "L03",
+        "model_year": null,
+        "powertrain": "bev",
+        "price_adjustment_method": null,
+        "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.xpeng.com/at/model/L03",
+        "price_tier": "approximate",
+        "price_value": 36600.0,
+        "price_value_eur": 36600.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": 5,
+        "source_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_url": "https://www.xpeng.com/at/model/L03",
+        "staged_at": "2026-11-22T09:57:52.210069+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "L03 RWD Standard Range",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": 445
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": 445,
+        "seats": 5,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "033-xpeng-l03-l03-rwd-standard-range"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "mpv",
+        "drivetrain": "FWD",
+        "make": "XPeng",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "X9",
+        "model_year": null,
+        "powertrain": "bev",
+        "variant": "X9 FWD Standard Range"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 78600.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.xpeng.com/at/model/x9",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "retrieval_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_type": "xpeng_austria",
+        "url": "https://www.xpeng.com/at/model/x9"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "mpv",
+        "brand": "XPeng",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": "FWD",
+        "evidence_notes": [
+          "AT page displays 'Kaufpreis 78.600,-'; incl. 20% USt; valid to 31.12.2026.",
+          "Page states 12-80% in 10 min and 7 seats; no numeric WLTP displayed (provisional homologation)."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "X9",
+        "model_year": null,
+        "powertrain": "bev",
+        "price_adjustment_method": null,
+        "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.xpeng.com/at/model/x9",
+        "price_tier": "approximate",
+        "price_value": 78600.0,
+        "price_value_eur": 78600.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": 7,
+        "source_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_url": "https://www.xpeng.com/at/model/x9",
+        "staged_at": "2026-11-22T09:57:52.211527+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "X9 FWD Standard Range",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": 7,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "034-xpeng-x9-x9-fwd-standard-range"
+    },
+    {
+      "catalog_duplicate_conflict_result": {
+        "blocked": false,
+        "conflicting_fields": [],
+        "exact_duplicate_ids": [],
+        "probable_duplicate_ids": []
+      },
+      "identity_assessment": {
+        "body_style": "suv",
+        "drivetrain": "RWD",
+        "make": "XPeng",
+        "missing_fields": [
+          "model_year"
+        ],
+        "model": "G9L",
+        "model_year": null,
+        "powertrain": "bev",
+        "variant": "G9L Long Range 2WD 7-seat Ultra"
+      },
+      "owner_decision_required": "yes",
+      "price_assessment": {
+        "approximate_not_promoted": true,
+        "confidence": "medium",
+        "currency": "EUR",
+        "limitations": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "price_tier": "approximate",
+        "price_value": 75600.0,
+        "source_date": "2026-11-22",
+        "source_url": "https://www.xpeng.com/at/model/G9L",
+        "vat_basis": "incl_vat"
+      },
+      "provenance_assessment": {
+        "attribution": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "retrieval_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_type": "xpeng_austria",
+        "url": "https://www.xpeng.com/at/model/G9L"
+      },
+      "raw_staging_record": {
+        "adjustment_method": null,
+        "battery_capacity_gross_kwh": null,
+        "battery_capacity_usable_kwh": null,
+        "body_style": "suv",
+        "brand": "XPeng",
+        "catalog_written": false,
+        "confidence": "medium",
+        "currency": "EUR",
+        "dc_charging_power_kw": null,
+        "dc_charging_time_10_80_min": null,
+        "drivetrain": "RWD",
+        "evidence_notes": [
+          "Austrian offering documented on xpeng.com/at with its own model page and configurator.",
+          "AT page displays 'Kaufpreis 75.600,-' for Long Range 2WD 7-Sitzer Ultra; incl. 20% USt; valid to 31.12.2026.",
+          "Page also shows UVP ab 86.600 € and WLTP 553 km for the AWD Performance variant; those figures are NOT assigned to the priced variant."
+        ],
+        "gaps": [
+          "Model-level base price only; variant/trim-specific price not evidenced.",
+          "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+        ],
+        "market": "AT",
+        "model": "G9L",
+        "model_year": null,
+        "powertrain": "bev",
+        "price_adjustment_method": null,
+        "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+        "price_confidence": "medium",
+        "price_high_eur": null,
+        "price_low_eur": null,
+        "price_source_date": "2026-11-22",
+        "price_source_url": "https://www.xpeng.com/at/model/G9L",
+        "price_tier": "approximate",
+        "price_value": 75600.0,
+        "price_value_eur": 75600.0,
+        "provider_calls": 0,
+        "recommended_action": "owner_review_then_prepare_approximate_record",
+        "review_required": true,
+        "seating_capacity": 7,
+        "source_date": "2026-11-22",
+        "source_id": "xpeng_austria",
+        "source_url": "https://www.xpeng.com/at/model/G9L",
+        "staged_at": "2026-11-22T09:57:52.213979+00:00",
+        "staging_only": true,
+        "staging_report_source": "pilot-gap-price-candidates.json",
+        "variant": "G9L Long Range 2WD 7-seat Ultra",
+        "vat_basis": "incl_vat",
+        "wltp_range_km": null
+      },
+      "recommended_next_action": "complete_specifications",
+      "specification_completeness": {
+        "battery_capacity_kwh": null,
+        "dimensions": null,
+        "missing_fields": [
+          "battery_capacity_kwh",
+          "dimensions.height_mm",
+          "dimensions.length_mm",
+          "dimensions.width_mm",
+          "range",
+          "seats",
+          "weight_kg"
+        ],
+        "range_km": null,
+        "seats": 7,
+        "weight_kg": null
+      },
+      "tco_readiness_gaps": [
+        "dimensions.max_permissible_mass_kg",
+        "dimensions.own_weight_kg",
+        "emissions.co2_wltp_gpkm",
+        "identity.vehicle_class",
+        "offers.0.purchase_price_excl_vat_eur",
+        "registration.first_registration_date"
+      ],
+      "variant_id": "035-xpeng-g9l-g9l-long-range-2wd-7-seat-ultra"
+    }
+  ],
+  "input_files": [
+    {
+      "path": "docs\\research\\identity-conflict-report-2026-11-22-adapted.json",
+      "read_only": true,
+      "sha256": "732e7164e30e4d90e8ad9f0f2089a1fa9c90db4ddee50f08daab0c4eba8cf9bd"
+    },
+    {
+      "path": "docs\\research\\staging-adapted-tool-input-2026-11-22.json",
+      "read_only": true,
+      "sha256": "b1a893a38bc57ce4758e2e3b4e9df2e2bf401fd26d2963a9343c1fde29d911aa"
+    },
+    {
+      "path": "docs\\research\\staging-adapter-output-2026-11-22.json",
+      "read_only": true,
+      "sha256": "7e33d949833208ca47fb04fe95b1208037798afe2404b0feb241c53eacc3e86d"
+    },
+    {
+      "path": "docs\\research\\catalog-records-snapshot-adapted.json",
+      "read_only": true,
+      "sha256": "46e553628a18060376084151cbdbd81fb07b7fc4d71cd8d1dfecc77503ac9e24"
+    }
+  ],
+  "provider_calls": 0,
+  "records_deleted": 0,
+  "records_merged": 0,
+  "records_overwritten": 0,
+  "records_promoted": 0,
+  "schema_version": 1,
+  "staging_writes": 0,
+  "summary": {
+    "records_blocked_by_duplicate_conflict": 0,
+    "records_needing_price_provenance_review": 2,
+    "records_needing_specification_completion": 10,
+    "records_needing_tco_input_completion": 0,
+    "records_ready_for_owner_approval": 0
+  }
+}
