@@ -140,5 +140,49 @@
     "weight_kg": null,
     "wltp_range_km": null
   },
+  "tco_input_gaps": [
+    {
+      "field": "dimensions.max_permissible_mass_kg",
+      "reason": "Maximum permissible mass is not displayed on the consulted Austrian manufacturer page."
+    },
+    {
+      "field": "identity.vehicle_class",
+      "reason": "Regulatory vehicle class is not displayed on the consulted Austrian manufacturer page."
+    },
+    {
+      "field": "offers.0.purchase_price_excl_vat_eur",
+      "reason": "Source displays an incl-VAT price only; no excl-VAT price is published and no conversion is applied."
+    },
+    {
+      "field": "registration.first_registration_date",
+      "reason": "First registration date is vehicle-specific and is not published on the manufacturer page."
+    }
+  ],
+  "tco_input_provenance": {
+    "dimensions.own_weight_kg": {
+      "confidence": "medium",
+      "limitation": "Page states 1999 kg without tow bar for P7+ RWD Standard Range; variant-specific.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "xpeng_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.xpeng.com/at/model/p7plus"
+    },
+    "emissions.co2_wltp_gpkm": {
+      "confidence": "medium",
+      "limitation": "Page displays 0 g/km for the BEV model; model-level zero-CO2 classification, not a variant-specific measurement.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "xpeng_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.xpeng.com/at/model/p7plus"
+    }
+  },
+  "tco_inputs": {
+    "dimensions.max_permissible_mass_kg": null,
+    "dimensions.own_weight_kg": 1999.0,
+    "emissions.co2_wltp_gpkm": 0,
+    "identity.vehicle_class": null,
+    "offers.0.purchase_price_excl_vat_eur": null,
+    "registration.first_registration_date": null
+  },
   "variant_id": "032-xpeng-p7--p7-rwd-standard-range"
 }

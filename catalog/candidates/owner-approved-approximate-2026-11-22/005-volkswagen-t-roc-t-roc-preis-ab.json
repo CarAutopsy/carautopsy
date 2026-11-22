@@ -133,5 +133,40 @@
     "weight_kg": null,
     "wltp_range_km": null
   },
+  "tco_input_gaps": [
+    {
+      "field": "dimensions.max_permissible_mass_kg",
+      "reason": "Maximum permissible mass is not displayed on the consulted Austrian manufacturer page."
+    },
+    {
+      "field": "dimensions.own_weight_kg",
+      "reason": "Own weight is not displayed on the consulted Austrian manufacturer page for this variant."
+    },
+    {
+      "field": "emissions.co2_wltp_gpkm",
+      "reason": "A variant-specific WLTP CO2 value is not displayed on the consulted page."
+    },
+    {
+      "field": "identity.vehicle_class",
+      "reason": "Regulatory vehicle class is not displayed on the consulted Austrian manufacturer page."
+    },
+    {
+      "field": "offers.0.purchase_price_excl_vat_eur",
+      "reason": "Source displays an incl-VAT price only; no excl-VAT price is published and no conversion is applied."
+    },
+    {
+      "field": "registration.first_registration_date",
+      "reason": "First registration date is vehicle-specific and is not published on the manufacturer page."
+    }
+  ],
+  "tco_input_provenance": {},
+  "tco_inputs": {
+    "dimensions.max_permissible_mass_kg": null,
+    "dimensions.own_weight_kg": null,
+    "emissions.co2_wltp_gpkm": null,
+    "identity.vehicle_class": null,
+    "offers.0.purchase_price_excl_vat_eur": null,
+    "registration.first_registration_date": null
+  },
   "variant_id": "005-volkswagen-t-roc-t-roc-preis-ab"
 }
