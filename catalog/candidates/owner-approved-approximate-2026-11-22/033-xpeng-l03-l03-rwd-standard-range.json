@@ -1,0 +1,100 @@
+{
+  "approval": {
+    "model_year_and_specifications_complete": false,
+    "owner_approved_for_approximate_catalog_preparation_only": true,
+    "price_tier": "approximate",
+    "promotion_to_verified_permitted": false,
+    "tco_ready": false
+  },
+  "identity": {
+    "body_style": "suv_coupe",
+    "drivetrain": "RWD",
+    "make": "XPeng",
+    "model": "L03",
+    "model_year": null,
+    "powertrain": "bev",
+    "variant": "L03 RWD Standard Range"
+  },
+  "price": {
+    "adjustment_method": null,
+    "currency": "EUR",
+    "evidence_notes": [
+      "AT page displays 'Kaufpreis 36.600,-' and 'UVP ab 36.600 €'; incl. 20% USt; valid to 31.12.2026.",
+      "Page explicitly states 10-80% charging in 20 minutes and WLTP 445 km."
+    ],
+    "limitations": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+    "price_confidence": "medium",
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.xpeng.com/at/model/L03",
+    "price_tier": "approximate",
+    "price_value": 36600.0,
+    "source_date": "2026-11-22",
+    "source_id": "xpeng_austria",
+    "source_url": "https://www.xpeng.com/at/model/L03",
+    "vat_basis": "incl_vat"
+  },
+  "raw_staging_record": {
+    "adjustment_method": null,
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": null,
+    "body_style": "suv_coupe",
+    "brand": "XPeng",
+    "catalog_written": false,
+    "confidence": "medium",
+    "currency": "EUR",
+    "dc_charging_power_kw": null,
+    "dc_charging_time_10_80_min": 20,
+    "drivetrain": "RWD",
+    "evidence_notes": [
+      "AT page displays 'Kaufpreis 36.600,-' and 'UVP ab 36.600 €'; incl. 20% USt; valid to 31.12.2026.",
+      "Page explicitly states 10-80% charging in 20 minutes and WLTP 445 km."
+    ],
+    "gaps": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "market": "AT",
+    "model": "L03",
+    "model_year": null,
+    "powertrain": "bev",
+    "price_adjustment_method": null,
+    "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+    "price_confidence": "medium",
+    "price_high_eur": null,
+    "price_low_eur": null,
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.xpeng.com/at/model/L03",
+    "price_tier": "approximate",
+    "price_value": 36600.0,
+    "price_value_eur": 36600.0,
+    "provider_calls": 0,
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "review_required": true,
+    "seating_capacity": 5,
+    "source_date": "2026-11-22",
+    "source_id": "xpeng_austria",
+    "source_url": "https://www.xpeng.com/at/model/L03",
+    "staged_at": "2026-11-22T09:57:52.210069+00:00",
+    "staging_only": true,
+    "staging_report_source": "pilot-gap-price-candidates.json",
+    "variant": "L03 RWD Standard Range",
+    "vat_basis": "incl_vat",
+    "wltp_range_km": 445
+  },
+  "schema_version": 1,
+  "specifications": {
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": null,
+    "dc_charging_power_kw": null,
+    "dc_charging_time_10_80_min": 20,
+    "dimensions": null,
+    "seats": 5,
+    "weight_kg": null,
+    "wltp_range_km": 445
+  },
+  "variant_id": "033-xpeng-l03-l03-rwd-standard-range"
+}

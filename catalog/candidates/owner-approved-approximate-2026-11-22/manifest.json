@@ -1,0 +1,65 @@
+{
+  "artifact": "owner-approved-approximate-catalog-candidates",
+  "brands": [
+    "Volkswagen",
+    "XPeng"
+  ],
+  "catalog_variants_written": 0,
+  "deterministic": true,
+  "directory": "catalog\\candidates\\owner-approved-approximate-2026-11-22",
+  "record_count": 10,
+  "records": [
+    {
+      "byte_size": 3920,
+      "sha256": "d80b5e2446fc9afe89a8d0b863de15bdf1f76877bb7438343d0e6141443d86e1",
+      "variant_id": "003-volkswagen-golf-golf-preis-ab"
+    },
+    {
+      "byte_size": 3746,
+      "sha256": "e7f2f100daa901aa57d4115f02be8ae2dbddaad6653d8ab14b5c51f4ae39d605",
+      "variant_id": "004-volkswagen-tiguan-tiguan-preis-ab"
+    },
+    {
+      "byte_size": 3672,
+      "sha256": "e262c8c5ca23c0c3751ac848d872cca351ececd3794a52ed153f975870db1188",
+      "variant_id": "005-volkswagen-t-roc-t-roc-preis-ab"
+    },
+    {
+      "byte_size": 4589,
+      "sha256": "991194ef74b870a63cddd161883120e960a01160823cb2b41fe54d43f9e54481",
+      "variant_id": "006-volkswagen-id.3-id.3-neo-trend"
+    },
+    {
+      "byte_size": 3831,
+      "sha256": "10d7ddd7fbaf789ec6702fb952a9cc2c31af4c67b550682f127095386163334e",
+      "variant_id": "030-xpeng-g6-g6-rwd-standard-range"
+    },
+    {
+      "byte_size": 3643,
+      "sha256": "18dece75fe348467e7bea0dc557f859a2b47ff501f2d3755a3e174787aad5570",
+      "variant_id": "031-xpeng-g9-g9-rwd-standard-range"
+    },
+    {
+      "byte_size": 3598,
+      "sha256": "54d185ee0b16a3a185f4a37625acbe1c3e6d4276d709058441f11f35bbb80c80",
+      "variant_id": "032-xpeng-p7--p7-rwd-standard-range"
+    },
+    {
+      "byte_size": 3579,
+      "sha256": "abd8b6af7f45b48bfb4a6b4b3a28f5bc4bf3128c4ed8dd5afbac1d734ee120bd",
+      "variant_id": "033-xpeng-l03-l03-rwd-standard-range"
+    },
+    {
+      "byte_size": 3567,
+      "sha256": "670aaad6349a6f93ce1bbfa10398cdbb89ea9645592e5cbba6f7e9224fc57426",
+      "variant_id": "034-xpeng-x9-x9-fwd-standard-range"
+    },
+    {
+      "byte_size": 3948,
+      "sha256": "a06e40e6d18bc6eb379eddb6f61ab70e76a58bc16a3e0aacb63be1dd362e9bdf",
+      "variant_id": "035-xpeng-g9l-g9l-long-range-2wd-7-seat-ultra"
+    }
+  ],
+  "schema_version": 1,
+  "staging_records_written": 0
+}

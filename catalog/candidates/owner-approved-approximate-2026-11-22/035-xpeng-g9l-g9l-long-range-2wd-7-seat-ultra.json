@@ -1,0 +1,102 @@
+{
+  "approval": {
+    "model_year_and_specifications_complete": false,
+    "owner_approved_for_approximate_catalog_preparation_only": true,
+    "price_tier": "approximate",
+    "promotion_to_verified_permitted": false,
+    "tco_ready": false
+  },
+  "identity": {
+    "body_style": "suv",
+    "drivetrain": "RWD",
+    "make": "XPeng",
+    "model": "G9L",
+    "model_year": null,
+    "powertrain": "bev",
+    "variant": "G9L Long Range 2WD 7-seat Ultra"
+  },
+  "price": {
+    "adjustment_method": null,
+    "currency": "EUR",
+    "evidence_notes": [
+      "Austrian offering documented on xpeng.com/at with its own model page and configurator.",
+      "AT page displays 'Kaufpreis 75.600,-' for Long Range 2WD 7-Sitzer Ultra; incl. 20% USt; valid to 31.12.2026.",
+      "Page also shows UVP ab 86.600 € and WLTP 553 km for the AWD Performance variant; those figures are NOT assigned to the priced variant."
+    ],
+    "limitations": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+    "price_confidence": "medium",
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.xpeng.com/at/model/G9L",
+    "price_tier": "approximate",
+    "price_value": 75600.0,
+    "source_date": "2026-11-22",
+    "source_id": "xpeng_austria",
+    "source_url": "https://www.xpeng.com/at/model/G9L",
+    "vat_basis": "incl_vat"
+  },
+  "raw_staging_record": {
+    "adjustment_method": null,
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": null,
+    "body_style": "suv",
+    "brand": "XPeng",
+    "catalog_written": false,
+    "confidence": "medium",
+    "currency": "EUR",
+    "dc_charging_power_kw": null,
+    "dc_charging_time_10_80_min": null,
+    "drivetrain": "RWD",
+    "evidence_notes": [
+      "Austrian offering documented on xpeng.com/at with its own model page and configurator.",
+      "AT page displays 'Kaufpreis 75.600,-' for Long Range 2WD 7-Sitzer Ultra; incl. 20% USt; valid to 31.12.2026.",
+      "Page also shows UVP ab 86.600 € and WLTP 553 km for the AWD Performance variant; those figures are NOT assigned to the priced variant."
+    ],
+    "gaps": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "market": "AT",
+    "model": "G9L",
+    "model_year": null,
+    "powertrain": "bev",
+    "price_adjustment_method": null,
+    "price_basis": "Austrian indicative purchase price (Kaufpreis/UVP)",
+    "price_confidence": "medium",
+    "price_high_eur": null,
+    "price_low_eur": null,
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.xpeng.com/at/model/G9L",
+    "price_tier": "approximate",
+    "price_value": 75600.0,
+    "price_value_eur": 75600.0,
+    "provider_calls": 0,
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "review_required": true,
+    "seating_capacity": 7,
+    "source_date": "2026-11-22",
+    "source_id": "xpeng_austria",
+    "source_url": "https://www.xpeng.com/at/model/G9L",
+    "staged_at": "2026-11-22T09:57:52.213979+00:00",
+    "staging_only": true,
+    "staging_report_source": "pilot-gap-price-candidates.json",
+    "variant": "G9L Long Range 2WD 7-seat Ultra",
+    "vat_basis": "incl_vat",
+    "wltp_range_km": null
+  },
+  "schema_version": 1,
+  "specifications": {
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": null,
+    "dc_charging_power_kw": null,
+    "dc_charging_time_10_80_min": null,
+    "dimensions": null,
+    "seats": 7,
+    "weight_kg": null,
+    "wltp_range_km": null
+  },
+  "variant_id": "035-xpeng-g9l-g9l-long-range-2wd-7-seat-ultra"
+}

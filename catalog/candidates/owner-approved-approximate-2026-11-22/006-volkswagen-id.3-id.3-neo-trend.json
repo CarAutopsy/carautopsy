@@ -1,0 +1,108 @@
+{
+  "approval": {
+    "model_year_and_specifications_complete": false,
+    "owner_approved_for_approximate_catalog_preparation_only": true,
+    "price_tier": "approximate",
+    "promotion_to_verified_permitted": false,
+    "tco_ready": false
+  },
+  "identity": {
+    "body_style": "hatchback",
+    "drivetrain": "RWD",
+    "make": "Volkswagen",
+    "model": "ID.3",
+    "model_year": null,
+    "powertrain": "bev",
+    "variant": "ID.3 Neo Trend"
+  },
+  "price": {
+    "adjustment_method": null,
+    "currency": "EUR",
+    "evidence_notes": [
+      "Official VW Austria ID.3 Neo page; 'Preis ab €34.490,00 inkl. MwSt.' for Trend retrieved 2026-11-22.",
+      "Page states 50 kWh net battery for Trend, WLTP up to 629 km across range, DC up to 183 kW, ~29 min 10-80%.",
+      "Current Austrian name is ID.3 Neo; pilot model 'ID.3' mapped with explicit variant note.",
+      "Bonus-adjusted €28.990 price excluded.",
+      "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists.",
+      "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists."
+    ],
+    "limitations": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+    "price_confidence": "medium",
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.volkswagen.at/id3/id3",
+    "price_tier": "approximate",
+    "price_value": 34490.0,
+    "source_date": "2026-11-22",
+    "source_id": "vw_austria",
+    "source_url": "https://www.volkswagen.at/id3/id3",
+    "vat_basis": "incl_vat"
+  },
+  "raw_staging_record": {
+    "adjustment_method": null,
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": 50.0,
+    "body_style": "hatchback",
+    "brand": "Volkswagen",
+    "catalog_written": false,
+    "confidence": "medium",
+    "currency": "EUR",
+    "dc_charging_power_kw": 183.0,
+    "dc_charging_time_10_80_min": 29,
+    "drivetrain": "RWD",
+    "evidence_notes": [
+      "Official VW Austria ID.3 Neo page; 'Preis ab €34.490,00 inkl. MwSt.' for Trend retrieved 2026-11-22.",
+      "Page states 50 kWh net battery for Trend, WLTP up to 629 km across range, DC up to 183 kW, ~29 min 10-80%.",
+      "Current Austrian name is ID.3 Neo; pilot model 'ID.3' mapped with explicit variant note.",
+      "Bonus-adjusted €28.990 price excluded.",
+      "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists.",
+      "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists."
+    ],
+    "gaps": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "market": "AT",
+    "model": "ID.3",
+    "model_year": null,
+    "powertrain": "bev",
+    "price_adjustment_method": null,
+    "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+    "price_confidence": "medium",
+    "price_high_eur": null,
+    "price_low_eur": null,
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.volkswagen.at/id3/id3",
+    "price_tier": "approximate",
+    "price_value": 34490.0,
+    "price_value_eur": 34490.0,
+    "provider_calls": 0,
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "review_required": true,
+    "seating_capacity": null,
+    "source_date": "2026-11-22",
+    "source_id": "vw_austria",
+    "source_url": "https://www.volkswagen.at/id3/id3",
+    "staged_at": "2026-11-22T09:57:52.147621+00:00",
+    "staging_only": true,
+    "staging_report_source": "pilot-gap-price-candidates.json",
+    "variant": "ID.3 Neo Trend",
+    "vat_basis": "incl_vat",
+    "wltp_range_km": null
+  },
+  "schema_version": 1,
+  "specifications": {
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": 50.0,
+    "dc_charging_power_kw": 183.0,
+    "dc_charging_time_10_80_min": 29,
+    "dimensions": null,
+    "seats": null,
+    "weight_kg": null,
+    "wltp_range_km": null
+  },
+  "variant_id": "006-volkswagen-id.3-id.3-neo-trend"
+}
