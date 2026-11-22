@@ -94,6 +94,54 @@
     "wltp_range_km": null
   },
   "schema_version": 1,
+  "specification_gaps": [
+    {
+      "field": "battery_capacity_gross_kwh",
+      "reason": "Gross capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "wltp_range_km",
+      "reason": "No variant-specific WLTP value displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dimensions",
+      "reason": "Dimensions not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "weight_kg",
+      "reason": "Weight not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "seats",
+      "reason": "Seat count not displayed on the consulted Austrian page."
+    }
+  ],
+  "specification_provenance": {
+    "battery_capacity_usable_kwh": {
+      "confidence": "medium",
+      "limitation": "Value displayed on the consulted Austrian manufacturer page; no inference applied.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "vw_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.volkswagen.at/id3/id3"
+    },
+    "dc_charging_power_kw": {
+      "confidence": "medium",
+      "limitation": "Page states 'up to 183 kW' across the ID.3 Neo range; not Trend-specific.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "vw_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.volkswagen.at/id3/id3"
+    },
+    "dc_charging_time_10_80_min": {
+      "confidence": "medium",
+      "limitation": "Page states ~29 min across the ID.3 Neo range; not Trend-specific.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "vw_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.volkswagen.at/id3/id3"
+    }
+  },
   "specifications": {
     "battery_capacity_gross_kwh": null,
     "battery_capacity_usable_kwh": 50.0,

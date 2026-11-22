@@ -88,6 +88,41 @@
     "wltp_range_km": null
   },
   "schema_version": 1,
+  "specification_gaps": [
+    {
+      "field": "battery_capacity_gross_kwh",
+      "reason": "Gross capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "battery_capacity_usable_kwh",
+      "reason": "Usable capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "wltp_range_km",
+      "reason": "No variant-specific WLTP value displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dc_charging_power_kw",
+      "reason": "No variant-specific DC charging power displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dc_charging_time_10_80_min",
+      "reason": "No 10-80% charging time displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dimensions",
+      "reason": "Dimensions not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "weight_kg",
+      "reason": "Weight not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "seats",
+      "reason": "Seat count not displayed on the consulted Austrian page."
+    }
+  ],
+  "specification_provenance": {},
   "specifications": {
     "battery_capacity_gross_kwh": null,
     "battery_capacity_usable_kwh": null,

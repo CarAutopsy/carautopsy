@@ -86,6 +86,54 @@
     "wltp_range_km": 445
   },
   "schema_version": 1,
+  "specification_gaps": [
+    {
+      "field": "battery_capacity_gross_kwh",
+      "reason": "Gross capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "battery_capacity_usable_kwh",
+      "reason": "Usable capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dc_charging_power_kw",
+      "reason": "No variant-specific DC charging power displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dimensions",
+      "reason": "Dimensions not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "weight_kg",
+      "reason": "Weight not displayed on the consulted Austrian page."
+    }
+  ],
+  "specification_provenance": {
+    "dc_charging_time_10_80_min": {
+      "confidence": "medium",
+      "limitation": "Page explicitly states 10-80% in 20 min; variant-specific.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "xpeng_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.xpeng.com/at/model/L03"
+    },
+    "seats": {
+      "confidence": "medium",
+      "limitation": "Value displayed on the consulted Austrian manufacturer page; no inference applied.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "xpeng_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.xpeng.com/at/model/L03"
+    },
+    "wltp_range_km": {
+      "confidence": "medium",
+      "limitation": "WLTP 445 km stated for Standard Range RWD; variant-specific.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "xpeng_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.xpeng.com/at/model/L03"
+    }
+  },
   "specifications": {
     "battery_capacity_gross_kwh": null,
     "battery_capacity_usable_kwh": null,
