@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "status": "provisional_priority_proxy",
+  "notice": "These are planning weights derived from the 2025 top-seller list in docs/operations/PILOT_BATCH_001.md. They are NOT measured registration counts. Replace with an owner-approved Statistik Austria table before treating registration-weighted coverage as an acceptance metric.",
+  "source_document": "docs/operations/PILOT_BATCH_001.md",
+  "weights": {
+    "Octavia": 1.0,
+    "Golf": 1.0,
+    "X1": 1.0,
+    "Ibiza": 1.0,
+    "Yaris": 1.0,
+    "Sandero": 1.0,
+    "Duster": 1.0,
+    "Fabia": 1.0,
+    "Bigster": 1.0
+  }
+}
