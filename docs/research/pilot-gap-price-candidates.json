@@ -35,7 +35,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 22630.0,
+    "price_source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
+    "price_source_date": "2018-11-30",
+    "price_confidence": "low"
   },
   {
     "brand": "Škoda",
@@ -73,7 +77,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 11480.0,
+    "price_source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
+    "price_source_date": "2019-03-01",
+    "price_confidence": "low"
   },
   {
     "brand": "Volkswagen",
@@ -112,7 +120,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 26790.0,
+    "price_source_url": "https://www.volkswagen.at/golf/golf",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "Volkswagen",
@@ -151,7 +163,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 37490.0,
+    "price_source_url": "https://www.volkswagen.at/tiguan/tiguan",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "Volkswagen",
@@ -190,7 +206,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 30390.0,
+    "price_source_url": "https://www.volkswagen.at/t-roc/t-roc",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "Volkswagen",
@@ -232,7 +252,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 34490.0,
+    "price_source_url": "https://www.volkswagen.at/id3/id3",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "BMW",
@@ -1113,7 +1137,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 43600.0,
+    "price_source_url": "https://www.xpeng.com/at/model/g6",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "XPeng",
@@ -1152,7 +1180,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 59600.0,
+    "price_source_url": "https://www.xpeng.com/at/model/g9",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "XPeng",
@@ -1190,7 +1222,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 47600.0,
+    "price_source_url": "https://www.xpeng.com/at/model/p7plus",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "XPeng",
@@ -1228,7 +1264,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 36600.0,
+    "price_source_url": "https://www.xpeng.com/at/model/L03",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "XPeng",
@@ -1266,7 +1306,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 78600.0,
+    "price_source_url": "https://www.xpeng.com/at/model/x9",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "XPeng",
@@ -1305,7 +1349,11 @@
       "Model-level base price only; variant/trim-specific price not evidenced.",
       "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
     ],
-    "recommended_action": "owner_review_then_prepare_approximate_record"
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "price_value": 75600.0,
+    "price_source_url": "https://www.xpeng.com/at/model/G9L",
+    "price_source_date": "2026-11-22",
+    "price_confidence": "medium"
   },
   {
     "brand": "XPeng",

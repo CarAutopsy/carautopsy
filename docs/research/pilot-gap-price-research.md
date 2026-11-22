@@ -54,6 +54,7 @@ file and are marked with their original source dates.
   XPeng monthly leasing rates are not base MSRPs. For XPeng, the separate
   *Kaufpreis / UVP* printed in the leasing footnote was used; the monthly rate was not.
 - A used-car asking price or a monthly leasing payment was never used as a purchase price.
+- Approximate records retain the owner-specified research field names and additionally carry the protocol-named aliases `price_value`, `price_source_url`, `price_source_date` and `price_confidence` so protocol-required provenance is directly discoverable. Unavailable records are unchanged.
 
 ## 3. Cross-market adjustment policy
 
