@@ -1,0 +1,74 @@
+[
+  {
+    "brand": "FixtureBrand",
+    "model": "OfficialPrice",
+    "tier": "unavailable",
+    "wave": 1,
+    "gap_class": "needs_austrian_official_price",
+    "required_evidence": "Exact dated Austrian MSRP/list price",
+    "best_source_type": "Austrian manufacturer configurator",
+    "next_action": "Owner-controlled manual check of the official AT model page",
+    "next_evidence_batch": true,
+    "remain_unavailable": true
+  },
+  {
+    "brand": "FixtureBrand",
+    "model": "DealerPrice",
+    "tier": "unavailable",
+    "wave": 2,
+    "gap_class": "needs_dated_australian_dealer_price",
+    "required_evidence": "Dated Austrian dealer list-price proxy",
+    "best_source_type": "Dated Austrian dealer source",
+    "next_action": "Locate one dated Austrian list-price source",
+    "next_evidence_batch": true,
+    "remain_unavailable": true
+  },
+  {
+    "brand": "FixtureBrand",
+    "model": "CrossMarket",
+    "tier": "unavailable",
+    "wave": 1,
+    "gap_class": "needs_cross_market_evidence",
+    "required_evidence": "Comparable EU/EEA price with FX date/rate and adjustment",
+    "best_source_type": "EU/EEA manufacturer price plus FX adjustment",
+    "next_action": "Owner approves market, FX date/rate and adjustment",
+    "next_evidence_batch": true,
+    "remain_unavailable": true
+  },
+  {
+    "brand": "FixtureBrand",
+    "model": "OwnerDecision",
+    "tier": "unavailable",
+    "wave": 3,
+    "gap_class": "needs_owner_decision",
+    "required_evidence": "Owner scope decision",
+    "best_source_type": "Owner decision record",
+    "next_action": "Owner decides pilot scope",
+    "next_evidence_batch": false,
+    "remain_unavailable": true
+  },
+  {
+    "brand": "FixtureBrand",
+    "model": "SpecCompletion",
+    "tier": "unavailable",
+    "wave": 2,
+    "gap_class": "needs_specification_completion",
+    "required_evidence": "Body style, powertrain and model-year evidence",
+    "best_source_type": "Austrian official specification page",
+    "next_action": "Complete identity evidence, then seek a price",
+    "next_evidence_batch": true,
+    "remain_unavailable": true
+  },
+  {
+    "brand": "FixtureBrand",
+    "model": "NotOffered",
+    "tier": "unavailable",
+    "wave": 3,
+    "gap_class": "not_offered_in_austria",
+    "required_evidence": "Documented Austrian offering or import pathway",
+    "best_source_type": "None until an Austrian offering is documented",
+    "next_action": "Do not research a price until an Austrian pathway exists",
+    "next_evidence_batch": false,
+    "remain_unavailable": true
+  }
+]
