@@ -1,0 +1,33 @@
+[
+  {
+    "variant_id": "fixture-spec-partial-1",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixturePartial",
+      "variant": "FixtureTrim",
+      "model_year": 2023,
+      "body_style": null,
+      "powertrain": "bev",
+      "fuel_type": "electric",
+      "drivetrain": null,
+      "transmission": null,
+      "model_specific_id": null
+    },
+    "specifications": {
+      "battery_capacity_kwh": 50.0,
+      "electric_range_km": null,
+      "dimensions": null,
+      "weight_kg": null,
+      "seats": null
+    },
+    "provenance": {
+      "source_id": "fixture-regulatory-page",
+      "source_url": "https://fixture.example/partial/1",
+      "retrieval_date": "2026-11-22",
+      "source_type": "regulatory",
+      "license_attribution_status": "public_domain",
+      "confidence": "high",
+      "limitation": "synthetic partial fixture; missing values remain null"
+    }
+  }
+]
