@@ -232,6 +232,62 @@
     "extensions": {
       "type": "object"
     },
+    "price_tier": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "derived",
+        "approximate",
+        "approximate_cross_market",
+        "range",
+        "unavailable"
+      ],
+      "description": "Pilot evidence tier. Promotion to verified requires a new owner-reviewed correction; see scripts/price_tier.py."
+    },
+    "price_confidence": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        null
+      ]
+    },
+    "price_source_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO date of the price evidence source, not the research-pass date."
+    },
+    "price_adjustment_method": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Required for approximate_cross_market prices; records FX and adjustment basis."
+    },
+    "vat_basis": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "incl_vat",
+        "excl_vat",
+        null
+      ]
+    },
+    "review_required": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "True for every non-unavailable pilot price candidate."
+    },
     "provenance": {
       "type": "object",
       "required": [
