@@ -1,6 +1,6 @@
 # CarAutopsy engineering roadmap
 
-**Last reconciled:** 2026-11-13  
+**Last reconciled:** 2026-11-22  
 **Default branch:** `main`  
 **Operating model:** one-person, zero-budget project; owner-led human review with cross-review from five AI services.
 
@@ -17,9 +17,20 @@ This is the operational roadmap for the Hive workstream. GitHub issues remain th
 - PR #69 Qodo review configuration is merged.
 - PR #71 security review handoff documentation is merged; its process now follows the owner-led, zero-budget review model recorded here.
 - PR #72 retrieval audit fixes are merged; exact-head CI passed on the PR head and post-merge validation passed on main.
+- PRs #140–#143 and #145 merged on 2026-11-21: offline catalog quality, EEA evidence harvesting/identity and price research, two owner-approved catalog batches (95 + 19 records), and offline bulk ingestion with dry-run/staging. HEAD is `245f8fd`; `origin/main` is 0/0. [TRACE_EXECUTION]
+- Draft PR #144 is open and overlaps the scope merged in #145; disposition is an owner decision. [TRACE_EXECUTION]
+- `catalog/variants/` holds 120 records. Read-only quality measurement at HEAD `245f8fd` (`--now 2026-11-22T09:00:00Z`): 0 structural errors, 0 blocking findings, completeness 0.2633, P1 refresh plan with `network_permitted: false`. [TRACE_EXECUTION]
+- Project state and session docs reconciled to HEAD `245f8fd` on 2026-11-22. [TRACE_EXECUTION]
 - `data-connectors/approved-source-hosts.json` remains empty.
 - `VERIFIED_RETRIEVAL_AVAILABLE` remains `False`; `HIVE_RESEARCH_PAUSED` remains active.
 - No live OEM retrieval, paid provider calls, or new vehicle research dispatch is authorized.
+
+## Offline catalog and bulk-ingestion milestone (2026-11-21)
+
+- Scope: additive offline tooling only. `scripts/catalog_quality.py`, EEA evidence harvesters, `scripts/ingest_bulk_catalog.py` and supporting docs/reports landed via PRs #140, #141 and #145. No socket, secret, provider call, queue dispatch or `catalog/variants/` write. [STATIC_READ]
+- Owner-approved catalog batches 001/002 (PRs #142/#143) added 95 + 19 Austrian 2018 variants; catalog now has 120 records. [TRACE_EXECUTION]
+- Measured at HEAD `245f8fd`: 0 structural errors, 0 blocking findings, completeness 0.2633, 120 refresh-plan entries, all P1 with `network_permitted: false`. Sparse EEA records dominate the P1 backlog. [TRACE_EXECUTION]
+- Outstanding: decide draft PR #144 disposition; enrich sparse EEA records (critical fields `identity.model_year_from`, `performance.power_w`, `dimensions.curb_mass_kg`, offer/price fields) only through owner-reviewed evidence; keep all Hive and activation gates unchanged. [OWNER_DECISION]
 
 ## Open work and dependencies
 
@@ -95,5 +106,6 @@ Update this roadmap when an issue changes state, a PR merges, a dependency is di
 - Implemented `scripts/catalog_quality.py` as an additive quality layer over the existing `validate_catalog.py` JSON-schema gate: canonical make/model/generation normalization, duplicate/conflict detection, evidence confidence scoring, missing-data and completeness metrics, source freshness/stale detection, deterministic refresh planning and a machine-readable report. [STATIC_READ]
 - CI integration: `.github/workflows/validate-catalog.yml` now builds `reports/catalog-quality.json` and uploads it as an artifact. [STATIC_READ]
 - Measured baseline on main `4e4398f`: 6 variants, 0 structural errors, 0 blocking findings, overall completeness 0.3277, 0 complete variants, 6 refresh-plan entries. A clean synthetic fixture reaches completeness 1.0 with 0 blocking findings. These are tool-quality metrics, not verified real-world vehicle data. [TRACE_EXECUTION] [TEST_OBSERVED]
+- Re-measured on main `245f8fd` at `--now 2026-11-22T09:00:00Z` after the owner-approved catalog batches: 120 variants, 0 structural errors, 0 blocking findings, overall completeness 0.2633. The lower ratio reflects intentionally sparse EEA-sourced records rather than corrupt data; all refresh entries remain P1 and network-disabled. [TRACE_EXECUTION]
 - Safety invariant: `HIVE_RESEARCH_PAUSED` stays active, `VERIFIED_RETRIEVAL_AVAILABLE` stays `False`, no live retrieval, paid call, secret change, catalog mutation, issue creation or merge is authorized by this milestone. [OWNER_DECISION]
 

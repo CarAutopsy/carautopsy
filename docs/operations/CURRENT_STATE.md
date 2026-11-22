@@ -1,6 +1,6 @@
 # Current Project State
 
-**Last updated:** 2026-11-13  
+**Last updated:** 2026-11-22  
 **Repository:** CarAutopsy/carautopsy  
 **Default branch:** `main`  
 **Operating model:** one-person, zero-budget project; owner-led human review with AI cross-review
@@ -20,15 +20,45 @@
 - PR #71 merged: owner-oriented security review handoff documentation.
 - PR #72 merged: URL validation/redaction, full retrieval deadline enforcement, bounded robots-policy callback, response-length integrity checks, and regression tests.
 - Issues #44 (prompt builders and deterministic candidate gates) and #45 (no-retrieval safety stop) are closed.
+- PR #141 merged: offline EEA evidence harvester plus identity/price research layer. [TRACE_EXECUTION]
+- PR #142 merged: catalog batch 001 — 95 owner-approved 2018 Austrian variants. [TRACE_EXECUTION]
+- PR #143 merged: catalog batch 002 — 19 owner-approved 2018 Austrian Fabia variants. [TRACE_EXECUTION]
+- PR #140 merged: offline catalog quality, completeness and refresh planner. [TRACE_EXECUTION]
+- PR #145 merged: offline bulk catalog ingestion with dry-run, staging and idempotence. [TRACE_EXECUTION]
+- Documentation state reconciled on 2026-11-22 to exact HEAD `245f8fdf676e855860e838413838a9d3b52f900c`; see `.carautopsy/sessions/CARAUTOPSY-SESSION-OPENCODE-20261122-0502-001.md`. [TRACE_EXECUTION]
+
+## Offline catalog and ingestion workstream (2026-11-21)
+
+- `catalog/variants/` now holds 120 records. Measured at HEAD `245f8fd` with
+  `--now 2026-11-22T09:00:00Z`: 0 structural errors, 0 blocking findings,
+  overall completeness 0.2633, all refresh-plan entries P1 with
+  `network_permitted: false`. [TRACE_EXECUTION]
+- Most new EEA-sourced records lack `identity.model_year_from`,
+  `performance.power_w`, `dimensions.curb_mass_kg` and offer/price fields, so
+  completeness fell against the earlier 6-variant baseline (0.3287). These are
+  tool-quality metrics, not verified vehicle data. [REASONED_ONLY]
+- `scripts/ingest_bulk_catalog.py` is offline and fails closed: catalog-shaped
+  records are staged only in a branch-scoped `staging/` directory, with no write
+  to `catalog/variants/`, no network and no secrets. The separate required
+  `--report` file is written even in dry-run mode, may target a path outside
+  `staging/` (except under `catalog/variants/`), and can overwrite an existing
+  file; operators must choose a safe temporary report path. [STATIC_READ]
+- In the 2018 AT sample, 114 rows resolve to identities already in the catalog
+  and are correctly reported as duplicates with zero new staging records; the
+  other 40 rows are rejected before duplicate detection because verified price
+  evidence is unavailable. [TRACE_EXECUTION]
+- Draft PR #144 (`copilot/build-ingest-bulk-catalog-script`) remains open and
+  overlaps the scope merged in #145; disposition is an owner decision. [TRACE_EXECUTION]
 
 ## Active Hive status
-
+ 
 - Open acceptance issues: #37 (retrieval security/provenance review and activation gates) and #47 (owner human audit of prompt-overhaul docs/schema tests).
 - Runtime orchestration is integrated, but not production-enabled.
 - `data-connectors/approved-source-hosts.json` intentionally has empty `approved_hosts` and `source_policies` arrays.
 - `VERIFIED_RETRIEVAL_AVAILABLE = False`; `HIVE_RESEARCH_PAUSED` remains active.
 - Full TCO mode remains separate from Hive research; provider smoke-test routing remains separate.
 - No live OEM retrieval, paid research calls, or vehicle research dispatch is authorized.
+- The offline catalog/ingestion workstream did not change any Hive readiness, source-manifest, catalog-write or activation gate. [OWNER_DECISION]
 - The vehicle queue and failed-candidate ledger remain quarantined while research is paused. Do not automatically retry or promote failed records.
 
 ## Required owner review and AI cross-review
