@@ -23,7 +23,7 @@
     "vat_basis": "incl_vat",
     "source_id": "committed_price_evidence_v1",
     "source_url": "https://web.archive.org/web/20190724165948id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/129-456_brochures-list-2065-downloadTag/default/0a31218f/1545229536/octavia-preisliste-12-2018.pdf",
-    "source_date": "2026-11-22",
+    "source_date": "2018-11-30",
     "confidence": "low",
     "adjustment_method": null,
     "review_required": true,
@@ -61,7 +61,7 @@
     "vat_basis": "incl_vat",
     "source_id": "committed_price_evidence_v1",
     "source_url": "https://web.archive.org/web/20190718182206id_/https://www.skoda.at/media/Kwc_Basic_DownloadTag_Component/3531-36652_brochures-list-73322-downloadTag/default/f68b2ea3/1552912769/FABIA20-Streuer-03-2019.pdf",
-    "source_date": "2026-11-22",
+    "source_date": "2019-03-01",
     "confidence": "low",
     "adjustment_method": null,
     "review_required": true,
@@ -203,7 +203,7 @@
     "drivetrain": "RWD",
     "battery_capacity_gross_kwh": null,
     "battery_capacity_usable_kwh": 50.0,
-    "wltp_range_km": 629,
+    "wltp_range_km": null,
     "dc_charging_power_kw": 183.0,
     "dc_charging_time_10_80_min": 29,
     "seating_capacity": null,
@@ -224,7 +224,9 @@
       "Official VW Austria ID.3 Neo page; 'Preis ab €34.490,00 inkl. MwSt.' for Trend retrieved 2026-11-22.",
       "Page states 50 kWh net battery for Trend, WLTP up to 629 km across range, DC up to 183 kW, ~29 min 10-80%.",
       "Current Austrian name is ID.3 Neo; pilot model 'ID.3' mapped with explicit variant note.",
-      "Bonus-adjusted €28.990 price excluded."
+      "Bonus-adjusted €28.990 price excluded.",
+      "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists.",
+      "629 km is the across-range model maximum, not a Trend-specific WLTP value; the structured field is null until variant-specific evidence exists."
     ],
     "gaps": [
       "Model-level base price only; variant/trim-specific price not evidenced.",

@@ -67,8 +67,8 @@ written adjustment method, `confidence` of `low` or `medium`, and
 
 | # | Brand | Model | Variant | Tier | Price (EUR incl. VAT) | Source | Retrieval / source date |
 |---:|---|---|---|---|---:|---|---|
-| 1 | Škoda | Octavia | model-level AT price-list entry | approximate | 22,630.00 | committed_price_evidence_v1 | 2026-11-22 |
-| 2 | Škoda | Fabia | model-level AT price-list entry | approximate | 11,480.00 | committed_price_evidence_v1 | 2026-11-22 |
+| 1 | Škoda | Octavia | model-level AT price-list entry | approximate | 22,630.00 | committed_price_evidence_v1 | 2018-11-30 |
+| 2 | Škoda | Fabia | model-level AT price-list entry | approximate | 11,480.00 | committed_price_evidence_v1 | 2019-03-01 |
 | 3 | Volkswagen | Golf | Golf (Preis ab) | approximate | 26,790.00 | vw_austria | 2026-11-22 |
 | 4 | Volkswagen | Tiguan | Tiguan (Preis ab) | approximate | 37,490.00 | vw_austria | 2026-11-22 |
 | 5 | Volkswagen | T-Roc | T-Roc (Preis ab) | approximate | 30,390.00 | vw_austria | 2026-11-22 |
@@ -115,8 +115,8 @@ written adjustment method, `confidence` of `low` or `medium`, and
 | 46 | BYD | Sealion 8 | — | unavailable | — | byd_austria | 2026-11-22 |
 | 47 | BYD | eMAX 7 | — | unavailable | — | byd_austria | 2026-11-22 |
 | 48 | BYD | M3 | — | unavailable | — | byd_austria | 2026-11-22 |
-Tier totals: **0 approximate**, **0 unavailable**.
-Source-ID distribution: Counter({'none': 24, 'byd_austria': 12, 'xpeng_austria': 6, 'vw_austria': 4, 'committed_price_evidence_v1': 2}).
+Tier totals: **12 approximate**, **36 unavailable**.
+Source-ID distribution: `none` 24, `byd_austria` 12, `xpeng_austria` 6, `vw_austria` 4, `committed_price_evidence_v1` 2.
 
 ### 4.1 Models with a usable Austrian price candidate
 
@@ -207,10 +207,10 @@ keys and no AT price list in the committed harvest. Toyota AT model path returne
 
 All 48 candidates remain in the correction queue.
 
-- **Approximate, owner review required (0):** Škoda Octavia, Škoda Fabia, Volkswagen Golf, Volkswagen Tiguan, Volkswagen T-Roc, Volkswagen ID.3, XPeng G6, XPeng G9, XPeng P7+, XPeng L03, XPeng X9, XPeng G9L.
+- **Approximate, owner review required (12):** Škoda Octavia, Škoda Fabia, Volkswagen Golf, Volkswagen Tiguan, Volkswagen T-Roc, Volkswagen ID.3, XPeng G6, XPeng G9, XPeng P7+, XPeng L03, XPeng X9, XPeng G9L.
   Correction requires a dated attributable source, explicit market and VAT basis,
   reviewer approval and a recorded change reason.
-- **Unavailable (0):** BMW X1, Seat Ibiza, Toyota Yaris, Dacia Sandero, Dacia Duster, Dacia Bigster, Škoda Kodiaq, Škoda Karoq, Audi A3, Audi Q3, BMW 3 Series, Mercedes-Benz GLC, Hyundai Tucson, Kia Sportage, Toyota Yaris Cross, Toyota Corolla, Škoda Enyaq, Volvo XC40 / EX40, Tesla Model 3, Tesla Model Y, Tesla Model S, Tesla Model X, Tesla Cybertruck, XPeng L05, BYD Dolphin, BYD Dolphin Surf, BYD Atto 3, BYD Seal, BYD Seal U, BYD Seal U DM-i, BYD Tang, BYD Sealion 7, BYD Han, BYD Sealion 8, BYD eMAX 7, BYD M3.
+- **Unavailable (36):** BMW X1, Seat Ibiza, Toyota Yaris, Dacia Sandero, Dacia Duster, Dacia Bigster, Škoda Kodiaq, Škoda Karoq, Audi A3, Audi Q3, BMW 3 Series, Mercedes-Benz GLC, Hyundai Tucson, Kia Sportage, Toyota Yaris Cross, Toyota Corolla, Škoda Enyaq, Volvo XC40 / EX40, Tesla Model 3, Tesla Model Y, Tesla Model S, Tesla Model X, Tesla Cybertruck, XPeng L05, BYD Dolphin, BYD Dolphin Surf, BYD Atto 3, BYD Seal, BYD Seal U, BYD Seal U DM-i, BYD Tang, BYD Sealion 7, BYD Han, BYD Sealion 8, BYD eMAX 7, BYD M3.
   Reopen only with a new dated Austrian price document or a documented, defensible
   cross-market adjustment.
 
@@ -238,11 +238,11 @@ from it in this matrix.
 
 ## 9. Coverage-gap list
 
-0 of 48 researched candidates have no defensible price proxy.
+36 of 48 researched candidates have no defensible price proxy.
 Highest-impact gaps among 2025 top sellers: BMW X1, Seat Ibiza, Toyota Yaris,
 Dacia Sandero, Dacia Duster, Dacia Bigster. Additional high-impact gaps: Audi A3/Q3,
 BMW 3 Series, Mercedes-Benz GLC, Hyundai Tucson, Kia Sportage, Toyota Yaris Cross,
-Toyota Corolla, Škoda Enyaq, Volvo XC40/EX40, all Tesla models, and eight BYD models.
+Toyota Corolla, Škoda Enyaq, Volvo XC40/EX40, all Tesla models, and all 12 BYD models.
 
 ## 10. TCO-readiness forecast
 
