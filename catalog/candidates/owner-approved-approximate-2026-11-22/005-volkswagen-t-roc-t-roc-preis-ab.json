@@ -1,0 +1,172 @@
+{
+  "approval": {
+    "model_year_and_specifications_complete": false,
+    "owner_approved_for_approximate_catalog_preparation_only": true,
+    "price_tier": "approximate",
+    "promotion_to_verified_permitted": false,
+    "tco_ready": false
+  },
+  "identity": {
+    "body_style": "suv",
+    "drivetrain": null,
+    "make": "Volkswagen",
+    "model": "T-Roc",
+    "model_year": null,
+    "powertrain": "mild_hybrid|full_hybrid",
+    "variant": "T-Roc (Preis ab)"
+  },
+  "price": {
+    "adjustment_method": null,
+    "currency": "EUR",
+    "evidence_notes": [
+      "Official VW Austria page; 'Preis ab €30.390,00 inkl. MwSt.' retrieved 2026-11-22.",
+      "Page lists mild-hybrid and full-hybrid variants.",
+      "Bonus-adjusted €24.390 price excluded."
+    ],
+    "limitations": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+    "price_confidence": "medium",
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.volkswagen.at/t-roc/t-roc",
+    "price_tier": "approximate",
+    "price_value": 30390.0,
+    "source_date": "2026-11-22",
+    "source_id": "vw_austria",
+    "source_url": "https://www.volkswagen.at/t-roc/t-roc",
+    "vat_basis": "incl_vat"
+  },
+  "raw_staging_record": {
+    "adjustment_method": null,
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": null,
+    "body_style": "suv",
+    "brand": "Volkswagen",
+    "catalog_written": false,
+    "confidence": "medium",
+    "currency": "EUR",
+    "dc_charging_power_kw": null,
+    "dc_charging_time_10_80_min": null,
+    "drivetrain": null,
+    "evidence_notes": [
+      "Official VW Austria page; 'Preis ab €30.390,00 inkl. MwSt.' retrieved 2026-11-22.",
+      "Page lists mild-hybrid and full-hybrid variants.",
+      "Bonus-adjusted €24.390 price excluded."
+    ],
+    "gaps": [
+      "Model-level base price only; variant/trim-specific price not evidenced.",
+      "Reviewer must confirm exact trim, VAT/NoVA basis and model year before use."
+    ],
+    "market": "AT",
+    "model": "T-Roc",
+    "model_year": null,
+    "powertrain": "mild_hybrid|full_hybrid",
+    "price_adjustment_method": null,
+    "price_basis": "official Austrian list price (Preis ab), incl. VAT and NoVA",
+    "price_confidence": "medium",
+    "price_high_eur": null,
+    "price_low_eur": null,
+    "price_source_date": "2026-11-22",
+    "price_source_url": "https://www.volkswagen.at/t-roc/t-roc",
+    "price_tier": "approximate",
+    "price_value": 30390.0,
+    "price_value_eur": 30390.0,
+    "provider_calls": 0,
+    "recommended_action": "owner_review_then_prepare_approximate_record",
+    "review_required": true,
+    "seating_capacity": null,
+    "source_date": "2026-11-22",
+    "source_id": "vw_austria",
+    "source_url": "https://www.volkswagen.at/t-roc/t-roc",
+    "staged_at": "2026-11-22T09:57:52.145934+00:00",
+    "staging_only": true,
+    "staging_report_source": "pilot-gap-price-candidates.json",
+    "variant": "T-Roc (Preis ab)",
+    "vat_basis": "incl_vat",
+    "wltp_range_km": null
+  },
+  "schema_version": 1,
+  "specification_gaps": [
+    {
+      "field": "battery_capacity_gross_kwh",
+      "reason": "Gross capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "battery_capacity_usable_kwh",
+      "reason": "Usable capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "wltp_range_km",
+      "reason": "No variant-specific WLTP value displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dc_charging_power_kw",
+      "reason": "No variant-specific DC charging power displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dc_charging_time_10_80_min",
+      "reason": "No 10-80% charging time displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dimensions",
+      "reason": "Dimensions not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "weight_kg",
+      "reason": "Weight not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "seats",
+      "reason": "Seat count not displayed on the consulted Austrian page."
+    }
+  ],
+  "specification_provenance": {},
+  "specifications": {
+    "battery_capacity_gross_kwh": null,
+    "battery_capacity_usable_kwh": null,
+    "dc_charging_power_kw": null,
+    "dc_charging_time_10_80_min": null,
+    "dimensions": null,
+    "seats": null,
+    "weight_kg": null,
+    "wltp_range_km": null
+  },
+  "tco_input_gaps": [
+    {
+      "field": "dimensions.max_permissible_mass_kg",
+      "reason": "Maximum permissible mass is not displayed on the consulted Austrian manufacturer page."
+    },
+    {
+      "field": "dimensions.own_weight_kg",
+      "reason": "Own weight is not displayed on the consulted Austrian manufacturer page for this variant."
+    },
+    {
+      "field": "emissions.co2_wltp_gpkm",
+      "reason": "A variant-specific WLTP CO2 value is not displayed on the consulted page."
+    },
+    {
+      "field": "identity.vehicle_class",
+      "reason": "Regulatory vehicle class is not displayed on the consulted Austrian manufacturer page."
+    },
+    {
+      "field": "offers.0.purchase_price_excl_vat_eur",
+      "reason": "Source displays an incl-VAT price only; no excl-VAT price is published and no conversion is applied."
+    },
+    {
+      "field": "registration.first_registration_date",
+      "reason": "First registration date is vehicle-specific and is not published on the manufacturer page."
+    }
+  ],
+  "tco_input_provenance": {},
+  "tco_inputs": {
+    "dimensions.max_permissible_mass_kg": null,
+    "dimensions.own_weight_kg": null,
+    "emissions.co2_wltp_gpkm": null,
+    "identity.vehicle_class": null,
+    "offers.0.purchase_price_excl_vat_eur": null,
+    "registration.first_registration_date": null
+  },
+  "variant_id": "005-volkswagen-t-roc-t-roc-preis-ab"
+}
