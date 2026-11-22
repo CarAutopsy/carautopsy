@@ -86,6 +86,50 @@
     "wltp_range_km": null
   },
   "schema_version": 1,
+  "specification_gaps": [
+    {
+      "field": "battery_capacity_gross_kwh",
+      "reason": "Gross capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "battery_capacity_usable_kwh",
+      "reason": "Usable capacity not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "wltp_range_km",
+      "reason": "No variant-specific WLTP value displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dc_charging_time_10_80_min",
+      "reason": "No 10-80% charging time displayed on the consulted Austrian page."
+    },
+    {
+      "field": "dimensions",
+      "reason": "Dimensions not displayed on the consulted Austrian page."
+    },
+    {
+      "field": "weight_kg",
+      "reason": "Weight not displayed on the consulted Austrian page."
+    }
+  ],
+  "specification_provenance": {
+    "dc_charging_power_kw": {
+      "confidence": "medium",
+      "limitation": "Page states up to 446 kW for the 800 V platform; not variant-specific charging peak.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "xpeng_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.xpeng.com/at/model/p7plus"
+    },
+    "seats": {
+      "confidence": "medium",
+      "limitation": "Value displayed on the consulted Austrian manufacturer page; no inference applied.",
+      "retrieval_date": "2026-11-22",
+      "source_id": "xpeng_austria",
+      "source_type": "austrian_manufacturer_web_page",
+      "source_url": "https://www.xpeng.com/at/model/p7plus"
+    }
+  },
   "specifications": {
     "battery_capacity_gross_kwh": null,
     "battery_capacity_usable_kwh": null,
