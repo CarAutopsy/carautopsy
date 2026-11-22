@@ -1,0 +1,82 @@
+[
+  {
+    "variant_id": "fixture-unresolved-suv-1",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureSUV",
+      "variant": "",
+      "model_year": 2024,
+      "powertrain": "bev",
+      "trim": "Base"
+    },
+    "spec": {
+      "body_style": "suv_coupe",
+      "battery_capacity_kwh": 60.0,
+      "range_km": 400,
+      "dimensions": {
+        "length_mm": 4500,
+        "width_mm": 1800
+      },
+      "weight_kg": 1800
+    },
+    "price": {
+      "price_tier": "approximate",
+      "price_value": 25000.0,
+      "source_url": "https://fixture.example/src/1",
+      "source_date": "2026-11-22",
+      "vat_basis": "incl_vat"
+    },
+    "provenance": {
+      "sources": [
+        {
+          "source_id": "fixture-exhaustive-search",
+          "url": "https://fixture.example/exhaustive-search",
+          "retrieved": "2026-11-22",
+          "note": "synthetic analogue of exhaustive-search audit trail"
+        }
+      ]
+    },
+    "synthetic": true,
+    "expected_outcome": "unresolved_variant"
+  },
+  {
+    "variant_id": "fixture-unresolved-suv-2",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureSUV",
+      "variant": "",
+      "model_year": 2024,
+      "powertrain": "bev",
+      "trim": "Base"
+    },
+    "spec": {
+      "body_style": "suv_coupe",
+      "battery_capacity_kwh": 60.0,
+      "range_km": 400,
+      "dimensions": {
+        "length_mm": 4500,
+        "width_mm": 1800
+      },
+      "weight_kg": 1800
+    },
+    "price": {
+      "price_tier": "approximate",
+      "price_value": 25000.0,
+      "source_url": "https://fixture.example/src/1",
+      "source_date": "2026-11-22",
+      "vat_basis": "incl_vat"
+    },
+    "provenance": {
+      "sources": [
+        {
+          "source_id": "fixture-exhaustive-search",
+          "url": "https://fixture.example/exhaustive-search",
+          "retrieved": "2026-11-22",
+          "note": "synthetic analogue of exhaustive-search audit trail"
+        }
+      ]
+    },
+    "synthetic": true,
+    "expected_outcome": "unresolved_variant"
+  }
+]
