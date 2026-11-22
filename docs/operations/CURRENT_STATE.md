@@ -37,10 +37,16 @@
   `performance.power_w`, `dimensions.curb_mass_kg` and offer/price fields, so
   completeness fell against the earlier 6-variant baseline (0.3287). These are
   tool-quality metrics, not verified vehicle data. [REASONED_ONLY]
-- `scripts/ingest_bulk_catalog.py` is offline and fails closed: branch-scoped
-  staging only, no write to `catalog/variants/`, no network, no secrets. Its
-  2018 AT sample is already represented in the catalog, so repeat ingestion
-  correctly writes zero new records. [STATIC_READ]
+- `scripts/ingest_bulk_catalog.py` is offline and fails closed: catalog-shaped
+  records are staged only in a branch-scoped `staging/` directory, with no write
+  to `catalog/variants/`, no network and no secrets. The separate required
+  `--report` file is written even in dry-run mode, may target a path outside
+  `staging/` (except under `catalog/variants/`), and can overwrite an existing
+  file; operators must choose a safe temporary report path. [STATIC_READ]
+- In the 2018 AT sample, 114 rows resolve to identities already in the catalog
+  and are correctly reported as duplicates with zero new staging records; the
+  other 40 rows are rejected before duplicate detection because verified price
+  evidence is unavailable. [TRACE_EXECUTION]
 - Draft PR #144 (`copilot/build-ingest-bulk-catalog-script`) remains open and
   overlaps the scope merged in #145; disposition is an owner decision. [TRACE_EXECUTION]
 

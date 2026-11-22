@@ -85,12 +85,12 @@ of `main` at `245f8fd`. No source, schema, catalog, CI or gate change was made.
    for a narrower follow-up.
 2. Owner selects the next workstream: enrich the sparse EEA variants (P1 refresh
    backlog) or complete the #37/#47 owner acceptance reviews.
-3. Route these documentation edits (commit on `main` or a docs PR) per owner
-   preference, then run the full validation suite on the exact final SHA.
+3. These documentation edits are submitted as PR #146. After any further push,
+   re-run the full validation suite on the exact final SHA.
 
 ## Owner decisions required
 
-- PR #144 disposition and routing of the uncommitted documentation edits. [OWNER_DECISION]
+- PR #144 disposition. The documentation edits are submitted as PR #146. [OWNER_DECISION]
 - Any later activation, merge, source-manifest change or queue dispatch. [OWNER_DECISION]
 
 ## Do not do
