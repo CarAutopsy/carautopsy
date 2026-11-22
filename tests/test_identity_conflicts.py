@@ -157,5 +157,59 @@ class DeterminismTests(unittest.TestCase):
         self.assertNotIn("retrieved_at", payload)
 
 
+class FixTests(unittest.TestCase):
+    def test_probable_duplicate_does_not_suppress_attribute_conflicts(self):
+        findings = ic.detect(load("mixed_duplicate_and_conflicts.json"))
+        categories = {f["recommended_resolution"] for f in findings}
+        fields = {f["conflicting_field"] for f in findings}
+        self.assertIn("probable_duplicate_owner_review", categories)
+        self.assertIn("conflicting_attribute", categories)
+        for field in ("model_year", "battery_capacity", "price_evidence"):
+            self.assertIn(field, fields)
+
+    def test_three_records_are_each_compared_to_the_first(self):
+        findings = ic.detect(load("three_record_conflict.json"))
+        conflicts = [f for f in findings if f["recommended_resolution"] == "conflicting_attribute"]
+        self.assertEqual(len(conflicts), 2)
+        pairs = {tuple(sorted(str(v) for v in f["related_variant_ids"])) for f in conflicts}
+        self.assertIn(("fixture-three-1", "fixture-three-2"), pairs)
+        self.assertIn(("fixture-three-1", "fixture-three-3"), pairs)
+
+    def test_summary_counts_and_rules_are_present(self):
+        payload = ic.generate(FIX / "mixed_duplicate_and_conflicts.json")
+        summary = payload["summary"]
+        for field in ("accepted", "rejected", "duplicate", "conflict", "error"):
+            self.assertIn(field, summary)
+        self.assertTrue(summary["counts_are_not_mutually_exclusive"])
+        self.assertEqual(summary["duplicate"], 2)
+        self.assertEqual(summary["conflict"], 2)
+
+    def test_verified_claim_with_approximate_evidence_is_reported_never_changed(self):
+        payload = ic.generate(FIX / "unverified_approximate_claim.json")
+        findings = payload["findings"]
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["recommended_resolution"], "unverified_approximate_claim")
+        self.assertTrue(findings[0]["owner_decision_required"])
+        self.assertEqual(payload["summary"]["error"], 1)
+        self.assertEqual(payload["records_promoted"], 0)
+        self.assertEqual(payload["catalog_writes"], 0)
+        self.assertEqual(load("unverified_approximate_claim.json")[0]["price"]["price_tier"], "verified")
+
+    def test_mutation_counters_are_derived_from_empty_operation_logs(self):
+        payload = ic.generate(FIX / "exact_duplicate.json")
+        for key in ("catalog_writes", "staging_writes", "provider_calls", "records_merged",
+                    "records_overwritten", "records_deleted", "records_promoted"):
+            self.assertEqual(payload[key], 0)
+        self.assertTrue(payload["mutation_log_is_invariant"])
+
+    def test_related_variant_ids_are_emitted_for_all_findings(self):
+        for name in ("exact_duplicate.json", "mixed_duplicate_and_conflicts.json",
+                     "unverified_approximate_claim.json"):
+            with self.subTest(name=name):
+                for finding in ic.detect(load(name)):
+                    self.assertIn("related_variant_ids", finding)
+                    self.assertTrue(finding["related_variant_ids"])
+
+
 if __name__ == "__main__":
     unittest.main()

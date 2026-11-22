@@ -138,7 +138,8 @@ def _canonical(record: dict[str, Any]) -> dict[str, Any]:
 
 def _finding(identity: dict[str, Any], field: str, competing: list[Any],
              provenance: list[Any], category: str, recommendation: str,
-             owner: bool = True) -> dict[str, Any]:
+             owner: bool = True, related: list[Any] | None = None) -> dict[str, Any]:
+    related_ids = list(related) if related is not None else [identity.get("variant_id")]
     return {
         "candidate_identity": identity,
         "conflicting_field": field,
@@ -147,18 +148,39 @@ def _finding(identity: dict[str, Any], field: str, competing: list[Any],
         "recommended_resolution": category,
         "owner_decision_required": owner,
         "action": recommendation,
+        "related_variant_ids": related_ids,
     }
+
+
+def _approximate_evidence(record: dict[str, Any]) -> bool:
+    """True when a verified price claim is supported only by approximate evidence."""
+    price = record.get("price") if isinstance(record.get("price"), dict) else {}
+    return (
+        price.get("evidence_tier") == "approximate"
+        or price.get("approximate") is True
+        or price.get("source_type") in {"approximate", "proxy", "dealer_estimate"}
+    )
 
 
 def _record_findings(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     for record in records:
         identity = record.get("identity") if isinstance(record.get("identity"), dict) else {}
+        variant_id = record.get("variant_id")
+        price = record.get("price") if isinstance(record.get("price"), dict) else {}
+        if price.get("price_tier") == "verified" and _approximate_evidence(record):
+            findings.append(_finding(
+                _identity_label(record), "price_evidence",
+                [price.get("price_tier"), price.get("evidence_tier") or price.get("source_type")],
+                [_source(record)], "unverified_approximate_claim",
+                "owner_replaces_approximate_evidence_before_verified_claim",
+                related=[variant_id]))
         missing = [f for f in ("make", "model") if not identity.get(f)]
         if missing:
             findings.append(_finding(
                 _identity_label(record), "identity", missing, [_source(record)],
-                "missing_mandatory_identity_field", "owner_supplies_missing_identity"))
+                "missing_mandatory_identity_field", "owner_supplies_missing_identity",
+                related=[variant_id]))
         unsupported = [
             f for f in ("make", "model", "variant")
             if f in identity and identity[f] is not None and not isinstance(identity[f], str)
@@ -169,45 +191,54 @@ def _record_findings(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if unsupported:
             findings.append(_finding(
                 _identity_label(record), "identity", unsupported, [_source(record)],
-                "unsupported_identity_assertion", "owner_corrects_identity_types"))
+                "unsupported_identity_assertion", "owner_corrects_identity_types",
+                related=[variant_id]))
         if not identity.get("variant") and not identity.get("variant_name"):
             findings.append(_finding(
                 _identity_label(record), "variant", [], [_source(record)],
-                "unresolved_variant", "owner_resolves_variant"))
+                "unresolved_variant", "owner_resolves_variant", related=[variant_id]))
     return findings
 
 
 def _group_findings(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Compare every record in a group to the first; never return early."""
     findings: list[dict[str, Any]] = []
     if len(records) < 2:
         return findings
-    values = [_values(r) for r in records]
-    differing = [f for f in COMPARE_FIELDS if any(v[f] != values[0][f] for v in values[1:])]
-    # Case/whitespace-only identity differences canonicalize to the same key;
-    # they are probable duplicates requiring owner review even when no watched
-    # attribute differs.
-    raw_identity_diff = any(
-        (r.get("identity") or {}).get("make") != (records[0].get("identity") or {}).get("make")
-        or (r.get("identity") or {}).get("model") != (records[0].get("identity") or {}).get("model")
-        for r in records[1:]
-    )
-    if raw_identity_diff:
+    first = records[0]
+    first_values = _values(first)
+    first_identity = first.get("identity") if isinstance(first.get("identity"), dict) else {}
+    group_ids = [r.get("variant_id") for r in records]
+
+    raw_diff_records = [
+        r for r in records[1:]
+        if (r.get("identity") or {}).get("make") != first_identity.get("make")
+        or (r.get("identity") or {}).get("model") != first_identity.get("model")
+    ]
+    if raw_diff_records:
         findings.append(_finding(
-            _identity_label(records[0]), "identity_raw",
+            _identity_label(first), "identity_raw",
             [((r.get("identity") or {}).get("make"), (r.get("identity") or {}).get("model")) for r in records],
             [_source(r) for r in records], "probable_duplicate_owner_review",
-            "owner_reviews_raw_identity_differences"))
-        return findings
-    if not differing:
+            "owner_reviews_raw_identity_differences", related=group_ids))
+
+    for other in records[1:]:
+        other_values = _values(other)
+        for field in COMPARE_FIELDS:
+            if other_values[field] != first_values[field]:
+                findings.append(_finding(
+                    _identity_label(other), field,
+                    [first_values[field], other_values[field]],
+                    [_source(first), _source(other)], "conflicting_attribute",
+                    "owner_selects_supported_value",
+                    related=[first.get("variant_id"), other.get("variant_id")]))
+
+    if not raw_diff_records and not any(
+            f["recommended_resolution"] == "conflicting_attribute" for f in findings):
         findings.append(_finding(
-            _identity_label(records[0]), "record", [r.get("variant_id") for r in records],
-            [_source(r) for r in records], "exact_duplicate", "do_not_write_duplicate"))
-        return findings
-    for field in differing:
-        findings.append(_finding(
-            _identity_label(records[0]), field, [v[field] for v in values],
-            [_source(r) for r in records], "conflicting_attribute",
-            "owner_selects_supported_value"))
+            _identity_label(first), "record", group_ids,
+            [_source(r) for r in records], "exact_duplicate", "do_not_write_duplicate",
+            related=group_ids))
     return findings
 
 
@@ -231,7 +262,8 @@ def detect(candidates: list[dict[str, Any]],
                     _identity_label(record), "existing_catalog_record",
                     [record.get("variant_id"), existing.get("variant_id")],
                     [_source(record), _source(existing)], "exact_duplicate",
-                    "do_not_write_existing_catalog_duplicate"))
+                    "do_not_write_existing_catalog_duplicate",
+                    related=[record.get("variant_id"), existing.get("variant_id")]))
     findings.sort(key=lambda f: (
         str(f["candidate_identity"].get("variant_id") or ""),
         str(f["conflicting_field"]), str(f["recommended_resolution"]),
@@ -255,6 +287,32 @@ def generate(candidates_path: Path, catalog_path: Path | None = None) -> dict[st
             raise ConflictError("INVALID_INPUT")
         inputs.append(_input_descriptor(catalog_path))
     findings = detect(candidates, catalog)
+
+    # Mutating-operation log. This offline tool never appends to any of these
+    # lists; counters are derived from the actual log rather than hard-coded.
+    operations: dict[str, list[str]] = {
+        "catalog_writes": [], "staging_writes": [], "provider_calls": [],
+        "records_merged": [], "records_overwritten": [], "records_deleted": [],
+        "records_promoted": [],
+    }
+
+    def referenced(categories: set[str]) -> set[str]:
+        result: set[str] = set()
+        for finding in findings:
+            if finding["recommended_resolution"] in categories:
+                result.update(str(v) for v in finding["related_variant_ids"] if v is not None)
+        return result
+
+    all_referenced = {
+        str(v) for finding in findings for v in finding["related_variant_ids"] if v is not None
+    }
+    candidate_ids = {str(r.get("variant_id")) for r in candidates}
+    rejected = referenced({"missing_mandatory_identity_field",
+                           "unsupported_identity_assertion", "unresolved_variant"})
+    duplicate = referenced({"exact_duplicate", "probable_duplicate_owner_review"})
+    conflict = referenced({"conflicting_attribute"})
+    error = referenced({"unverified_approximate_claim"})
+
     return {
         "schema_version": 1,
         "artifact": "identity-conflict-resolution",
@@ -263,14 +321,23 @@ def generate(candidates_path: Path, catalog_path: Path | None = None) -> dict[st
         "candidate_count": len(candidates),
         "catalog_records_read": len(catalog or []),
         "finding_count": len(findings),
+        "summary": {
+            "accepted": len(candidate_ids - all_referenced),
+            "rejected": len(rejected),
+            "duplicate": len(duplicate),
+            "conflict": len(conflict),
+            "error": len(error),
+            "counts_are_not_mutually_exclusive": True,
+        },
         "findings": findings,
-        "catalog_writes": 0,
-        "staging_writes": 0,
-        "provider_calls": 0,
-        "records_merged": 0,
-        "records_overwritten": 0,
-        "records_deleted": 0,
-        "records_promoted": 0,
+        "catalog_writes": len(operations["catalog_writes"]),
+        "staging_writes": len(operations["staging_writes"]),
+        "provider_calls": len(operations["provider_calls"]),
+        "records_merged": len(operations["records_merged"]),
+        "records_overwritten": len(operations["records_overwritten"]),
+        "records_deleted": len(operations["records_deleted"]),
+        "records_promoted": len(operations["records_promoted"]),
+        "mutation_log_is_invariant": True,
     }
 
 

@@ -66,6 +66,42 @@ Each finding contains:
 
 Output is deterministic: sorted keys, stable finding order and no timestamps.
 
+## Summary counts
+
+The report includes a `summary` object with these counts and rules:
+
+| Count | Rule |
+|---|---|
+| `accepted` | Candidate variant ids not referenced by any finding |
+| `rejected` | Distinct candidates with `missing_mandatory_identity_field`, `unsupported_identity_assertion` or `unresolved_variant` |
+| `duplicate` | Distinct candidates with `exact_duplicate` or `probable_duplicate_owner_review` |
+| `conflict` | Distinct candidates with `conflicting_attribute` |
+| `error` | `unverified_approximate_claim` guard findings |
+
+Counts are **not mutually exclusive**: one candidate can be both duplicate and
+conflict. Every finding stays visible in `findings`.
+
+Group comparison compares every record against the first record in the group.
+A `probable_duplicate_owner_review` finding is emitted when raw make/model casing
+or whitespace differs, but it does **not** stop attribute comparison; differing
+model year, battery capacity, price evidence and other watched fields are still
+reported as `conflicting_attribute` findings.
+
+## Verified-claim guard
+
+A candidate whose `price.price_tier` is `verified` while its supporting evidence
+is approximate (`evidence_tier: approximate`, `approximate: true`, or a proxy
+`source_type`) produces an `unverified_approximate_claim` finding. The record is
+reported only; the tool never changes, promotes, or writes it.
+
+## Mutation counters
+
+`catalog_writes`, `staging_writes`, `provider_calls`, `records_merged`,
+`records_overwritten`, `records_deleted` and `records_promoted` are derived from
+an in-process mutation-operation log. This offline tool never appends to that
+log, so the counters are zero by construction; `mutation_log_is_invariant: true`
+records this property.
+
 ## Owner-decision rules
 
 - Every finding stays visible; nothing is auto-resolved.
