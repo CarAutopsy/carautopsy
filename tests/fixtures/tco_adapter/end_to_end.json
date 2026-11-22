@@ -1,0 +1,404 @@
+[
+  {
+    "variant_id": "fixture-tco-bev-accepted",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel",
+      "variant": "FixtureTrim",
+      "powertrain": "bev",
+      "vehicle_class": "M1"
+    },
+    "registration": {
+      "first_registration_date": "2025-01-15"
+    },
+    "dimensions": {
+      "max_permissible_mass_kg": 2000,
+      "own_weight_kg": 1800
+    },
+    "emissions": {
+      "co2_wltp_gpkm": 0
+    },
+    "provenance": {
+      "confidence": "medium"
+    },
+    "field_provenance": {
+      "variant_id": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.powertrain": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.vehicle_class": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "registration.first_registration_date": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.max_permissible_mass_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.own_weight_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "emissions.co2_wltp_gpkm": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "offers.0.purchase_price_excl_vat_eur": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "performance.electric_motor_continuous_power_w": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium"
+      },
+      "energy.consumption_wh_km.real_world": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium"
+      }
+    },
+    "performance": {
+      "electric_motor_continuous_power_w": 150000
+    },
+    "energy": {
+      "consumption_wh_km": {
+        "real_world": 180
+      }
+    },
+    "offers": [
+      {
+        "purchase_price_excl_vat_eur": 25000.0,
+        "list_price_minor": 3000000
+      }
+    ],
+    "price": {
+      "price_tier": "approximate",
+      "source_url": "https://fixture.example/tco/1",
+      "source_date": "2026-11-22",
+      "confidence": "low",
+      "market": "AT",
+      "vat_basis": "excl_vat"
+    }
+  },
+  {
+    "variant_id": "fixture-tco-ice-missing-price",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel",
+      "variant": "FixtureTrim",
+      "powertrain": "ice_petrol",
+      "vehicle_class": "M1"
+    },
+    "registration": {
+      "first_registration_date": "2025-01-15"
+    },
+    "dimensions": {
+      "max_permissible_mass_kg": 2000,
+      "own_weight_kg": 1800
+    },
+    "emissions": {
+      "co2_wltp_gpkm": 120
+    },
+    "provenance": {
+      "confidence": "medium"
+    },
+    "field_provenance": {
+      "variant_id": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.powertrain": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.vehicle_class": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "registration.first_registration_date": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.max_permissible_mass_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.own_weight_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "emissions.co2_wltp_gpkm": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "offers.0.purchase_price_excl_vat_eur": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "performance.combustion_engine_power_w": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22"
+      },
+      "extensions.fuel_consumption_l_100km.real_world": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22"
+      }
+    },
+    "performance": {
+      "combustion_engine_power_w": 100000
+    },
+    "extensions": {
+      "fuel_consumption_l_100km": {
+        "real_world": 6.5
+      }
+    },
+    "offers": []
+  },
+  {
+    "variant_id": "fixture-tco-owner-decision",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel",
+      "variant": "FixtureTrim",
+      "powertrain": "bev",
+      "vehicle_class": "M1"
+    },
+    "registration": {
+      "first_registration_date": "2025-01-15"
+    },
+    "dimensions": {
+      "max_permissible_mass_kg": 2000,
+      "own_weight_kg": 1800
+    },
+    "emissions": {
+      "co2_wltp_gpkm": 0
+    },
+    "provenance": {
+      "confidence": "medium"
+    },
+    "field_provenance": {
+      "variant_id": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.powertrain": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.vehicle_class": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "registration.first_registration_date": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.max_permissible_mass_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.own_weight_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "emissions.co2_wltp_gpkm": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "offers.0.purchase_price_excl_vat_eur": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "performance.electric_motor_continuous_power_w": {
+        "status": "owner_decision_required",
+        "source_url": null
+      }
+    },
+    "performance": {
+      "electric_motor_continuous_power_w": 120000
+    },
+    "energy": {
+      "consumption_wh_km": {
+        "real_world": 200
+      }
+    },
+    "offers": [
+      {
+        "purchase_price_excl_vat_eur": 22000.0
+      }
+    ]
+  },
+  {
+    "variant_id": "fixture-tco-unavailable",
+    "identity": {
+      "make": "FixtureBrand",
+      "model": "FixtureModel",
+      "variant": "FixtureTrim",
+      "powertrain": "bev",
+      "vehicle_class": "M1"
+    },
+    "registration": {
+      "first_registration_date": "2025-01-15"
+    },
+    "dimensions": {
+      "max_permissible_mass_kg": 2000,
+      "own_weight_kg": 1800
+    },
+    "emissions": {
+      "co2_wltp_gpkm": 0
+    },
+    "provenance": {
+      "confidence": "medium"
+    },
+    "field_provenance": {
+      "variant_id": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.powertrain": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "identity.vehicle_class": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "registration.first_registration_date": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.max_permissible_mass_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "dimensions.own_weight_kg": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "emissions.co2_wltp_gpkm": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      },
+      "offers.0.purchase_price_excl_vat_eur": {
+        "status": "verified",
+        "source_url": "https://fixture.example/tco/1",
+        "source_date": "2026-11-22",
+        "confidence": "medium",
+        "market": "AT"
+      }
+    },
+    "performance": {
+      "electric_motor_continuous_power_w": 120000
+    },
+    "offers": [
+      {
+        "purchase_price_excl_vat_eur": 22000.0
+      }
+    ]
+  }
+]
