@@ -104,7 +104,7 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(payload["wave_counts"], {"1": 9, "2": 18, "3": 9})
         self.assertEqual(payload["gap_class_counts"], {
             "needs_austrian_official_price": 23,
-            "needs_dated_australian_dealer_price": 4,
+            "needs_dated_austrian_dealer_price": 4,
             "needs_cross_market_evidence": 2,
             "needs_owner_decision": 1,
             "needs_specification_completion": 1,

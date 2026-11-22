@@ -19,7 +19,7 @@ DEFAULT_ASSIGNMENTS = ROOT / "docs/research/evidence-sprint-002-assignments.json
 
 GAP_CLASSES = frozenset({
     "needs_austrian_official_price",
-    "needs_dated_australian_dealer_price",
+    "needs_dated_austrian_dealer_price",
     "needs_cross_market_evidence",
     "needs_owner_decision",
     "needs_specification_completion",
