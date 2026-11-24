@@ -58,7 +58,7 @@ jobs:
             --format json > "$RUNNER_TEMP/hive-owner-digest.json"
 
       - name: Upload sanitized digest artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: hive-owner-digest
           path: ${{ runner.temp }}/hive-owner-digest.json
