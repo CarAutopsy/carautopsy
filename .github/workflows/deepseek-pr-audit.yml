@@ -51,7 +51,7 @@ jobs:
           set -euo pipefail
           python scripts/deepseek_pr_audit.py --diff "$RUNNER_TEMP/pr.diff" --head-sha "${{ steps.pr.outputs.head_sha }}" --base-sha "${{ steps.pr.outputs.base_sha }}" --json-output "$RUNNER_TEMP/audit.json" --summary-output "$RUNNER_TEMP/audit.md" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload audit report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: deepseek-pr-audit-${{ inputs.pr_number }}
           path: |
