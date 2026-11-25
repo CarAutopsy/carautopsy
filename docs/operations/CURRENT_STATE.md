@@ -7,7 +7,7 @@
 
 ## Confirmed completed
 
-- PR #43 merged: prompt/schema contract documentation and schema tests. The owner waived the audit prerequisite for that merge; the owner audit tracked by issue #47 is still a separate recorded task.
+- PR #43 merged: prompt/schema contract documentation and schema tests. The owner waived the audit prerequisite for that merge; issue #47 is closed with owner PASS at reviewed PR #43 head `492390abec21ea268b22829f1017242d9b930121`.
 - PR #49 merged: schema-aligned prompt builders and deterministic candidate/evidence validation helpers.
 - PR #50 merged: DNS-pinned HTTPS retrieval primitive.
 - PR #52 merged: owner-controlled exact-host/URL policy, robots handling, bounded HTML/plain-text/PDF extraction, and claim-level quote/locator evidence bindings.
@@ -87,3 +87,7 @@ See [ROADMAP.md](ROADMAP.md), [NEXT_ACTIONS.md](NEXT_ACTIONS.md), and [HIVE_PIPE
 - Do not treat schema validity, quote presence, or HTTP 2xx as proof that a vehicle claim is true.
 - Preserve two independent vendor PASS verdicts for candidate acceptance; this vendor gate is distinct from the five-service AI cross-review used for security review.
 - AI review output is advisory evidence; the owner records the final human verdict.
+
+## Static backlog checkpoint (2026-11-25)
+
+PRs #118, #121, #133 and #144 are closed without merge. PR #85 merged at `d3d6188134a8fa1bf5a1046b36dc8e21f139e8cf` (reviewed head `bf9c2f87729777074d11cae725d21c8589b88e23`). #130/#135/#138 merged; #168 addresses an additional publication-path defect. #113 merged at `09f590f41f9db02d48b40fa45d65b78364b8a864`; live crawler-only execution evidence still required for #86. Historical measurements above remain pinned to their original SHA and date. Copilot retired; no new assignments. No test or activation claim.
