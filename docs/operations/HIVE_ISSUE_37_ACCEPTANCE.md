@@ -9,7 +9,7 @@
 
 This document records the implementation evidence, remaining acceptance conditions, and review boundary for issue #37. It does **not** authorize live retrieval, populate the approved-source manifest, enable paid research, dispatch the research queue, or set `VERIFIED_RETRIEVAL_AVAILABLE = True`.
 
-The project owner remains the sole human reviewer and final authorization authority. The five AI services already used by the project provide supplementary cross-review; their findings are not independent human certification.
+The project owner remains the sole human reviewer and final authorization authority. The designated independent review services provide supplementary cross-review; their findings are not independent human certification.
 
 ## Activation boundary
 
@@ -43,7 +43,7 @@ The following conditions remain in force:
 The following must be completed before issue #37 can be considered review-complete:
 
 1. Owner performs and records a human security review against one exact final head SHA.
-2. Each of the five AI services already used by the project performs an independent security-focused review against that exact SHA.
+2. Each designated independent review service performs an independent security-focused review against that exact SHA.
 3. Findings, disagreements, unresolved risks, residual limitations, and dispositions are recorded in `docs/operations/HIVE_EXTERNAL_SECURITY_REVIEW.md`.
 4. Exact-head CI passes: Python test suite, catalog validation, provider-module compilation, and Repository Audit.
 5. The owner separately reviews every proposed OEM/official hostname, exact URL, and automated-access terms before any manifest entry is added.
@@ -66,7 +66,7 @@ A HTTP 2xx response and `retrieved_unverified` status are never proof that a cla
 1. Pin the exact final head SHA for review.
 2. Run and record full exact-head CI evidence.
 3. Owner completes the human security review using the existing review template.
-4. Request and record reviews from CodeRabbit, Qodo, ChatGPT, Copilot, and Perplexity.
+4. Request and record reviews from CodeRabbit, Qodo, ChatGPT, Perplexity, and an owner-designated independent replacement reviewer (if needed to preserve the original review count).
 5. Resolve or explicitly accept every material finding with rationale.
 6. Record residual risks and limitations.
 7. Owner separately decides whether to authorize activation.
@@ -74,3 +74,6 @@ A HTTP 2xx response and `retrieved_unverified` status are never proof that a cla
 ## Stop condition
 
 Do not enable live retrieval, populate the approved-host list, enable paid research, or set `VERIFIED_RETRIEVAL_AVAILABLE = True` as part of this documentation-only PR. Keep the research pause active until all acceptance criteria are met and the owner explicitly authorizes activation.
+
+## Owner decision: Copilot retired (2026-11-25)
+No new Copilot assignments, review requests, coding agent sessions or paid usage are authorized. Historical review evidence is retained. Replacement review must be independent and owner-authorized; unavailable reviews are not passes. Administrative policies and billing require separate owner action. No live retrieval or other activation is authorized.
