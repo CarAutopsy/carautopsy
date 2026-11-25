@@ -107,15 +107,21 @@ class TcoPublicationGuardTests(unittest.TestCase):
                 with self.assertRaises(PublicationBlocked):
                     assert_attestation(bad, ATTESTATION)
 
-    def test_status_parser_handles_quoted_and_renamed_paths(self):
-        status = (
-            f" M {PUBLICATION_PATH}\n?? stray.txt\n"
-            f'R  "old name.json" -> "{PUBLICATION_PATH}"\n'
-        )
-        self.assertEqual(
-            parse_status_paths(status),
-            [PUBLICATION_PATH, "stray.txt", PUBLICATION_PATH],
-        )
+    def test_status_parser_handles_quoted_paths(self):
+        status = f' M "{PUBLICATION_PATH}"\n?? stray.txt\n'
+        self.assertEqual(parse_status_paths(status), [PUBLICATION_PATH, "stray.txt"])
+
+    def test_rename_copy_and_ambiguous_status_fail_closed(self):
+        for status in (
+            f'R  "old name.json" -> "{PUBLICATION_PATH}"\n',
+            f"C  unrelated.json -> {PUBLICATION_PATH}\n",
+            f" R unrelated.json -> {PUBLICATION_PATH}\n",
+            f" M unrelated -> {PUBLICATION_PATH}\n",
+            "??\n",
+        ):
+            with self.subTest(status=status):
+                with self.assertRaises(PublicationBlocked):
+                    assert_only_publication_paths_changed(status)
 
     def test_only_explicit_publication_path_may_change(self):
         self.assertEqual(
