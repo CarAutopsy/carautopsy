@@ -8,7 +8,7 @@ This is the operational roadmap for the Hive workstream. GitHub issues remain th
 
 ## Current operating state
 
-- PR #43 (prompt/schema contract) is merged under an explicit owner waiver of the then-planned audit prerequisite. The owner human audit tracked by #47 remains a separate task.
+- PR #43 (prompt/schema contract) is merged under an explicit owner waiver of the then-planned audit prerequisite. The owner human audit tracked by #47 is CLOSED with owner PASS on 2026-11-13 at PR #43 reviewed head `492390abec21ea268b22829f1017242d9b930121`; activation is separate.
 - PR #49 (prompt builders and deterministic candidate/evidence gate) is merged.
 - PR #50 (DNS-pinned HTTPS transport) is merged.
 - PR #52 (source policy, robots checks, bounded extraction, and claim-level evidence bindings) is merged.
@@ -18,7 +18,7 @@ This is the operational roadmap for the Hive workstream. GitHub issues remain th
 - PR #71 security review handoff documentation is merged; its process now follows the owner-led, zero-budget review model recorded here.
 - PR #72 retrieval audit fixes are merged; exact-head CI passed on the PR head and post-merge validation passed on main.
 - PRs #140–#143 and #145 merged on 2026-11-21: offline catalog quality, EEA evidence harvesting/identity and price research, two owner-approved catalog batches (95 + 19 records), and offline bulk ingestion with dry-run/staging. HEAD is `245f8fd`; `origin/main` is 0/0. [TRACE_EXECUTION]
-- Draft PR #144 is open and overlaps the scope merged in #145; disposition is an owner decision. [TRACE_EXECUTION]
+- PR #144 is closed without merge; overlapping bulk-ingestion scope was merged in #145. [TRACE_EXECUTION]
 - `catalog/variants/` holds 120 records. Read-only quality measurement at HEAD `245f8fd` (`--now 2026-11-22T09:00:00Z`): 0 structural errors, 0 blocking findings, completeness 0.2633, P1 refresh plan with `network_permitted: false`. [TRACE_EXECUTION]
 - Project state and session docs reconciled to HEAD `245f8fd` on 2026-11-22. [TRACE_EXECUTION]
 - `data-connectors/approved-source-hosts.json` remains empty.
@@ -30,19 +30,19 @@ This is the operational roadmap for the Hive workstream. GitHub issues remain th
 - Scope: additive offline tooling only. `scripts/catalog_quality.py`, EEA evidence harvesters, `scripts/ingest_bulk_catalog.py` and supporting docs/reports landed via PRs #140, #141 and #145. No socket, secret, provider call, queue dispatch or `catalog/variants/` write. [STATIC_READ]
 - Owner-approved catalog batches 001/002 (PRs #142/#143) added 95 + 19 Austrian 2018 variants; catalog now has 120 records. [TRACE_EXECUTION]
 - Measured at HEAD `245f8fd`: 0 structural errors, 0 blocking findings, completeness 0.2633, 120 refresh-plan entries, all P1 with `network_permitted: false`. Sparse EEA records dominate the P1 backlog. [TRACE_EXECUTION]
-- Outstanding: decide draft PR #144 disposition; enrich sparse EEA records (critical fields `identity.model_year_from`, `performance.power_w`, `dimensions.curb_mass_kg`, offer/price fields) only through owner-reviewed evidence; keep all Hive and activation gates unchanged. [OWNER_DECISION]
+- Outstanding: enrich sparse EEA records (critical fields `identity.model_year_from`, `performance.power_w`, `dimensions.curb_mass_kg`, offer/price fields) only through owner-reviewed evidence; keep all Hive and activation gates unchanged. [OWNER_DECISION]
 
 ## Open work and dependencies
 
 | Order | Workstream | GitHub issue | Status | Depends on |
 |---:|---|---|---|---|
-| 1 | Owner audit of prompt/schema contract | [#47](https://github.com/CarAutopsy/carautopsy/issues/47) | Open; owner human review and five-service AI cross-review evidence to record | Merged PR #43 |
+| 1 | Owner audit of prompt/schema contract | [#47](https://github.com/CarAutopsy/carautopsy/issues/47) | Closed; owner PASS recorded at reviewed head `492390abec21ea268b22829f1017242d9b930121` | Merged PR #43 |
 | 2 | Retrieval/provenance security and zero-bypass acceptance | [#37](https://github.com/CarAutopsy/carautopsy/issues/37) | Open; owner security review, five-service AI cross-review, evidence reconciliation and source/activation gates | #49, #50, #52, #57–#72 |
 | 3 | Owner review of exact source approvals | [#37](https://github.com/CarAutopsy/carautopsy/issues/37) | Pending any proposed source; exact host/URL and automated-access terms must be reviewed before manifest change | #37 |
 
 Issue #44 (prompt builders and deterministic candidate gates) and #45 (no-retrieval safety stop) are closed. Their guarantees remain mandatory regression requirements.
 
-## M1 — Owner audit of prompt/schema contract (#47)
+## M1 — Owner audit of prompt/schema contract (#47; closed, historical checklist)
 
 - [ ] Pin exact merged PR #43 target SHA.
 - [ ] Owner reads the specified documentation and schema-contract tests and records PASS / PASS WITH CONDITIONS / FAIL.
@@ -109,3 +109,7 @@ Update this roadmap when an issue changes state, a PR merges, a dependency is di
 - Re-measured on main `245f8fd` at `--now 2026-11-22T09:00:00Z` after the owner-approved catalog batches: 120 variants, 0 structural errors, 0 blocking findings, overall completeness 0.2633. The lower ratio reflects intentionally sparse EEA-sourced records rather than corrupt data; all refresh entries remain P1 and network-disabled. [TRACE_EXECUTION]
 - Safety invariant: `HIVE_RESEARCH_PAUSED` stays active, `VERIFIED_RETRIEVAL_AVAILABLE` stays `False`, no live retrieval, paid call, secret change, catalog mutation, issue creation or merge is authorized by this milestone. [OWNER_DECISION]
 
+
+## Backlog reconciliation (2026-11-25; static GitHub inspection)
+
+Issue #136 audited PRs #118, #121 and #133; all three are now closed without merge. Their stale PR descriptions are historical, not outstanding merge instructions. PR #85 reviewed head `bf9c2f87729777074d11cae725d21c8589b88e23` differs from merge commit `d3d6188134a8fa1bf5a1046b36dc8e21f139e8cf`. The #118 diff added 11 test methods (plus subtests), not 59 verified tests, per the issue audit. #86 still requires integrated crawler-only proof; #37 remains open; #129 has a new path-guard repair in #168. No new test execution or activation is claimed. Copilot is retired by owner decision; independent review requirements remain in force.
