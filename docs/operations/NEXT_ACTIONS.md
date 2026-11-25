@@ -5,13 +5,11 @@
 
 ## Immediate
 
-1. Decide the disposition of draft PR #144, whose bulk-ingestion scope overlaps
-   the already-merged PR #145 (close as superseded, or keep as a narrower
-   follow-up). [OWNER_DECISION]
+1. PR #144 is closed without merge; overlapping scope landed in #145. [STATIC_READ]
 2. Reconcile stale project state and session handover with merged `main` at
    `245f8fd`. **DONE 2026-11-22** — see
    `.carautopsy/sessions/CARAUTOPSY-SESSION-OPENCODE-20261122-0502-001.md`. [TRACE_EXECUTION]
-3. Complete the owner human audit for issue #47 against the exact merged PR #43 target SHA. Record PASS / PASS WITH CONDITIONS / FAIL, findings, severity, and limitations.
+3. Issue #47 is closed: owner PASS at reviewed PR #43 head `492390abec21ea268b22829f1017242d9b930121`. [STATIC_READ]
 4. Complete the owner security review for issue #37 against the integrated retrieval/orchestration implementation. Obtain and record cross-review from all five AI services already in use, including findings, disagreements, unresolved risks, and residual limitations.
 5. Review and approve each proposed exact OEM source hostname, URL, source relevance, and automated-access terms before adding any entry to the owner-controlled manifest.
 6. Select the next engineering workstream: enrich the sparse EEA-sourced
@@ -40,7 +38,7 @@
 - Catalog quality report on the exact final SHA (`python scripts/catalog_quality.py --report <temp> --now <fixed>`), recording variant count, structural errors, blocking findings and completeness. The 2026-11-22 reading at HEAD `245f8fd` is 120 / 0 / 0 / 0.2633. [TRACE_EXECUTION]
 - Recursive compilation of scripts and tests.
 - Repository Audit and relevant GitHub Actions checks on the exact final SHA.
-- Owner human audit for #47 and owner security review for #37.
+- Owner security review for #37; #47 owner audit is closed.
 - Five-service AI cross-review for #37, with findings/disagreements/residual risks recorded.
 - Owner review of every source manifest entry and automated-access terms.
 
@@ -54,3 +52,7 @@
 - Do not confuse the five-service security cross-review with the two independent vendor PASS verdicts required for each candidate.
 - Do not treat the 120 catalog records, or their completeness score, as verified vehicle data; most EEA-sourced records still have P1 critical-field gaps. [OWNER_DECISION]
 - Do not dispatch, promote or catalog-write staging output from `scripts/ingest_bulk_catalog.py` without a separate owner-approved batch PR. [OWNER_DECISION]
+
+## Backlog checkpoint (2026-11-25)
+
+Prioritize #37, #86, #114, #119, #129 and #136. #118/#121/#133 are closed without merge, so their old merge instructions are not actionable. #129 repair #168 needs tests and review. #86 requires crawler-only proof, not another scheduler. Copilot is retired; no new review requests or spend. No activation or test execution claimed here.
