@@ -168,11 +168,14 @@ def parse_status_paths(status_output: str) -> list[str]:
         raise PublicationBlocked("git status output must be text")
     paths: list[str] = []
     for line in status_output.splitlines():
-        if len(line) < 4:
-            continue
+        if len(line) < 4 or line[2] != " ":
+            raise PublicationBlocked("malformed git status line")
+        # A rename/copy has two paths; accepting only its destination could
+        # conceal mutation of an unrelated source path. Neither operation is
+        # needed to refresh the single publication artifact.
+        if "R" in line[:2] or "C" in line[:2]:
+            raise PublicationBlocked("rename or copy blocks publication")
         raw = line[3:]
-        if " -> " in raw:
-            raw = raw.split(" -> ", 1)[1]
         if raw.startswith('"') and raw.endswith('"'):
             try:
                 raw = json.loads(raw)
