@@ -4,6 +4,8 @@ This folder is the operating manual for CarAutopsy.
 
 ## Core Protocols
 
+[SENTINEL quality assurance v1.0](protocols/sentinel-quality-assurance-v100.md) — proposed universal quality gate; mandatory upon owner acceptance.
+
 | Document | Purpose |
 |:---|:---|
 | [Vehicle Catalog Protocol](protocols/vehicle-catalog-protocol-v104.md) | Canonical vehicle identity, specs, units, provenance, and source policy |
