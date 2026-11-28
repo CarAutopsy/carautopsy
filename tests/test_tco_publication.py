@@ -231,7 +231,14 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
         self.assertTrue(is_duplicate_publication(existing, first_attestation))
 
         # (c) no refresh is needed on the new timestamp
-        self.assertFalse(publication_needs_refresh(existing, second_payload, first_attestation))
+        from datetime import datetime, timezone
+        fixed_now = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
+        self.assertFalse(publication_needs_refresh(existing, second_payload, first_attestation, now=fixed_now))
+        # (d) expired and future timestamps force refresh
+        expired_now = datetime(2026, 12, 1, 12, 0, tzinfo=timezone.utc)
+        future_now = datetime(2026, 11, 19, 12, 0, tzinfo=timezone.utc)
+        self.assertTrue(publication_needs_refresh(existing, second_payload, first_attestation, now=expired_now))
+        self.assertTrue(publication_needs_refresh(existing, second_payload, first_attestation, now=future_now))
 
         # (d) the post-write gate accepts the stored binding
         assert_attestation(existing, first_attestation)
@@ -245,7 +252,9 @@ class TcoPublicationSecurityRegressionTests(unittest.TestCase):
         existing = {"results": payload["results"], "summary": payload["summary"],
                     "envelope": envelope, "attestation": new_evidence}
         self.assertTrue(is_duplicate_publication(existing, new_evidence))
-        self.assertFalse(publication_needs_refresh(existing, payload, new_evidence))
+        from datetime import datetime, timezone
+        fixed_now = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
+        self.assertFalse(publication_needs_refresh(existing, payload, new_evidence, now=fixed_now))
         assert_attestation(existing, new_evidence)
 
     def test_changed_input_binding_forces_refresh_and_blocks_stale_artifact(self):
