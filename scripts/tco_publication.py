@@ -168,11 +168,14 @@ def parse_status_paths(status_output: str) -> list[str]:
         raise PublicationBlocked("git status output must be text")
     paths: list[str] = []
     for line in status_output.splitlines():
-        if len(line) < 4:
-            continue
+        if len(line) < 4 or line[2] != " ":
+            raise PublicationBlocked("malformed git status line")
+        # A rename/copy has two paths; accepting only its destination could
+        # conceal mutation of an unrelated source path. Neither operation is
+        # needed to refresh the single publication artifact.
+        if "R" in line[:2] or "C" in line[:2]:
+            raise PublicationBlocked("rename or copy blocks publication")
         raw = line[3:]
-        if " -> " in raw:
-            raw = raw.split(" -> ", 1)[1]
         if raw.startswith('"') and raw.endswith('"'):
             try:
                 raw = json.loads(raw)
@@ -232,7 +235,13 @@ def is_duplicate_publication(existing: Any, attestation: dict[str, Any]) -> bool
     )
 
 
-def publication_needs_refresh(existing: Any, payload: dict[str, Any], attestation: dict[str, Any]) -> bool:
+def publication_needs_refresh(
+    existing: Any,
+    payload: dict[str, Any],
+    attestation: dict[str, Any],
+    *,
+    now: Any = None,
+) -> bool:
     """Decide whether the local artifact must be rewritten (no git write).
 
     HEAD SHA and run URL are run-specific evidence, not input bindings: they
@@ -247,7 +256,7 @@ def publication_needs_refresh(existing: Any, payload: dict[str, Any], attestatio
         not isinstance(actual, dict)
         or any(actual.get(field) != attestation.get(field) for field in ATTESTATION_BINDING_FIELDS)
     )
-    return binding_changed or not publication_artifact_is_current(existing, payload)
+    return binding_changed or not publication_artifact_is_current(existing, payload, now=now)
 
 
 def classify_publication_response(response: Any) -> str:
